@@ -1,0 +1,8 @@
+outputs/
+.cache/
+.env
+.env.local
+github_tokens.txt
+__pycache__/
+*.pyc
+.pytest_cache/

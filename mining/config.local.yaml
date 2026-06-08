@@ -1,0 +1,21 @@
+source:
+  mode: real
+  aidev_dataset: dysavepeople/AIDev
+  data_root:
+
+github:
+  enabled: true
+  token_file: mining/github_tokens.txt
+  batch_size: 20
+  per_repo_search_limit:
+
+resume:
+  enabled: true
+  reset: false
+
+criteria:
+  star_floor: 100
+  task_type: perf
+
+outputs:
+  dir: mining/outputs
