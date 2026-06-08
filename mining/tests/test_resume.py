@@ -24,7 +24,7 @@ def _signature() -> dict:
                 "data_root": None,
             },
             "criteria": {"star_floor": 100, "task_type": "perf"},
-            "github": {"enabled": True, "token_env": "GITHUB_TOKEN"},
+            "github": {"enabled": True, "token_file": "mining/github_tokens.txt"},
         },
         TimeWindow(
             start=pd.Timestamp("2025-01-01T00:00:00Z"),

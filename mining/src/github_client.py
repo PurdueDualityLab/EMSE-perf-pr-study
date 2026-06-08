@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
 import re
 import threading
 import time
 from dataclasses import dataclass, field
 from datetime import date
 from collections.abc import Callable, Iterable
+from pathlib import Path
 from typing import Any
 
 import requests
@@ -57,17 +57,18 @@ def parse_token_value(value: str | None) -> list[str]:
     return [token] if token else []
 
 
-def github_tokens_from_env(token_env: str = "GITHUB_TOKEN") -> list[str]:
+def github_tokens_from_file(token_file: str | Path) -> list[str]:
+    path = Path(token_file)
+    if not path.is_file():
+        raise GitHubClientError(
+            f"GitHub token file not found: {path}. Set github.token_file to an existing file with at least one token per line."
+        )
     tokens: list[str] = []
-    numbered_keys: list[tuple[int, str]] = []
-    pattern = re.compile(rf"^{re.escape(token_env)}_(\d+)$")
-    for key, value in os.environ.items():
-        match = pattern.match(key)
-        if match:
-            numbered_keys.append((int(match.group(1)), value))
-    for _, value in sorted(numbered_keys):
-        tokens.extend(parse_token_value(value))
-    tokens.extend(parse_token_value(os.environ.get(token_env)))
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        tokens.extend(parse_token_value(line))
 
     deduped: list[str] = []
     seen: set[str] = set()
@@ -77,6 +78,12 @@ def github_tokens_from_env(token_env: str = "GITHUB_TOKEN") -> list[str]:
         deduped.append(token)
         seen.add(token)
     return deduped
+
+
+def github_tokens(token_file: str | None) -> list[str]:
+    if not token_file:
+        raise GitHubClientError("github.token_file is required for real GitHub mining.")
+    return github_tokens_from_file(token_file)
 
 
 @dataclass
@@ -143,14 +150,14 @@ _TOKEN_POOLS: dict[tuple[str, tuple[str, ...]], GitHubTokenPool] = {}
 _TOKEN_POOLS_LOCK = threading.Lock()
 
 
-def github_token_pool_from_env(token_env: str = "GITHUB_TOKEN") -> GitHubTokenPool:
-    tokens = github_tokens_from_env(token_env)
+def github_token_pool(token_file: str | None) -> GitHubTokenPool:
+    tokens = github_tokens(token_file=token_file)
     if not tokens:
         raise GitHubClientError(
-            f"{token_env} is required for real GitHub mining. "
-            "Set GITHUB_TOKEN_1..N, or GITHUB_TOKEN for a single-token run, in mining/.env."
+            f"No GitHub tokens were loaded from {token_file}. "
+            "Set github.token_file to a file with at least one token per line."
         )
-    key = (token_env, tuple(tokens))
+    key = (str(token_file), tuple(tokens))
     with _TOKEN_POOLS_LOCK:
         pool = _TOKEN_POOLS.get(key)
         if pool is None:
@@ -169,8 +176,8 @@ class GitHubClient:
     last_token_index: int = 0
 
     @classmethod
-    def from_env(cls, token_env: str = "GITHUB_TOKEN") -> "GitHubClient":
-        return cls(token_pool=github_token_pool_from_env(token_env))
+    def from_token_file(cls, token_file: str | None) -> "GitHubClient":
+        return cls(token_pool=github_token_pool(token_file=token_file))
 
     def __post_init__(self) -> None:
         if self.token_pool is None:
@@ -349,12 +356,12 @@ class GitHubClient:
 
 def enrich_pull_request_records(
     rows: Iterable[dict],
-    token_env: str = "GITHUB_TOKEN",
+    token_file: str | None = None,
     progress: Callable[[str], None] | None = None,
     progress_every: int = 10,
     report: dict[str, Any] | None = None,
 ) -> list[dict]:
-    client = GitHubClient.from_env(token_env)
+    client = GitHubClient.from_token_file(token_file=token_file)
     rows_list = list(rows)
     total = len(rows_list)
     if report is not None:
@@ -457,12 +464,12 @@ def mine_human_pull_requests(
     repos: Iterable[dict],
     start: date,
     end: date,
-    token_env: str = "GITHUB_TOKEN",
+    token_file: str | None = None,
     per_repo_search_limit: int | None = None,
     progress: Callable[[str], None] | None = None,
     report: dict[str, Any] | None = None,
 ) -> list[dict]:
-    client = GitHubClient.from_env(token_env)
+    client = GitHubClient.from_token_file(token_file=token_file)
     repos_list = list(repos)
     total_repos = len(repos_list)
     if report is not None:

@@ -225,7 +225,7 @@ def build_pipeline_signature(
         "repo_count": int(repo_count),
         "limit_repos": limit_repos,
         "github_enabled": bool(github_cfg.get("enabled", False)),
-        "token_env": github_cfg.get("token_env", "GITHUB_TOKEN"),
+        "token_file": github_cfg.get("token_file"),
     }
 
 
@@ -234,7 +234,7 @@ def mine_one_repo_for_batch(
     repo_total: int,
     repo: dict[str, Any],
     window: TimeWindow,
-    token_env: str,
+    token_file: str | None,
     per_repo_search_limit: int | None,
     progress: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
@@ -250,7 +250,7 @@ def mine_one_repo_for_batch(
         [repo],
         window.start.date(),
         window.end.date(),
-        token_env=token_env,
+        token_file=token_file,
         per_repo_search_limit=per_repo_search_limit,
         progress=scoped_progress,
         report=aggregate_report,
@@ -305,7 +305,7 @@ def save_repo_checkpoint(
 
 def enrich_dataframe_with_github(
     df: pd.DataFrame,
-    token_env: str,
+    token_file: str | None,
     progress: Callable[[str], None] | None = None,
     progress_every: int = 10,
     report: dict[str, Any] | None = None,
@@ -314,7 +314,7 @@ def enrich_dataframe_with_github(
         return df.copy()
     enriched = enrich_pull_request_records(
         df.to_dict(orient="records"),
-        token_env=token_env,
+        token_file=token_file,
         progress=progress,
         progress_every=progress_every,
         report=report,
@@ -637,7 +637,7 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
     github_cfg = config.get("github", {})
     if not github_cfg.get("enabled", False):
         raise ValueError("Real mining requires github.enabled: true.")
-    token_env = github_cfg.get("token_env", "GITHUB_TOKEN")
+    token_file = github_cfg.get("token_file")
     batch_size = github_batch_size(config)
     resume_cfg = config.get("resume", {})
     resume_enabled = bool(resume_cfg.get("enabled", True))
@@ -668,7 +668,7 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
     agent_enrichment_report: dict[str, Any] = {"arm": "agent"}
     agent_perf = enrich_dataframe_with_github(
         agent_perf_candidates,
-        token_env,
+        token_file,
         progress=log,
         progress_every=25,
         report=agent_enrichment_report,
@@ -731,7 +731,7 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
                     len(records),
                     repo,
                     window,
-                    token_env,
+                    token_file,
                     github_cfg.get("per_repo_search_limit"),
                     log,
                 ): (repo_position, repo)
@@ -794,7 +794,7 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
     human_enrichment_report: dict[str, Any] = {"arm": "human"}
     human_perf_before_quality = enrich_dataframe_with_github(
         human_perf_before_quality,
-        token_env,
+        token_file,
         progress=log,
         progress_every=25,
         report=human_enrichment_report,

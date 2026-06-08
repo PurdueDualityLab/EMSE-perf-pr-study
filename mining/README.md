@@ -14,30 +14,29 @@ the natural yield after applying the matched inclusion criteria.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r mining/requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Secrets
 
-Copy `mining/.env.example` to `mining/.env` and fill in your GitHub tokens as
-separate variables:
+Copy `mining/github_tokens.example.txt` to `mining/github_tokens.txt` and put
+one GitHub token on each line:
 
-```env
-GITHUB_TOKEN_1=ghp_first_token
-GITHUB_TOKEN_2=ghp_second_token
-GITHUB_TOKEN_3=ghp_third_token
-GITHUB_TOKEN_4=ghp_fourth_token
-GITHUB_TOKEN_5=ghp_fifth_token
+```text
+ghp_first_token
+ghp_second_token
+ghp_third_token
 ```
 
-The pipeline loads `mining/.env` automatically. Keep `github.token_env:
-GITHUB_TOKEN` in the YAML; that value is treated as the prefix, so the miner
-reads `GITHUB_TOKEN_1`, `GITHUB_TOKEN_2`, and so on. If one token hits rate
+Blank lines and lines starting with `#` are ignored. If one token hits rate
 limit, the GitHub client rotates to the next token and retries the same request.
+
+`github.token_file` is mandatory for real GitHub mining. The file must exist and
+contain at least one token.
 
 ## Real mining run
 
-Copy `mining/config.example.yaml` to `mining/config.local.yaml` and run:
+Use `mining/config.local.yaml` and run:
 
 ```bash
 python mining/src/build_rebalanced_dataset.py --config mining/config.local.yaml
@@ -48,6 +47,7 @@ time:
 
 ```yaml
 github:
+  token_file: mining/github_tokens.txt
   batch_size: 20
 ```
 

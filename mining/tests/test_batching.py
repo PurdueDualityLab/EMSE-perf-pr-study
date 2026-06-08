@@ -79,7 +79,7 @@ def test_save_repo_checkpoint_writes_after_each_repo(tmp_path):
 
 
 def test_parallel_batch_worker_keeps_success_when_another_repo_fails(monkeypatch):
-    def fake_mine(repos, start, end, token_env, per_repo_search_limit, progress, report):
+    def fake_mine(repos, start, end, token_file, per_repo_search_limit, progress, report):
         repo = repos[0]
         name = repo["repo_full_name"]
         if name == "owner/fail":
@@ -124,7 +124,7 @@ def test_parallel_batch_worker_keeps_success_when_another_repo_fails(monkeypatch
                 2,
                 repo,
                 window,
-                "GITHUB_TOKEN",
+                None,
                 None,
                 None,
             )

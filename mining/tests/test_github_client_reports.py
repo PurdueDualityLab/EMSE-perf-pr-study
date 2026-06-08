@@ -1,7 +1,6 @@
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-import os
 import sys
 import time
 import threading
@@ -11,7 +10,14 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import github_client
-from github_client import GitHubClient, GitHubClientError, GitHubTokenPool, github_tokens_from_env, mine_human_pull_requests
+from github_client import (
+    GitHubClient,
+    GitHubClientError,
+    GitHubTokenPool,
+    github_tokens,
+    github_tokens_from_file,
+    mine_human_pull_requests,
+)
 
 
 class FakeClient:
@@ -110,46 +116,37 @@ class TokenOneLimitedSession:
         return FakeResponse(200, payload={"ok": True}, headers={"x-ratelimit-remaining": "4999"})
 
 
-def clear_github_token_env(monkeypatch):
-    for key in list(os.environ):
-        if key == "GITHUB_TOKEN" or key.startswith("GITHUB_TOKEN_"):
-            monkeypatch.delenv(key, raising=False)
+def test_github_tokens_from_file_reads_one_token_per_line(tmp_path):
+    token_file = tmp_path / "tokens.txt"
+    token_file.write_text("token-one\n\ntoken-two\n# comment\ntoken-three\n", encoding="utf-8")
+
+    assert github_tokens_from_file(token_file) == ["token-one", "token-two", "token-three"]
 
 
-def test_github_tokens_from_env_reads_numbered_tokens(monkeypatch):
-    clear_github_token_env(monkeypatch)
-    monkeypatch.setenv("GITHUB_TOKEN_1", "token-one")
-    monkeypatch.setenv("GITHUB_TOKEN_2", "token-two")
-    monkeypatch.setenv("GITHUB_TOKEN_5", "token-five")
+def test_github_tokens_from_file_dedupes_while_preserving_order(tmp_path):
+    token_file = tmp_path / "tokens.txt"
+    token_file.write_text("token-one\ntoken-two\ntoken-one\n", encoding="utf-8")
 
-    assert github_tokens_from_env("GITHUB_TOKEN") == ["token-one", "token-two", "token-five"]
+    assert github_tokens_from_file(token_file) == ["token-one", "token-two"]
 
 
-def test_github_tokens_from_env_skips_empty_numbered_tokens(monkeypatch):
-    clear_github_token_env(monkeypatch)
-    monkeypatch.setenv("GITHUB_TOKEN_1", "token-one")
-    monkeypatch.setenv("GITHUB_TOKEN_2", "")
-    monkeypatch.setenv("GITHUB_TOKEN_3", "   ")
-    monkeypatch.setenv("GITHUB_TOKEN_4", "token-four")
-    monkeypatch.setenv("GITHUB_TOKEN_5", "token-five")
+def test_github_tokens_from_file_requires_existing_file(tmp_path):
+    missing = tmp_path / "missing.txt"
 
-    assert github_tokens_from_env("GITHUB_TOKEN") == ["token-one", "token-four", "token-five"]
+    with pytest.raises(GitHubClientError, match="GitHub token file not found"):
+        github_tokens_from_file(missing)
 
 
-def test_github_tokens_from_env_reads_arbitrary_numbered_tokens(monkeypatch):
-    clear_github_token_env(monkeypatch)
-    monkeypatch.setenv("GITHUB_TOKEN_10", "token-ten")
-    monkeypatch.setenv("GITHUB_TOKEN_2", "token-two")
-    monkeypatch.setenv("GITHUB_TOKEN_100", "token-hundred")
-    monkeypatch.setenv("GITHUB_TOKEN_4", "")
-    monkeypatch.setenv("GITHUB_TOKEN", "token-bare")
+def test_github_tokens_requires_token_file(tmp_path):
+    with pytest.raises(GitHubClientError, match="github.token_file is required"):
+        github_tokens(None)
 
-    assert github_tokens_from_env("GITHUB_TOKEN") == [
-        "token-two",
-        "token-ten",
-        "token-hundred",
-        "token-bare",
-    ]
+
+def test_github_tokens_uses_file(tmp_path):
+    token_file = tmp_path / "tokens.txt"
+    token_file.write_text("file-token\n", encoding="utf-8")
+
+    assert github_tokens(str(token_file)) == ["file-token"]
 
 
 def test_github_client_rotates_to_next_numbered_token_on_rate_limit():
@@ -225,8 +222,8 @@ def test_mine_human_pull_requests_records_failures(monkeypatch):
     fake_client = FakeClient()
     monkeypatch.setattr(
         github_client.GitHubClient,
-        "from_env",
-        classmethod(lambda cls, token_env="GITHUB_TOKEN": fake_client),
+        "from_token_file",
+        classmethod(lambda cls, token_file=None: fake_client),
     )
 
     report: dict = {"repo_reports": [], "pr_failures": []}

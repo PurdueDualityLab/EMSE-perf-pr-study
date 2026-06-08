@@ -5,7 +5,7 @@ source:
 
 github:
   enabled: true
-  token_env: GITHUB_TOKEN
+  token_file: mining/github_tokens.txt
   batch_size: 20
   per_repo_search_limit:
 
