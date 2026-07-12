@@ -4,7 +4,7 @@ import re
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
@@ -55,6 +55,22 @@ def parse_token_value(value: str | None) -> list[str]:
         return []
     token = value.strip()
     return [token] if token else []
+
+
+def monthly_date_ranges(start: date, end: date) -> list[tuple[date, date]]:
+    if end < start:
+        return []
+    ranges: list[tuple[date, date]] = []
+    current = start
+    while current <= end:
+        if current.month == 12:
+            next_month = date(current.year + 1, 1, 1)
+        else:
+            next_month = date(current.year, current.month + 1, 1)
+        chunk_end = min(end, next_month - timedelta(days=1))
+        ranges.append((current, chunk_end))
+        current = chunk_end + timedelta(days=1)
+    return ranges
 
 
 def github_tokens_from_file(token_file: str | Path) -> list[str]:
@@ -113,6 +129,33 @@ class GitHubTokenPool:
                     self.next_index = (index + 1) % len(self.tokens)
                     return index, self.tokens[index]
         raise self.all_rate_limited_error("GitHub API")
+
+    def seconds_until_next_available(self) -> int | None:
+        with self.lock:
+            now = int(time.time())
+            reset_values = [
+                reset_at
+                for reset_at in self.rate_limited_until.values()
+                if reset_at > now
+            ]
+        if not reset_values:
+            return None
+        return max(min(reset_values) - int(time.time()), 0)
+
+    def acquire_waiting(self, url: str, progress: Callable[[str], None] | None = None) -> tuple[int, str]:
+        while True:
+            try:
+                return self.acquire()
+            except GitHubRateLimitError:
+                wait_seconds = self.seconds_until_next_available()
+                if wait_seconds is None:
+                    raise self.all_rate_limited_error(url)
+                if progress is not None:
+                    progress(
+                        f"[github-token] all {len(self.tokens)} token(s) are rate limited; "
+                        f"waiting about {format_seconds(wait_seconds)} before retrying"
+                    )
+                time.sleep(wait_seconds + 1)
 
     def mark_rate_limited(self, index: int, response: requests.Response) -> None:
         reset_at = response.headers.get("x-ratelimit-reset")
@@ -209,8 +252,8 @@ class GitHubClient:
 
     def request(self, path: str, params: dict | None = None) -> dict | list:
         url = path if path.startswith("https://") else f"{self.api_base}{path}"
-        for _ in range(len(self.token_pool.tokens)):
-            token_index, token = self.token_pool.acquire()
+        while True:
+            token_index, token = self.token_pool.acquire_waiting(url, progress=print)
             self.last_token_index = token_index
             try:
                 response = self.session.get(url, headers=self._headers(token), params=params, timeout=20)
@@ -220,7 +263,17 @@ class GitHubClient:
                 self.token_pool.mark_rate_limited(token_index, response)
                 next_label = self.token_pool.next_available_label()
                 if next_label is None:
-                    raise self.token_pool.all_rate_limited_error(url)
+                    wait_seconds = self.token_pool.seconds_until_next_available()
+                    if wait_seconds is None:
+                        raise self.token_pool.all_rate_limited_error(url)
+                    print(
+                        f"[github-token] rate limit on token {self.token_pool.label(token_index)}; "
+                        f"all {len(self.token_pool.tokens)} token(s) limited; "
+                        f"waiting about {format_seconds(wait_seconds)} before retrying",
+                        flush=True,
+                    )
+                    time.sleep(wait_seconds + 1)
+                    continue
                 print(
                     f"[github-token] rate limit on token {self.token_pool.label(token_index)}; switching to token {next_label}",
                     flush=True,
@@ -234,7 +287,6 @@ class GitHubClient:
                 raise GitHubClientError(f"GitHub request failed for {url}: {exc}") from exc
             time.sleep(self.sleep_seconds)
             return response.json()
-        raise self.token_pool.all_rate_limited_error(url)
 
     def search_pull_requests(
         self,
@@ -242,6 +294,32 @@ class GitHubClient:
         start: date,
         end: date,
         per_repo_limit: int | None = None,
+    ) -> list[dict]:
+        collected: list[dict] = []
+        seen_urls: set[str] = set()
+        seen_numbers: set[int] = set()
+        for chunk_start, chunk_end in monthly_date_ranges(start, end):
+            for item in self.search_pull_requests_for_range(repo_full_name, chunk_start, chunk_end):
+                url = str(item.get("html_url") or item.get("url") or "")
+                number = item.get("number")
+                if url and url in seen_urls:
+                    continue
+                if not url and isinstance(number, int) and number in seen_numbers:
+                    continue
+                if url:
+                    seen_urls.add(url)
+                if isinstance(number, int):
+                    seen_numbers.add(number)
+                collected.append(item)
+                if per_repo_limit and len(collected) >= per_repo_limit:
+                    return collected[:per_repo_limit]
+        return collected
+
+    def search_pull_requests_for_range(
+        self,
+        repo_full_name: str,
+        start: date,
+        end: date,
     ) -> list[dict]:
         query = f"repo:{repo_full_name} is:pr created:{start.isoformat()}..{end.isoformat()}"
         collected: list[dict] = []
@@ -261,8 +339,6 @@ class GitHubClient:
             if not items:
                 break
             collected.extend(items)
-            if per_repo_limit and len(collected) >= per_repo_limit:
-                return collected[:per_repo_limit]
             if len(items) < 100:
                 break
             page += 1

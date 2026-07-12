@@ -133,6 +133,18 @@ def derive_time_window(agent_prs: pd.DataFrame) -> TimeWindow:
     return TimeWindow(start=created.min(), end=created.max())
 
 
+def configured_time_window(config: dict[str, Any], fallback: TimeWindow) -> TimeWindow:
+    criteria = config.get("criteria", {})
+    start = criteria.get("start_date") or criteria.get("window_start")
+    end = criteria.get("end_date") or criteria.get("window_end")
+    if start is None and end is None:
+        return fallback
+    return TimeWindow(
+        start=ensure_datetime(pd.Series([start])).iloc[0] if start is not None else fallback.start,
+        end=ensure_datetime(pd.Series([end])).iloc[0] if end is not None else fallback.end,
+    )
+
+
 def filter_prs_to_repos_and_window(
     prs: pd.DataFrame,
     repos: pd.DataFrame,
@@ -652,8 +664,8 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
     log(f"[2/6] Filtering repositories with stars >= {star_floor}")
     repos = ensure_repo_full_names(filter_repositories(tables["repository"], star_floor), tables["pull_request"])
     log(f"  repositories kept: {len(repos)}")
-    agent_prs = filter_prs_to_repos_and_window(tables["pull_request"], repos, derive_time_window(tables["pull_request"]))
-    window = derive_time_window(agent_prs)
+    window = configured_time_window(config, derive_time_window(tables["pull_request"]))
+    agent_prs = filter_prs_to_repos_and_window(tables["pull_request"], repos, window)
     log(f"  time window: {window.start.isoformat()} -> {window.end.isoformat()}")
     signature = build_pipeline_signature(config, window, len(repos), limit_repos)
 

@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 
 import pandas as pd
+import pyarrow as pa
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -53,3 +54,16 @@ def test_quality_filters_with_details_capture_removed_rows():
     }
     assert removed_records["empty_filename"][0]["id"] == 2
     assert removed_records["config_only"][0]["id"] == 3
+
+
+def test_quality_filters_accept_arrow_array_filenames():
+    df = pd.DataFrame(
+        [
+            {"id": 1, "filenames": pa.array(["src/cache.py"]), "title": "perf"},
+        ]
+    )
+
+    filtered, counts = apply_quality_filters(df)
+
+    assert filtered["id"].tolist() == [1]
+    assert counts["empty_filename"] == 0

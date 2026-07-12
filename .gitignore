@@ -1,8 +1,17 @@
 outputs/
+mining/outputs/
+mining/outputs_*/
+mining/backups/
 .cache/
+.venv/
 .env
 .env.local
 github_tokens.txt
+mining/github_tokens.txt
 __pycache__/
 *.pyc
 .pytest_cache/
+*.parquet
+*.log
+*.pid
+*.nohup.log

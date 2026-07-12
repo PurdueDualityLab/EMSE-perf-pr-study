@@ -6,7 +6,7 @@ source:
 github:
   enabled: true
   token_file: mining/github_tokens.txt
-  batch_size: 20
+  batch_size: 16
   per_repo_search_limit:
 
 resume:
@@ -16,6 +16,8 @@ resume:
 criteria:
   star_floor: 100
   task_type: perf
+  start_date: "2024-12-24T00:23:09+00:00"
+  end_date: "2026-06-01T00:00:00+00:00"
 
 outputs:
-  dir: mining/outputs
+  dir: mining/outputs_2026_06_01

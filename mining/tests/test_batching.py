@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import build_rebalanced_dataset
 from build_rebalanced_dataset import (  # type: ignore
     chunked,
+    configured_time_window,
     github_batch_size,
     initial_resume_state,
     mine_one_repo_for_batch,
@@ -23,6 +24,26 @@ def test_github_batch_size_defaults_to_20():
 
 def test_github_batch_size_allows_sequential_mode():
     assert github_batch_size({"github": {"batch_size": 1}}) == 1
+
+
+def test_configured_time_window_overrides_fallback_dates():
+    fallback = TimeWindow(
+        start=pd.Timestamp("2025-01-01T00:00:00Z"),
+        end=pd.Timestamp("2025-01-31T23:59:59Z"),
+    )
+
+    window = configured_time_window(
+        {
+            "criteria": {
+                "start_date": "2024-12-24T00:23:09+00:00",
+                "end_date": "2026-06-01T00:00:00+00:00",
+            }
+        },
+        fallback,
+    )
+
+    assert window.start == pd.Timestamp("2024-12-24T00:23:09Z")
+    assert window.end == pd.Timestamp("2026-06-01T00:00:00Z")
 
 
 def test_chunked_splits_repos_into_expected_batches():

@@ -17,6 +17,7 @@ from github_client import (
     github_tokens,
     github_tokens_from_file,
     mine_human_pull_requests,
+    monthly_date_ranges,
 )
 
 
@@ -116,6 +117,39 @@ class TokenOneLimitedSession:
         return FakeResponse(200, payload={"ok": True}, headers={"x-ratelimit-remaining": "4999"})
 
 
+class AllTokensLimitedThenAvailableSession:
+    def __init__(self):
+        self.calls = 0
+
+    def get(self, url, headers=None, params=None, timeout=None):
+        self.calls += 1
+        if self.calls <= 2:
+            return FakeResponse(
+                403,
+                text="API rate limit exceeded",
+                headers={
+                    "x-ratelimit-remaining": "0",
+                    "x-ratelimit-reset": str(int(time.time())),
+                },
+            )
+        return FakeResponse(200, payload={"ok": True}, headers={"x-ratelimit-remaining": "4999"})
+
+
+class SearchRecordingClient(GitHubClient):
+    def __init__(self):
+        super().__init__(tokens=["token-one"], sleep_seconds=0)
+        self.ranges = []
+
+    def search_pull_requests_for_range(self, repo_full_name, start, end):
+        self.ranges.append((repo_full_name, start, end))
+        return [
+            {
+                "number": len(self.ranges),
+                "html_url": f"https://github.com/{repo_full_name}/pull/{len(self.ranges)}",
+            }
+        ]
+
+
 def test_github_tokens_from_file_reads_one_token_per_line(tmp_path):
     token_file = tmp_path / "tokens.txt"
     token_file.write_text("token-one\n\ntoken-two\n# comment\ntoken-three\n", encoding="utf-8")
@@ -147,6 +181,27 @@ def test_github_tokens_uses_file(tmp_path):
     token_file.write_text("file-token\n", encoding="utf-8")
 
     assert github_tokens(str(token_file)) == ["file-token"]
+
+
+def test_monthly_date_ranges_split_partial_months():
+    assert monthly_date_ranges(date(2024, 12, 24), date(2025, 2, 2)) == [
+        (date(2024, 12, 24), date(2024, 12, 31)),
+        (date(2025, 1, 1), date(2025, 1, 31)),
+        (date(2025, 2, 1), date(2025, 2, 2)),
+    ]
+
+
+def test_search_pull_requests_queries_monthly_ranges():
+    client = SearchRecordingClient()
+
+    results = client.search_pull_requests("owner/repo", date(2024, 12, 24), date(2025, 2, 2))
+
+    assert [item[1:] for item in client.ranges] == [
+        (date(2024, 12, 24), date(2024, 12, 31)),
+        (date(2025, 1, 1), date(2025, 1, 31)),
+        (date(2025, 2, 1), date(2025, 2, 2)),
+    ]
+    assert [item["number"] for item in results] == [1, 2, 3]
 
 
 def test_github_client_rotates_to_next_numbered_token_on_rate_limit():
@@ -200,7 +255,15 @@ def test_concurrent_requests_retry_after_shared_token_hits_rate_limit():
     assert 0 in pool.rate_limited_until
 
 
-def test_github_token_pool_raises_cleanly_when_all_tokens_are_limited():
+def test_github_client_waits_until_limited_tokens_become_available():
+    session = AllTokensLimitedThenAvailableSession()
+    client = GitHubClient(tokens=["token-one"], session=session, sleep_seconds=0)
+
+    assert client.request("/eventually-ok") == {"ok": True}
+    assert session.calls == 3
+
+
+def test_github_token_pool_waits_when_all_tokens_are_limited():
     pool = GitHubTokenPool(tokens=["token-one"])
     pool.mark_rate_limited(
         0,
@@ -209,13 +272,12 @@ def test_github_token_pool_raises_cleanly_when_all_tokens_are_limited():
             text="API rate limit exceeded",
             headers={
                 "x-ratelimit-remaining": "0",
-                "x-ratelimit-reset": str(int(time.time()) + 60),
+                "x-ratelimit-reset": str(int(time.time())),
             },
         ),
     )
 
-    with pytest.raises(github_client.GitHubRateLimitError, match="all 1 configured"):
-        pool.acquire()
+    assert pool.acquire_waiting("/ok") == (0, "token-one")
 
 
 def test_mine_human_pull_requests_records_failures(monkeypatch):

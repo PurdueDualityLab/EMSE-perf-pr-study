@@ -15,6 +15,9 @@ def _as_list(value: object) -> list:
         return value
     if isinstance(value, tuple):
         return list(value)
+    if hasattr(value, "tolist") and not isinstance(value, (str, bytes)):
+        converted = value.tolist()
+        return converted if isinstance(converted, list) else [converted]
     if value is None or pd.isna(value):
         return []
     if isinstance(value, str):

@@ -7,11 +7,13 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 from github_client import parse_repo_full_name
 
 
 RESUME_STATE_FILENAME = "rebalancing_state.json"
+CHECKPOINT_DROP_COLUMNS = ("files", "commits")
 
 
 def resume_state_path(output_dir: Path) -> Path:
@@ -36,12 +38,25 @@ def save_resume_state(path: Path, state: dict[str, Any]) -> None:
 def load_checkpoint_dataframe(path: Path) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame()
-    return pd.read_parquet(path)
+    try:
+        return pd.read_parquet(path)
+    except Exception:
+        parquet_file = pq.ParquetFile(path)
+        columns = [
+            name
+            for name in parquet_file.schema_arrow.names
+            if name not in CHECKPOINT_DROP_COLUMNS
+        ]
+        return pd.read_parquet(path, columns=columns)
+
+
+def checkpoint_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop(columns=[column for column in CHECKPOINT_DROP_COLUMNS if column in df.columns])
 
 
 def save_checkpoint_dataframe(df: pd.DataFrame, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(path, index=False)
+    checkpoint_dataframe(df).to_parquet(path, index=False)
 
 
 def completed_repo_names_from_checkpoint(df: pd.DataFrame) -> set[str]:
