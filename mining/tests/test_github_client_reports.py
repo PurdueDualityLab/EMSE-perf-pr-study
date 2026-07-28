@@ -6,13 +6,17 @@ import time
 import threading
 
 import pytest
+import requests
+import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import github_client
 from github_client import (
     GitHubClient,
+    GitHubAuthenticationError,
     GitHubClientError,
+    GitHubNotFoundError,
     GitHubTokenPool,
     github_tokens,
     github_tokens_from_file,
@@ -150,6 +154,45 @@ class SearchRecordingClient(GitHubClient):
         ]
 
 
+class SubdividingSearchClient(GitHubClient):
+    def __init__(self):
+        super().__init__(tokens=["token-one"], sleep_seconds=0)
+        self.queries = []
+
+    def request(self, path, params=None):
+        date_range = params["q"].split("created:", 1)[1]
+        self.queries.append(date_range)
+        if date_range == "2025-01-01..2025-01-04":
+            return {"total_count": 1200, "incomplete_results": False, "items": []}
+        if date_range == "2025-01-01..2025-01-02":
+            return {"total_count": 1100, "incomplete_results": False, "items": []}
+        number = {
+            "2025-01-01..2025-01-01": 1,
+            "2025-01-02..2025-01-02": 2,
+            "2025-01-03..2025-01-04": 3,
+        }[date_range]
+        return {
+            "total_count": 1,
+            "incomplete_results": False,
+            "items": [{"number": number}],
+        }
+
+
+class SequenceSession:
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.authorizations = []
+        self.calls = 0
+
+    def get(self, url, headers=None, params=None, timeout=None):
+        self.calls += 1
+        self.authorizations.append(headers["Authorization"])
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+
 def test_github_tokens_from_file_reads_one_token_per_line(tmp_path):
     token_file = tmp_path / "tokens.txt"
     token_file.write_text("token-one\n\ntoken-two\n# comment\ntoken-three\n", encoding="utf-8")
@@ -204,6 +247,115 @@ def test_search_pull_requests_queries_monthly_ranges():
     assert [item["number"] for item in results] == [1, 2, 3]
 
 
+def test_search_pull_requests_recursively_subdivides_ranges_over_cap():
+    client = SubdividingSearchClient()
+
+    results = client.search_pull_requests_for_range(
+        "owner/repo", date(2025, 1, 1), date(2025, 1, 4)
+    )
+
+    assert [item["number"] for item in results] == [1, 2, 3]
+    assert client.queries == [
+        "2025-01-01..2025-01-04",
+        "2025-01-01..2025-01-02",
+        "2025-01-01..2025-01-01",
+        "2025-01-02..2025-01-02",
+        "2025-01-03..2025-01-04",
+    ]
+
+
+def test_search_pull_requests_subdivides_incomplete_ranges(monkeypatch):
+    client = GitHubClient(tokens=["token-one"], sleep_seconds=0)
+    client.max_retries = 0
+
+    def fake_request(path, params=None):
+        date_range = params["q"].split("created:", 1)[1]
+        if date_range == "2025-01-01..2025-01-02":
+            return {"total_count": 2, "incomplete_results": True, "items": []}
+        number = 1 if date_range.startswith("2025-01-01") else 2
+        return {
+            "total_count": 1,
+            "incomplete_results": False,
+            "items": [{"number": number}],
+        }
+
+    monkeypatch.setattr(client, "request", fake_request)
+
+    results = client.search_pull_requests_for_range(
+        "owner/repo", date(2025, 1, 1), date(2025, 1, 2)
+    )
+
+    assert [item["number"] for item in results] == [1, 2]
+
+
+def test_search_pull_requests_fails_when_one_day_exceeds_cap(monkeypatch):
+    client = GitHubClient(tokens=["token-one"], sleep_seconds=0)
+    monkeypatch.setattr(
+        client,
+        "request",
+        lambda path, params=None: {
+            "total_count": 1001,
+            "incomplete_results": False,
+            "items": [],
+        },
+    )
+
+    with pytest.raises(GitHubClientError, match="one-day range cannot be subdivided"):
+        client.search_pull_requests_for_range(
+            "owner/repo", date(2025, 1, 1), date(2025, 1, 1)
+        )
+
+
+def test_one_day_search_can_return_a_bounded_prefix_over_cap(monkeypatch):
+    client = GitHubClient(tokens=["token-one"], sleep_seconds=0)
+    items = [{"number": number} for number in range(1, 101)]
+    monkeypatch.setattr(
+        client,
+        "request",
+        lambda path, params=None: {
+            "total_count": 1200,
+            "incomplete_results": False,
+            "items": items,
+        },
+    )
+
+    results = client.search_pull_requests(
+        "owner/repo",
+        date(2025, 1, 1),
+        date(2025, 1, 1),
+        per_repo_limit=10,
+    )
+
+    assert [item["number"] for item in results] == list(range(1, 11))
+
+
+def test_search_retries_transient_incomplete_results(monkeypatch):
+    client = GitHubClient(
+        tokens=["token-one"],
+        sleep_seconds=0,
+        retry_backoff_seconds=0,
+    )
+    calls = 0
+
+    def fake_request(path, params=None):
+        nonlocal calls
+        calls += 1
+        return {
+            "total_count": 1,
+            "incomplete_results": calls == 1,
+            "items": [{"number": 1}],
+        }
+
+    monkeypatch.setattr(client, "request", fake_request)
+
+    results = client.search_pull_requests_for_range(
+        "owner/repo", date(2025, 1, 1), date(2025, 1, 1)
+    )
+
+    assert results == [{"number": 1}]
+    assert calls == 2
+
+
 def test_github_client_rotates_to_next_numbered_token_on_rate_limit():
     session = RotatingSession()
     client = GitHubClient(tokens=["token-one", "token-two"], session=session, sleep_seconds=0)
@@ -211,6 +363,81 @@ def test_github_client_rotates_to_next_numbered_token_on_rate_limit():
     assert client.request("/rate-limited-once") == {"ok": True}
     assert session.authorizations == ["Bearer token-one", "Bearer token-two"]
     assert client.token == "token-two"
+
+
+def test_github_client_rotates_past_invalid_token():
+    session = SequenceSession(
+        [
+            FakeResponse(401, text="Bad credentials"),
+            FakeResponse(200, payload={"ok": True}),
+        ]
+    )
+    client = GitHubClient(tokens=["bad-token", "good-token"], session=session, sleep_seconds=0)
+
+    assert client.request("/ok") == {"ok": True}
+    assert session.authorizations == ["Bearer bad-token", "Bearer good-token"]
+    assert client.token_pool.invalid_token_indexes == {0}
+
+
+def test_github_client_fails_when_all_tokens_are_invalid():
+    session = SequenceSession(
+        [
+            FakeResponse(401, text="Bad credentials"),
+            FakeResponse(401, text="Bad credentials"),
+        ]
+    )
+    client = GitHubClient(tokens=["bad-one", "bad-two"], session=session, sleep_seconds=0)
+
+    with pytest.raises(GitHubAuthenticationError, match="All 2 configured"):
+        client.request("/never-succeeds")
+
+
+def test_github_client_retries_timeout_and_server_error():
+    session = SequenceSession(
+        [
+            requests.Timeout("timed out"),
+            FakeResponse(503, text="unavailable"),
+            FakeResponse(200, payload={"ok": True}),
+        ]
+    )
+    client = GitHubClient(
+        tokens=["token-one"],
+        session=session,
+        sleep_seconds=0,
+        retry_backoff_seconds=0,
+        max_retries=2,
+    )
+
+    assert client.request("/eventually-ok") == {"ok": True}
+    assert session.calls == 3
+
+
+def test_token_pool_uses_retry_after_for_secondary_rate_limit(monkeypatch):
+    monkeypatch.setattr(github_client.time, "time", lambda: 100.0)
+    pool = GitHubTokenPool(tokens=["token-one"])
+
+    pool.mark_rate_limited(
+        0,
+        FakeResponse(403, text="secondary rate limit", headers={"Retry-After": "7"}),
+    )
+
+    assert pool.rate_limited_until[0] == 107.0
+
+
+def test_token_pool_applies_minimum_delay_to_stale_reset(monkeypatch):
+    monkeypatch.setattr(github_client.time, "time", lambda: 100.0)
+    pool = GitHubTokenPool(tokens=["token-one"])
+
+    pool.mark_rate_limited(
+        0,
+        FakeResponse(
+            403,
+            text="API rate limit exceeded",
+            headers={"x-ratelimit-remaining": "0", "x-ratelimit-reset": "100"},
+        ),
+    )
+
+    assert pool.rate_limited_until[0] == 100.5
 
 
 def test_github_token_pool_distributes_concurrent_requests():
@@ -297,14 +524,116 @@ def test_mine_human_pull_requests_records_failures(monkeypatch):
     )
 
     assert len(mined) == 1
-    assert report["completed_repos"] == 1
+    assert report["completed_repos"] == 0
     assert report["pr_fetch_failed"] == 1
     assert report["kept_rows"] == 1
     assert len(report["repo_reports"]) == 1
     repo_report = report["repo_reports"][0]
-    assert repo_report["status"] == "completed"
+    assert repo_report["status"] == "partial"
     assert repo_report["candidate_count"] == 2
     assert repo_report["kept_count"] == 1
     assert repo_report["pr_fetch_failed_count"] == 1
     assert len(report["pr_failures"]) == 1
     assert report["pr_failures"][0]["number"] == 2
+
+
+def test_failed_repository_search_is_not_completed(monkeypatch):
+    class SearchFailingClient:
+        def search_pull_requests(self, repo_full_name, start, end, per_repo_limit=None):
+            raise GitHubClientError("search failed")
+
+    monkeypatch.setattr(
+        github_client.GitHubClient,
+        "from_token_file",
+        classmethod(lambda cls, token_file=None: SearchFailingClient()),
+    )
+    report: dict = {"repo_reports": [], "pr_failures": []}
+
+    mined = mine_human_pull_requests(
+        [{"repo_id": 7, "repo_full_name": "example/repo"}],
+        date(2025, 1, 1),
+        date(2025, 1, 2),
+        report=report,
+    )
+
+    assert mined == []
+    assert report["completed_repos"] == 0
+    assert report["repo_reports"][0]["status"] == "search_failed"
+
+
+def test_repository_search_does_not_swallow_authentication_exhaustion(monkeypatch):
+    class AuthenticationFailingClient:
+        def search_pull_requests(self, repo_full_name, start, end, per_repo_limit=None):
+            raise GitHubAuthenticationError("all tokens invalid")
+
+    monkeypatch.setattr(
+        github_client.GitHubClient,
+        "from_token_file",
+        classmethod(lambda cls, token_file=None: AuthenticationFailingClient()),
+    )
+
+    with pytest.raises(GitHubAuthenticationError, match="all tokens invalid"):
+        mine_human_pull_requests(
+            [{"repo_id": 7, "repo_full_name": "example/repo"}],
+            date(2025, 1, 1),
+            date(2025, 1, 2),
+        )
+
+
+def test_fetch_record_preserves_commit_metadata_without_commit_fetch(monkeypatch):
+    client = GitHubClient(tokens=["token-one"], sleep_seconds=0)
+    monkeypatch.setattr(
+        client,
+        "fetch_pull_request",
+        lambda repo, number: {"id": 1, "user": {}, "html_url": "https://github.com/a/b/pull/1"},
+    )
+    monkeypatch.setattr(client, "fetch_pull_files", lambda repo, number: [])
+    monkeypatch.setattr(
+        client,
+        "fetch_pull_commits",
+        lambda repo, number: pytest.fail("commits should not be fetched"),
+    )
+    existing_commits = [{"sha": "abc"}]
+
+    result = client.fetch_pull_request_record(
+        "a/b",
+        1,
+        base_record={"commit_messages": ["existing"], "commits": existing_commits},
+        include_commits=False,
+    )
+
+    assert result["commit_messages"] == ["existing"]
+    assert result["commits"] == existing_commits
+
+
+def test_files_endpoint_404_is_not_classified_as_deleted_repo(monkeypatch):
+    client = GitHubClient(tokens=["token-one"], sleep_seconds=0)
+    monkeypatch.setattr(client, "fetch_pull_request", lambda repo, number: {"id": 1, "user": {}})
+    monkeypatch.setattr(
+        client,
+        "fetch_pull_files",
+        lambda repo, number: (_ for _ in ()).throw(GitHubNotFoundError("files not found")),
+    )
+
+    with pytest.raises(GitHubNotFoundError, match="files not found"):
+        client.fetch_pull_request_record("a/b", 1)
+
+
+@pytest.mark.parametrize("value", [None, "", "[]", float("nan"), pd.NA, [], [None]])
+def test_has_filenames_rejects_missing_values(value):
+    assert not github_client._has_filenames({"filenames": value})
+
+
+@pytest.mark.parametrize("value", [["src/a.py"], "src/a.py"])
+def test_has_filenames_accepts_real_values(value):
+    assert github_client._has_filenames({"filenames": value})
+
+
+@pytest.mark.parametrize("value", [None, pd.NA, float("nan"), "", "1.5", 0, -1])
+def test_parse_pr_number_rejects_invalid_values(value):
+    assert github_client._parse_pr_number(value) is None
+
+
+@pytest.mark.parametrize("value", [1, 1.0, "1"])
+def test_parse_pr_number_accepts_positive_integers(value):
+    assert github_client._parse_pr_number(value) == 1

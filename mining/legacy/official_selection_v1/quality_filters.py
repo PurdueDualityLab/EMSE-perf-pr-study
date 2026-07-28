@@ -10,16 +10,6 @@ import pandas as pd
 from schema import CONFIG_FILE_PREFIXES, CONFIG_FILE_SUFFIXES
 
 
-def _is_missing(value: object) -> bool:
-    if value is None:
-        return True
-    try:
-        missing = pd.isna(value)
-    except (TypeError, ValueError):
-        return False
-    return isinstance(missing, bool) and missing
-
-
 def _as_list(value: object) -> list:
     if isinstance(value, list):
         return value
@@ -28,7 +18,7 @@ def _as_list(value: object) -> list:
     if hasattr(value, "tolist") and not isinstance(value, (str, bytes)):
         converted = value.tolist()
         return converted if isinstance(converted, list) else [converted]
-    if _is_missing(value):
+    if value is None or pd.isna(value):
         return []
     if isinstance(value, str):
         if not value.strip():
@@ -124,8 +114,7 @@ def is_merge_only_row(row: pd.Series) -> bool:
         item.get("message", "") if isinstance(item, dict) else str(item)
         for item in messages
     ).strip().lower()
-    title_value = row.get("title")
-    title = "" if _is_missing(title_value) else str(title_value).strip().lower()
+    title = str(row.get("title") or "").strip().lower()
     return bool(message_text or title) and (
         message_text.startswith("merge ")
         or title.startswith("merge ")
@@ -135,18 +124,10 @@ def is_merge_only_row(row: pd.Series) -> bool:
 
 def quality_filter_flags(df: pd.DataFrame) -> pd.DataFrame:
     flags = pd.DataFrame(index=df.index)
-    flags["empty_filename"] = pd.Series(
-        (is_empty_filename_row(row) for _, row in df.iterrows()), index=df.index, dtype=bool
-    )
-    flags["config_only"] = pd.Series(
-        (is_config_only_row(row) for _, row in df.iterrows()), index=df.index, dtype=bool
-    )
-    flags["deleted_repo"] = pd.Series(
-        (is_deleted_repo_row(row) for _, row in df.iterrows()), index=df.index, dtype=bool
-    )
-    flags["merge_only"] = pd.Series(
-        (is_merge_only_row(row) for _, row in df.iterrows()), index=df.index, dtype=bool
-    )
+    flags["empty_filename"] = df.apply(is_empty_filename_row, axis=1)
+    flags["config_only"] = df.apply(is_config_only_row, axis=1)
+    flags["deleted_repo"] = df.apply(is_deleted_repo_row, axis=1)
+    flags["merge_only"] = df.apply(is_merge_only_row, axis=1)
     return flags
 
 
@@ -163,7 +144,7 @@ def quality_filter_removed_record(row: pd.Series, reason: str) -> dict[str, Any]
         "task_type",
         "task_type_source",
     ):
-        if column in row and not _is_missing(row[column]):
+        if column in row and row[column] is not None and not pd.isna(row[column]):
             value = row[column]
             if isinstance(value, (list, tuple)):
                 record[column] = [str(_json_safe(item)) for item in value]

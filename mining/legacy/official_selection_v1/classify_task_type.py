@@ -42,10 +42,8 @@ PERF_TERMS = (
 
 def compatible_task_type(row: Mapping[str, object]) -> tuple[str, float, str]:
     """Conventional-Commit-compatible task classifier for PRs missing AIDev labels."""
-    title_value = row.get("title")
-    body_value = row.get("body")
-    title = "" if title_value is None or pd.isna(title_value) else str(title_value)
-    body = "" if body_value is None or pd.isna(body_value) else str(body_value)
+    title = str(row.get("title") or "")
+    body = str(row.get("body") or "")
     text = f"{title}\n{body}".lower()
 
     match = re.match(r"^\s*([a-z]+)(\([^)]+\))?!?:", title.lower())

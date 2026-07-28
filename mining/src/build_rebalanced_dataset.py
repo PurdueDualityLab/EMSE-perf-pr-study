@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
+import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from collections.abc import Callable
@@ -16,7 +19,7 @@ from classify_task_type import attach_task_type
 from github_client import GitHubRateLimitError, enrich_pull_request_records, mine_human_pull_requests, parse_repo_full_name
 from load_aidev import load_aidev_tables
 from resume import (
-    completed_repo_names_from_checkpoint,
+    checkpoint_dataframe,
     completed_repo_set,
     initial_resume_state,
     load_checkpoint_dataframe,
@@ -33,6 +36,7 @@ from schema import (
     REPO_NAME_COLUMNS,
     STAR_COLUMNS,
     TimeWindow,
+    atomic_write_text,
     ensure_datetime,
     ensure_output_dirs,
     first_existing_column,
@@ -191,6 +195,51 @@ def dedupe_prs(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop_duplicates(keep="first").copy()
 
 
+def canonical_pull_request_url(value: object) -> str | None:
+    if value is None:
+        return None
+    try:
+        if bool(pd.isna(value)):
+            return None
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    if not text:
+        return None
+    patterns = (
+        r"https?://(?:www\.)?github\.com/([^/?#]+)/([^/?#]+)/pull/(\d+)",
+        r"https?://api\.github\.com/repos/([^/?#]+)/([^/?#]+)/pulls/(\d+)",
+    )
+    for pattern in patterns:
+        match = re.match(pattern, text, flags=re.IGNORECASE)
+        if match:
+            owner, repo, number = match.groups()
+            return f"https://github.com/{owner.lower()}/{repo.lower()}/pull/{number}"
+    return text.split("?", 1)[0].split("#", 1)[0].rstrip("/").lower()
+
+
+def anti_join_agentic_urls(human_prs: pd.DataFrame, agentic_prs: pd.DataFrame) -> pd.DataFrame:
+    if human_prs.empty or agentic_prs.empty:
+        return human_prs.copy()
+    url_columns = ("html_url", "url", "pull_request_url", "pr_url")
+    known_urls: set[str] = set()
+    for column in url_columns:
+        if column in agentic_prs.columns:
+            known_urls.update(
+                url
+                for url in agentic_prs[column].map(canonical_pull_request_url).tolist()
+                if url is not None
+            )
+    if not known_urls:
+        return human_prs.copy()
+
+    matched = pd.Series(False, index=human_prs.index)
+    for column in url_columns:
+        if column in human_prs.columns:
+            matched |= human_prs[column].map(canonical_pull_request_url).isin(known_urls)
+    return human_prs.loc[~matched].copy()
+
+
 def repo_records_for_github(repos: pd.DataFrame, limit_repos: int | None) -> list[dict]:
     repo_name_col = first_existing_column(repos, REPO_NAME_COLUMNS)
     if repo_name_col is None:
@@ -202,6 +251,44 @@ def repo_records_for_github(repos: pd.DataFrame, limit_repos: int | None) -> lis
         record["repo_full_name"] = record.get(repo_name_col)
         records.append(record)
     return records
+
+
+def repository_identity_hash(records: list[dict[str, Any]]) -> str:
+    identities: list[dict[str, str | None]] = []
+    for record in records:
+        raw_repo_id = None
+        for column in ("repo_id", "repository_id", "id"):
+            candidate = record.get(column)
+            if candidate is None:
+                continue
+            try:
+                if bool(pd.isna(candidate)):
+                    continue
+            except (TypeError, ValueError):
+                pass
+            raw_repo_id = candidate
+            break
+        repo_id = None
+        if raw_repo_id is not None:
+            repo_id = str(json_safe(raw_repo_id))
+        raw_name = record.get("repo_full_name")
+        repo_name = parse_repo_full_name(raw_name)
+        identities.append(
+            {
+                "repo_id": repo_id,
+                "repo_full_name": repo_name or (str(raw_name).strip() if raw_name is not None else None),
+            }
+        )
+    payload = json.dumps(identities, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def github_batch_size(config: dict[str, Any]) -> int:
@@ -223,13 +310,16 @@ def build_pipeline_signature(
     window: TimeWindow,
     repo_count: int,
     limit_repos: int | None,
+    repository_identity_hash: str | None = None,
 ) -> dict[str, Any]:
     source_cfg = config.get("source", {})
     criteria_cfg = config.get("criteria", {})
     github_cfg = config.get("github", {})
+    search_limit = github_cfg.get("per_repo_search_limit")
     return {
         "source_mode": source_cfg.get("mode"),
         "aidev_dataset": source_cfg.get("aidev_dataset"),
+        "aidev_revision": source_cfg.get("aidev_revision") or source_cfg.get("revision"),
         "data_root": source_cfg.get("data_root"),
         "star_floor": int(criteria_cfg.get("star_floor", 100)),
         "task_type": str(criteria_cfg.get("task_type", "perf")),
@@ -238,6 +328,8 @@ def build_pipeline_signature(
         "limit_repos": limit_repos,
         "github_enabled": bool(github_cfg.get("enabled", False)),
         "token_file": github_cfg.get("token_file"),
+        "per_repo_search_limit": int(search_limit) if search_limit is not None else None,
+        "repository_identity_hash": repository_identity_hash,
     }
 
 
@@ -306,13 +398,75 @@ def save_repo_checkpoint(
         resume_state,
         completed_repos,
         len(github_human),
-        last_completed_repo=repo_name,
+        last_completed_repo=repo_name if repo_name in completed_repos else None,
     )
     updated_state["repo_mining_reports"] = repo_mining_report["repo_reports"]
     updated_state["pr_failures"] = repo_mining_report["pr_failures"]
-    save_checkpoint_dataframe(github_human, raw_path)
-    save_resume_state(state_path, updated_state)
+    raw_path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, staged_name = tempfile.mkstemp(
+        dir=raw_path.parent,
+        prefix=f".{raw_path.name}.",
+        suffix=".pending.parquet",
+    )
+    os.close(descriptor)
+    staged_path = Path(staged_name)
+    journal_path = state_path.with_name("checkpoint_pending.json")
+    raw_replaced = False
+    try:
+        checkpoint_dataframe(github_human).to_parquet(staged_path, index=False)
+        updated_state["raw_checkpoint_sha256"] = sha256_file(staged_path)
+        save_resume_state(
+            journal_path,
+            {
+                "version": 1,
+                "raw_path": str(raw_path.resolve()),
+                "raw_sha256": updated_state["raw_checkpoint_sha256"],
+                "staged_path": str(staged_path.resolve()),
+                "state": updated_state,
+            },
+        )
+        os.replace(staged_path, raw_path)
+        raw_replaced = True
+        save_resume_state(state_path, updated_state)
+        journal_path.unlink(missing_ok=True)
+    except Exception:
+        if not raw_replaced:
+            staged_path.unlink(missing_ok=True)
+            journal_path.unlink(missing_ok=True)
+        raise
     return updated_state
+
+
+def merge_repo_mining_rows(
+    existing: pd.DataFrame,
+    mined_rows: list[dict[str, Any]],
+    repo_name: str,
+    status: str,
+) -> pd.DataFrame:
+    if existing.empty:
+        return pd.DataFrame(mined_rows) if mined_rows else existing.copy()
+    if "repo_full_name" not in existing.columns:
+        return dedupe_prs(
+            pd.concat([existing, pd.DataFrame(mined_rows)], ignore_index=True, sort=False)
+        )
+
+    existing_repo_names = existing["repo_full_name"].map(parse_repo_full_name)
+    if mined_rows and "number" in existing.columns:
+        fetched_numbers = {
+            str(row["number"])
+            for row in mined_rows
+            if row.get("number") is not None
+        }
+        same_fetched_pr = (existing_repo_names == repo_name) & existing["number"].map(str).isin(
+            fetched_numbers
+        )
+        base = existing.loc[~same_fetched_pr].copy()
+    else:
+        base = existing.copy()
+
+    if not mined_rows:
+        return base.reset_index(drop=True)
+    return pd.concat([base, pd.DataFrame(mined_rows)], ignore_index=True, sort=False)
 
 
 def enrich_dataframe_with_github(
@@ -503,7 +657,7 @@ def write_detailed_report_markdown(report: dict[str, Any], path: Path) -> None:
             lines.append(f"- `{reason}`: `{len(records)}`")
     lines.append("")
     lines.append("Full row-level details are stored in the JSON report.")
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    atomic_write_text(path, "\n".join(lines) + "\n")
 
 
 def write_summary_markdown(summary: dict[str, Any], path: Path) -> None:
@@ -569,7 +723,44 @@ def write_summary_markdown(summary: dict[str, Any], path: Path) -> None:
             f"Methodological note: {summary['methodological_note']}.",
         ]
     )
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    atomic_write_text(path, "\n".join(lines) + "\n")
+
+
+def recover_pending_repo_checkpoint(raw_path: Path, state_path: Path) -> None:
+    journal_path = state_path.with_name("checkpoint_pending.json")
+    if not journal_path.is_file():
+        return
+    journal = load_resume_state(journal_path)
+    expected_raw_path = journal.get("raw_path")
+    expected_hash = journal.get("raw_sha256")
+    pending_state = journal.get("state")
+    if (
+        expected_raw_path != str(raw_path.resolve())
+        or not isinstance(expected_hash, str)
+        or not isinstance(pending_state, dict)
+    ):
+        raise ValueError(f"Invalid pending checkpoint journal: {journal_path}")
+
+    if raw_path.is_file() and sha256_file(raw_path) == expected_hash:
+        pending_state["raw_checkpoint_sha256"] = expected_hash
+        save_resume_state(state_path, pending_state)
+        log("[resume] recovered state for an atomically written raw checkpoint")
+    else:
+        log("[resume] discarded an unfinished checkpoint transaction before raw replacement")
+
+    staged_value = journal.get("staged_path")
+    if isinstance(staged_value, str):
+        staged_path = Path(staged_value)
+        if staged_path.parent == raw_path.resolve().parent:
+            staged_path.unlink(missing_ok=True)
+    journal_path.unlink(missing_ok=True)
+
+
+def cleanup_orphaned_staged_checkpoints(raw_path: Path) -> None:
+    pattern = f".{raw_path.name}.*.pending.parquet"
+    for staged_path in raw_path.parent.glob(pattern):
+        staged_path.unlink(missing_ok=True)
+        log(f"[resume] removed orphaned staged checkpoint {staged_path.name}")
 
 
 def prepare_resume_checkpoint(
@@ -588,6 +779,9 @@ def prepare_resume_checkpoint(
         reset_output_tree(output_dir)
         output_dirs.update(ensure_output_dirs(output_dir))
 
+    recover_pending_repo_checkpoint(raw_path, state_path)
+    cleanup_orphaned_staged_checkpoints(raw_path)
+    raw_checkpoint_exists = raw_path.exists()
     state = load_resume_state(state_path)
     raw_df = load_checkpoint_dataframe(raw_path)
 
@@ -600,33 +794,50 @@ def prepare_resume_checkpoint(
             "Set resume.reset: true to start from scratch."
         )
 
+    recorded_raw_hash = state.get("raw_checkpoint_sha256") if state else None
+    if raw_checkpoint_exists and state:
+        actual_raw_hash = sha256_file(raw_path)
+        if recorded_raw_hash and actual_raw_hash != recorded_raw_hash:
+            raise ValueError(
+                f"Raw checkpoint integrity mismatch for {raw_path}; "
+                "restore the matching checkpoint or reset the run."
+            )
+        if not recorded_raw_hash:
+            legacy_completed = completed_repo_set(state)
+            if legacy_completed and not bool(
+                resume_cfg.get("trust_legacy_checkpoint", False)
+            ):
+                raise ValueError(
+                    "Existing resume state predates raw-checkpoint hashes and marks "
+                    f"{len(legacy_completed)} repositories complete. Verify the raw parquet, "
+                    "then set resume.trust_legacy_checkpoint: true once to adopt it."
+                )
+            state["version"] = 2
+            state["raw_checkpoint_sha256"] = actual_raw_hash
+            save_resume_state(state_path, state)
+            log("[resume] adopted legacy raw checkpoint with a SHA-256 integrity hash")
+
     if state:
         state.setdefault("repo_mining_reports", [])
         state.setdefault("pr_failures", [])
 
-    if not state and raw_df.empty:
+    if not state and raw_checkpoint_exists:
+        raise ValueError(
+            f"Raw checkpoint exists without its resume state: {raw_path}. "
+            "Restore the matching state file or move the orphan checkpoint before starting a new run."
+        )
+
+    if not state:
         state = initial_resume_state(signature, repo_count)
-        save_resume_state(state_path, state)
+        completed: set[str] = set()
         log("[resume] no checkpoint found; starting fresh")
+        save_resume_state(state_path, state)
+    else:
+        completed = completed_repo_set(state)
+        state = update_resume_state(state, completed, len(raw_df))
+        save_resume_state(state_path, state)
 
-    completed = completed_repo_set(state) if state else set()
-    if not raw_df.empty:
-        inferred = completed_repo_names_from_checkpoint(raw_df)
-        if inferred:
-            completed |= inferred
-            if inferred:
-                log(
-                    f"[resume] raw checkpoint covers {len(inferred)} repos; "
-                    f"completed total={len(completed)}"
-                )
-            if state:
-                state = update_resume_state(state, completed, len(raw_df))
-            else:
-                state = initial_resume_state(signature, repo_count)
-                state = update_resume_state(state, completed, len(raw_df))
-            save_resume_state(state_path, state)
-
-    if state and raw_df.empty and completed:
+    if not raw_checkpoint_exists and completed:
         log("[resume] state exists but raw checkpoint is missing; starting from scratch")
         state = initial_resume_state(signature, repo_count)
         completed = set()
@@ -666,8 +877,15 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
     log(f"  repositories kept: {len(repos)}")
     window = configured_time_window(config, derive_time_window(tables["pull_request"]))
     agent_prs = filter_prs_to_repos_and_window(tables["pull_request"], repos, window)
+    records = repo_records_for_github(repos, limit_repos)
     log(f"  time window: {window.start.isoformat()} -> {window.end.isoformat()}")
-    signature = build_pipeline_signature(config, window, len(repos), limit_repos)
+    signature = build_pipeline_signature(
+        config,
+        window,
+        len(repos),
+        limit_repos,
+        repository_identity_hash=repository_identity_hash(records),
+    )
 
     log("[3/6] Preparing AI arm")
     agent_typed = attach_task_type(agent_prs, tables.get("pr_task_type"))
@@ -691,7 +909,6 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
     log(f"  AI perf PRs after quality filters: {len(agent_perf)}")
     log(f"  AI quality removals: {agent_removed}")
 
-    records = repo_records_for_github(repos, limit_repos)
     raw_path = output_dirs["raw"] / "github_human_prs.parquet"
     state_path = resume_state_path(output_dir)
     if resume_enabled:
@@ -719,10 +936,13 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
         log(f"  repos already completed: {len(completed_repos)}")
         log(f"  repos remaining: {max(len(records) - len(completed_repos), 0)}")
 
-    pending_records = [record for record in records if record["repo_full_name"] not in completed_repos]
-    pending_items = list(enumerate(pending_records, start=len(completed_repos) + 1))
+    pending_items = [
+        (repo_position, record)
+        for repo_position, record in enumerate(records, start=1)
+        if record["repo_full_name"] not in completed_repos
+    ]
     batches = chunked(pending_items, batch_size)
-    if not pending_records:
+    if not pending_items:
         log("  nothing left to mine; rebuilding outputs from checkpoint")
     else:
         log(f"  GitHub batch size: {batch_size}")
@@ -760,15 +980,34 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
 
                 mined_rows = result["mined_rows"]
                 repo_report = result["repo_report"]
-                if mined_rows:
-                    github_human = pd.concat([github_human, pd.DataFrame(mined_rows)], ignore_index=True, sort=False)
+                result_repo_name = result["repo_name"]
+                status = str(repo_report.get("status"))
+                github_human = merge_repo_mining_rows(
+                    github_human,
+                    mined_rows,
+                    result_repo_name,
+                    status,
+                )
+                github_human = checkpoint_dataframe(github_human)
+                repo_mining_report["repo_reports"] = [
+                    item
+                    for item in repo_mining_report["repo_reports"]
+                    if str(item.get("repo_full_name")) != result_repo_name
+                ]
+                repo_mining_report["pr_failures"] = [
+                    item
+                    for item in repo_mining_report["pr_failures"]
+                    if str(item.get("repo_full_name")) != result_repo_name
+                ]
                 repo_mining_report["repo_reports"].append(repo_report)
                 repo_mining_report["pr_failures"].extend(result.get("pr_failures", []))
-                if repo_report.get("status") in {"completed", "missing_repo_name", "search_failed"}:
-                    completed_repos.add(result["repo_name"])
+                if status == "completed":
+                    completed_repos.add(result_repo_name)
+                else:
+                    completed_repos.discard(result_repo_name)
                 log(
                     f"[github {repo_report.get('repo_index', repo_position)}/{len(records)}] "
-                    f"{result['repo_name']} done | status={repo_report.get('status')} | kept={repo_report.get('kept_count', 0)}"
+                    f"{result_repo_name} done | status={status} | kept={repo_report.get('kept_count', 0)}"
                 )
                 if resume_enabled:
                     resume_state = save_repo_checkpoint(
@@ -778,10 +1017,10 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
                         resume_state,
                         completed_repos,
                         repo_mining_report,
-                        result["repo_name"],
+                        result_repo_name,
                     )
                     log(
-                        f"[resume] checkpoint saved after {result['repo_name']}: "
+                        f"[resume] checkpoint saved after {result_repo_name}: "
                         f"completed={len(completed_repos)}/{len(records)} raw_rows={len(github_human)}"
                     )
 
@@ -792,6 +1031,10 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
     log("[5/6] Joining and typing human PRs")
     existing_human = tables.get("human_pull_request", pd.DataFrame())
     human_candidates = dedupe_prs(pd.concat([existing_human, github_human], ignore_index=True, sort=False))
+    before_agentic_url_anti_join = len(human_candidates)
+    human_candidates = anti_join_agentic_urls(human_candidates, tables["pull_request"])
+    human_agentic_url_removed = before_agentic_url_anti_join - len(human_candidates)
+    log(f"  known AIDev agentic URLs removed from human arm: {human_agentic_url_removed}")
     human_candidates = filter_prs_to_repos_and_window(human_candidates, repos, window)
     human_candidates_before_author = len(human_candidates)
     human_candidates, human_author_removed = filter_by_author_with_removed(human_candidates, "human")
@@ -842,6 +1085,7 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
         "agent_perf_before_enrichment": int(len(agent_perf_candidates)),
         "agent_perf_after_enrichment": int(agent_perf_before_quality),
         "agent_perf_after_quality": int(len(agent_perf)),
+        "human_agentic_url_removed": int(human_agentic_url_removed),
         "human_candidates_before_author": int(human_candidates_before_author),
         "human_author_kept": int(len(human_candidates)),
         "human_author_removed": int(len(human_author_removed)),
@@ -920,13 +1164,13 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
         }
     )
     summary_json = output_dirs["final"] / "rebalancing_summary.json"
-    summary_json.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    atomic_write_text(summary_json, json.dumps(summary, indent=2) + "\n")
     write_summary_markdown(summary, output_dirs["final"] / "rebalancing_summary.md")
     detailed_json = output_dirs["final"] / "rebalancing_detailed_report.json"
-    detailed_json.write_text(json.dumps(detailed_report, indent=2) + "\n", encoding="utf-8")
+    atomic_write_text(detailed_json, json.dumps(detailed_report, indent=2) + "\n")
     write_detailed_report_markdown(detailed_report, output_dirs["final"] / "rebalancing_detailed_report.md")
-    log("Done. Summary written to mining/outputs/final/rebalancing_summary.json")
-    log("Done. Detailed report written to mining/outputs/final/rebalancing_detailed_report.json")
+    log(f"Done. Summary written to {summary_json}")
+    log(f"Done. Detailed report written to {detailed_json}")
     return summary
 
 

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -107,41 +105,6 @@ def ensure_output_dirs(output_dir: Path) -> dict[str, Path]:
     return dirs
 
 
-def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-    )
-    temporary_path = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "w", encoding=encoding) as handle:
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary_path, path)
-    except Exception:
-        try:
-            os.close(descriptor)
-        except OSError:
-            pass
-        temporary_path.unlink(missing_ok=True)
-        raise
-
-
 def write_parquet(df: pd.DataFrame, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-    )
-    os.close(descriptor)
-    temporary_path = Path(temporary_name)
-    try:
-        df.to_parquet(temporary_path, index=False)
-        os.replace(temporary_path, path)
-    except Exception:
-        temporary_path.unlink(missing_ok=True)
-        raise
+    df.to_parquet(path, index=False)

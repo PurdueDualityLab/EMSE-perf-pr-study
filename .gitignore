@@ -1,17 +1,36 @@
+# Generated mining outputs
 outputs/
 mining/outputs/
 mining/outputs_*/
+mining/official_selection/
+mining/official_selection_*/
+
+# Local backups and query caches
 mining/backups/
+mining/query_cache/
+
+# Local environments and caches
 .cache/
 .venv/
+
+# Local secrets
 .env
 .env.local
 github_tokens.txt
 mining/github_tokens.txt
+
+# Local runtime configuration
+mining/config.local.yaml
+
+# Python bytecode and test caches
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Generated datasets
 *.parquet
+
+# Runtime logs and process markers
 *.log
 *.pid
 *.nohup.log

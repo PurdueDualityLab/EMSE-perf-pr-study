@@ -9,7 +9,8 @@ This repository is a small Python research/mining project for rebuilding the hum
 - `mining/src/`: main pipeline code.
 - `mining/tests/`: pytest-based regression tests.
 - `mining/analysis/`: reporting helpers for mined outputs.
-- `mining/config.local.yaml`: local runtime configuration.
+- `mining/config.example.yaml`: tracked runtime configuration template.
+- `mining/config.local.yaml`: ignored local runtime configuration.
 - `mining/github_tokens.txt`: local GitHub token file used for mining runs.
 - `requirements.txt`: Python dependencies.
 
@@ -34,7 +35,7 @@ This repository is a small Python research/mining project for rebuilding the hum
 ## Testing
 
 - Expected test command: `python -m pytest mining/tests -q`
-- Install deps with `pip install -r requirements.txt` inside a virtualenv before relying on test results.
+- Install dev deps with `pip install -r requirements-dev.txt` inside a virtualenv before relying on test results.
 
 ## Run commands
 

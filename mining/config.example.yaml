@@ -1,6 +1,7 @@
 source:
   mode: real
   aidev_dataset: dysavepeople/AIDev
+  aidev_revision: b6d1b8af952053f20fd9f9aa03e66bddd12228fe
   data_root:
 
 github:
@@ -12,6 +13,7 @@ github:
 resume:
   enabled: true
   reset: false
+  trust_legacy_checkpoint: false
 
 criteria:
   star_floor: 100
@@ -20,4 +22,4 @@ criteria:
   end_date: "2026-06-01T00:00:00+00:00"
 
 outputs:
-  dir: mining/outputs_2026_06_01
+  dir: mining/outputs

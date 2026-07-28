@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import math
 import re
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from collections.abc import Callable, Iterable
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +20,17 @@ class GitHubClientError(RuntimeError):
 
 class GitHubRateLimitError(GitHubClientError):
     pass
+
+
+class GitHubAuthenticationError(GitHubClientError):
+    pass
+
+
+class GitHubNotFoundError(GitHubClientError):
+    pass
+
+
+SEARCH_RESULT_CAP = 1000
 
 
 def format_seconds(seconds: float | None) -> str:
@@ -73,6 +86,29 @@ def monthly_date_ranges(start: date, end: date) -> list[tuple[date, date]]:
     return ranges
 
 
+def response_header(response: requests.Response, name: str) -> str | None:
+    for key, value in response.headers.items():
+        if key.lower() == name.lower():
+            return str(value)
+    return None
+
+
+def retry_after_seconds(response: requests.Response) -> float | None:
+    raw_value = response_header(response, "retry-after")
+    if not raw_value:
+        return None
+    try:
+        return max(float(raw_value), 0.0)
+    except ValueError:
+        try:
+            retry_at = parsedate_to_datetime(raw_value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=timezone.utc)
+        return max((retry_at - datetime.now(timezone.utc)).total_seconds(), 0.0)
+
+
 def github_tokens_from_file(token_file: str | Path) -> list[str]:
     path = Path(token_file)
     if not path.is_file():
@@ -106,8 +142,9 @@ def github_tokens(token_file: str | None) -> list[str]:
 class GitHubTokenPool:
     tokens: list[str]
     next_index: int = 0
-    rate_limited_until: dict[int, int] = field(default_factory=dict, repr=False)
+    rate_limited_until: dict[int, float] = field(default_factory=dict, repr=False)
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+    invalid_token_indexes: set[int] = field(default_factory=set, repr=False)
 
     def __post_init__(self) -> None:
         if not self.tokens:
@@ -116,31 +153,38 @@ class GitHubTokenPool:
     def label(self, index: int) -> str:
         return f"{index + 1}/{len(self.tokens)}"
 
-    def _is_available_unlocked(self, index: int, now: int) -> bool:
+    def _is_available_unlocked(self, index: int, now: float) -> bool:
+        if index in self.invalid_token_indexes:
+            return False
         reset_at = self.rate_limited_until.get(index)
         return reset_at is None or reset_at <= now
 
     def acquire(self) -> tuple[int, str]:
         with self.lock:
-            now = int(time.time())
+            now = time.time()
             for offset in range(len(self.tokens)):
                 index = (self.next_index + offset) % len(self.tokens)
                 if self._is_available_unlocked(index, now):
                     self.next_index = (index + 1) % len(self.tokens)
                     return index, self.tokens[index]
+            all_invalid = len(self.invalid_token_indexes) == len(self.tokens)
+        if all_invalid:
+            raise GitHubAuthenticationError(
+                f"All {len(self.tokens)} configured GitHub token(s) were rejected with HTTP 401."
+            )
         raise self.all_rate_limited_error("GitHub API")
 
-    def seconds_until_next_available(self) -> int | None:
+    def seconds_until_next_available(self) -> float | None:
         with self.lock:
-            now = int(time.time())
+            now = time.time()
             reset_values = [
                 reset_at
-                for reset_at in self.rate_limited_until.values()
-                if reset_at > now
+                for index, reset_at in self.rate_limited_until.items()
+                if index not in self.invalid_token_indexes and reset_at > now
             ]
         if not reset_values:
             return None
-        return max(min(reset_values) - int(time.time()), 0)
+        return max(min(reset_values) - time.time(), 0.0)
 
     def acquire_waiting(self, url: str, progress: Callable[[str], None] | None = None) -> tuple[int, str]:
         while True:
@@ -155,17 +199,36 @@ class GitHubTokenPool:
                         f"[github-token] all {len(self.tokens)} token(s) are rate limited; "
                         f"waiting about {format_seconds(wait_seconds)} before retrying"
                     )
-                time.sleep(wait_seconds + 1)
+                time.sleep(wait_seconds)
 
-    def mark_rate_limited(self, index: int, response: requests.Response) -> None:
-        reset_at = response.headers.get("x-ratelimit-reset")
-        reset_value = int(reset_at) if reset_at and reset_at.isdigit() else int(time.time()) + 60
+    def mark_rate_limited(
+        self,
+        index: int,
+        response: requests.Response,
+        minimum_delay: float = 0.5,
+    ) -> None:
+        now = time.time()
+        retry_after = retry_after_seconds(response)
+        reset_at = response_header(response, "x-ratelimit-reset")
+        if retry_after is not None:
+            reset_value = now + retry_after
+        else:
+            try:
+                reset_value = float(reset_at) if reset_at is not None else now + 60
+            except ValueError:
+                reset_value = now + 60
+        reset_value = max(reset_value, now + max(minimum_delay, 0.0))
         with self.lock:
             self.rate_limited_until[index] = reset_value
 
+    def mark_invalid(self, index: int) -> None:
+        with self.lock:
+            self.invalid_token_indexes.add(index)
+            self.rate_limited_until.pop(index, None)
+
     def next_available_label(self) -> str | None:
         with self.lock:
-            now = int(time.time())
+            now = time.time()
             for offset in range(len(self.tokens)):
                 index = (self.next_index + offset) % len(self.tokens)
                 if self._is_available_unlocked(index, now):
@@ -174,15 +237,15 @@ class GitHubTokenPool:
 
     def all_rate_limited_error(self, url: str) -> GitHubRateLimitError:
         with self.lock:
-            now = int(time.time())
+            now = time.time()
             reset_values = [
                 reset_at
-                for reset_at in self.rate_limited_until.values()
-                if reset_at > now
+                for index, reset_at in self.rate_limited_until.items()
+                if index not in self.invalid_token_indexes and reset_at > now
             ]
         reset_note = ""
         if reset_values:
-            wait_seconds = max(min(reset_values) - int(time.time()), 0)
+            wait_seconds = max(min(reset_values) - time.time(), 0.0)
             reset_note = f" Earliest token reset in about {format_seconds(wait_seconds)}."
         return GitHubRateLimitError(
             f"GitHub rate limit hit for all {len(self.tokens)} configured token(s) while requesting {url}.{reset_note}"
@@ -217,6 +280,8 @@ class GitHubClient:
     session: requests.Session = field(default_factory=requests.Session, repr=False)
     token_pool: GitHubTokenPool | None = None
     last_token_index: int = 0
+    max_retries: int = 3
+    retry_backoff_seconds: float = 0.5
 
     @classmethod
     def from_token_file(cls, token_file: str | None) -> "GitHubClient":
@@ -240,27 +305,64 @@ class GitHubClient:
 
     @staticmethod
     def _is_rate_limited(response: requests.Response) -> bool:
-        remaining = response.headers.get("x-ratelimit-remaining")
+        remaining = response_header(response, "x-ratelimit-remaining")
+        if response.status_code == 429:
+            return True
         if response.status_code in {403, 429} and remaining == "0":
             return True
-        text = response.text.lower()
+        text = str(response.text or "").lower()
         return response.status_code in {403, 429} and (
             "rate limit" in text
             or "secondary rate limit" in text
             or "api rate limit exceeded" in text
         )
 
+    def _transient_retry_delay(
+        self,
+        retry_number: int,
+        response: requests.Response | None = None,
+    ) -> float:
+        if response is not None:
+            retry_after = retry_after_seconds(response)
+            if retry_after is not None:
+                return retry_after
+        return self.retry_backoff_seconds * (2 ** retry_number)
+
     def request(self, path: str, params: dict | None = None) -> dict | list:
         url = path if path.startswith("https://") else f"{self.api_base}{path}"
+        transient_retries = 0
         while True:
             token_index, token = self.token_pool.acquire_waiting(url, progress=print)
             self.last_token_index = token_index
             try:
                 response = self.session.get(url, headers=self._headers(token), params=params, timeout=20)
+            except (requests.Timeout, requests.ConnectionError) as exc:
+                if transient_retries >= self.max_retries:
+                    raise GitHubClientError(
+                        f"GitHub request failed for {url} after {transient_retries + 1} attempts: {exc}"
+                    ) from exc
+                delay = self._transient_retry_delay(transient_retries)
+                transient_retries += 1
+                time.sleep(delay)
+                continue
             except requests.RequestException as exc:
                 raise GitHubClientError(f"GitHub request failed for {url}: {exc}") from exc
+            if response.status_code == 401:
+                self.token_pool.mark_invalid(token_index)
+                next_label = self.token_pool.next_available_label()
+                if next_label is not None:
+                    print(
+                        f"[github-token] token {self.token_pool.label(token_index)} was rejected with HTTP 401; "
+                        f"switching to token {next_label}",
+                        flush=True,
+                    )
+                continue
             if self._is_rate_limited(response):
-                self.token_pool.mark_rate_limited(token_index, response)
+                self.token_pool.mark_rate_limited(
+                    token_index,
+                    response,
+                    minimum_delay=max(self.retry_backoff_seconds, 0.1),
+                )
                 next_label = self.token_pool.next_available_label()
                 if next_label is None:
                     wait_seconds = self.token_pool.seconds_until_next_available()
@@ -272,18 +374,28 @@ class GitHubClient:
                         f"waiting about {format_seconds(wait_seconds)} before retrying",
                         flush=True,
                     )
-                    time.sleep(wait_seconds + 1)
+                    time.sleep(wait_seconds)
                     continue
                 print(
                     f"[github-token] rate limit on token {self.token_pool.label(token_index)}; switching to token {next_label}",
                     flush=True,
                 )
                 continue
+            if 500 <= response.status_code < 600:
+                if transient_retries >= self.max_retries:
+                    raise GitHubClientError(
+                        f"GitHub request failed for {url} with HTTP {response.status_code} "
+                        f"after {transient_retries + 1} attempts."
+                    )
+                delay = self._transient_retry_delay(transient_retries, response=response)
+                transient_retries += 1
+                time.sleep(delay)
+                continue
             if response.status_code == 404:
-                raise GitHubClientError(f"GitHub resource not found: {url}")
+                raise GitHubNotFoundError(f"GitHub resource not found: {url}")
             try:
                 response.raise_for_status()
-            except requests.RequestException as exc:
+            except Exception as exc:
                 raise GitHubClientError(f"GitHub request failed for {url}: {exc}") from exc
             time.sleep(self.sleep_seconds)
             return response.json()
@@ -295,11 +407,28 @@ class GitHubClient:
         end: date,
         per_repo_limit: int | None = None,
     ) -> list[dict]:
+        if per_repo_limit is not None and per_repo_limit <= 0:
+            raise ValueError("per_repo_limit must be a positive integer when set.")
         collected: list[dict] = []
         seen_urls: set[str] = set()
         seen_numbers: set[int] = set()
         for chunk_start, chunk_end in monthly_date_ranges(start, end):
-            for item in self.search_pull_requests_for_range(repo_full_name, chunk_start, chunk_end):
+            remaining = (
+                per_repo_limit - len(collected)
+                if per_repo_limit is not None
+                else None
+            )
+            if remaining is not None and remaining <= 0:
+                break
+            if remaining is None:
+                range_items = self.search_pull_requests_for_range(
+                    repo_full_name, chunk_start, chunk_end
+                )
+            else:
+                range_items = self.search_pull_requests_for_range(
+                    repo_full_name, chunk_start, chunk_end, result_limit=remaining
+                )
+            for item in range_items:
                 url = str(item.get("html_url") or item.get("url") or "")
                 number = item.get("number")
                 if url and url in seen_urls:
@@ -320,28 +449,114 @@ class GitHubClient:
         repo_full_name: str,
         start: date,
         end: date,
+        result_limit: int | None = None,
     ) -> list[dict]:
+        if end < start:
+            return []
         query = f"repo:{repo_full_name} is:pr created:{start.isoformat()}..{end.isoformat()}"
-        collected: list[dict] = []
-        page = 1
-        while True:
-            payload = self.request(
-                "/search/issues",
-                {
-                    "q": query,
-                    "sort": "created",
-                    "order": "asc",
-                    "per_page": 100,
-                    "page": page,
-                },
+        params = {
+            "q": query,
+            "sort": "created",
+            "order": "asc",
+            "per_page": 100,
+            "page": 1,
+        }
+        def request_page(page: int) -> dict | list:
+            payload: dict | list = {}
+            for retry_number in range(self.max_retries + 1):
+                payload = self.request("/search/issues", {**params, "page": page})
+                if not isinstance(payload, dict) or not bool(
+                    payload.get("incomplete_results", False)
+                ):
+                    return payload
+                if retry_number < self.max_retries:
+                    time.sleep(self._transient_retry_delay(retry_number))
+            return payload
+
+        payload = request_page(1)
+        if not isinstance(payload, dict):
+            return []
+
+        raw_total = payload.get("total_count")
+        try:
+            total_count = int(raw_total) if raw_total is not None else None
+        except (TypeError, ValueError):
+            total_count = None
+        incomplete = bool(payload.get("incomplete_results", False))
+        exceeds_cap = total_count is not None and total_count > SEARCH_RESULT_CAP
+
+        def subdivide_or_fail(reason: str) -> list[dict]:
+            if start == end:
+                raise GitHubClientError(reason + "; the one-day range cannot be subdivided.")
+            midpoint = start + timedelta(days=(end - start).days // 2)
+            left = self.search_pull_requests_for_range(
+                repo_full_name, start, midpoint, result_limit=result_limit
             )
-            items = payload.get("items", []) if isinstance(payload, dict) else []
+            if result_limit is not None and len(left) >= result_limit:
+                return left[:result_limit]
+            right_limit = None if result_limit is None else result_limit - len(left)
+            right = self.search_pull_requests_for_range(
+                repo_full_name,
+                midpoint + timedelta(days=1),
+                end,
+                result_limit=right_limit,
+            )
+            return left + right
+
+        bounded_one_day = (
+            start == end
+            and result_limit is not None
+            and result_limit <= SEARCH_RESULT_CAP
+        )
+        if (exceeds_cap and not bounded_one_day) or incomplete:
+            if exceeds_cap:
+                reason = (
+                    f"GitHub search for {repo_full_name} on {start.isoformat()} returned "
+                    f"{total_count} results, exceeding the {SEARCH_RESULT_CAP}-result cap"
+                )
+            else:
+                reason = (
+                    f"GitHub search for {repo_full_name} on {start.isoformat()}..{end.isoformat()} "
+                    "returned incomplete_results"
+                )
+            return subdivide_or_fail(reason)
+
+        target_count = total_count
+        if result_limit is not None:
+            target_count = (
+                result_limit
+                if target_count is None
+                else min(target_count, result_limit)
+            )
+        collected = list(payload.get("items") or [])
+        if target_count is not None:
+            collected = collected[:target_count]
+        page = 2
+        while True:
+            if target_count is not None and len(collected) >= target_count:
+                break
+            if len(collected) < (page - 1) * 100:
+                break
+            page_payload = request_page(page)
+            if isinstance(page_payload, dict) and bool(page_payload.get("incomplete_results", False)):
+                return subdivide_or_fail(
+                    f"GitHub search for {repo_full_name} on {start.isoformat()}..{end.isoformat()} "
+                    "returned incomplete_results"
+                )
+            items = page_payload.get("items", []) if isinstance(page_payload, dict) else []
             if not items:
                 break
             collected.extend(items)
+            if target_count is not None:
+                collected = collected[:target_count]
             if len(items) < 100:
                 break
             page += 1
+        if target_count is not None and len(collected) < target_count:
+            raise GitHubClientError(
+                f"GitHub search for {repo_full_name} on {start.isoformat()}..{end.isoformat()} "
+                f"returned {len(collected)} of {target_count} required results."
+            )
         return collected
 
     def fetch_pull_request(self, repo_full_name: str, number: int) -> dict:
@@ -391,17 +606,16 @@ class GitHubClient:
         record["number"] = number
         try:
             pr = self.fetch_pull_request(repo_full_name, number)
-            files = self.fetch_pull_files(repo_full_name, number)
-            commits = self.fetch_pull_commits(repo_full_name, number) if include_commits else []
-        except GitHubClientError as exc:
-            if "resource not found" in str(exc).lower():
-                record["deleted_repo"] = True
-                record.setdefault("filenames", [])
-                record.setdefault("files", [])
-                record.setdefault("commit_messages", [])
-                record.setdefault("commits", [])
-                return record
-            raise
+        except GitHubNotFoundError:
+            record["deleted_repo"] = True
+            record.setdefault("filenames", [])
+            record.setdefault("files", [])
+            record.setdefault("commit_messages", [])
+            record.setdefault("commits", [])
+            return record
+
+        files = self.fetch_pull_files(repo_full_name, number)
+        commits = self.fetch_pull_commits(repo_full_name, number) if include_commits else None
 
         record.update(
             {
@@ -420,13 +634,17 @@ class GitHubClient:
                 "changed_files": pr.get("changed_files", record.get("changed_files")),
                 "filenames": [file.get("filename") for file in files],
                 "files": files,
-                "commit_messages": [
-                    (commit.get("commit") or {}).get("message") for commit in commits
-                ],
-                "commits": commits,
                 "deleted_repo": False,
             }
         )
+        if commits is None:
+            record.setdefault("commit_messages", [])
+            record.setdefault("commits", [])
+        else:
+            record["commit_messages"] = [
+                (commit.get("commit") or {}).get("message") for commit in commits
+            ]
+            record["commits"] = commits
         return record
 
 
@@ -464,7 +682,7 @@ def enrich_pull_request_records(
             or parse_repo_full_name(record.get("html_url"))
             or parse_repo_full_name(record.get("url"))
         )
-        number = record.get("number")
+        number = _parse_pr_number(record.get("number"))
         if not repo_full_name or number is None:
             if progress:
                 progress(f"[enrich {index}/{total}] missing repo/number, keeping row as-is")
@@ -474,7 +692,7 @@ def enrich_pull_request_records(
                     {
                         "status": "missing_repo_or_number",
                         "repo_full_name": repo_full_name,
-                        "number": int(number) if number is not None else None,
+                        "number": number,
                         "html_url": record.get("html_url"),
                         "title": record.get("title"),
                     }
@@ -484,7 +702,7 @@ def enrich_pull_request_records(
         try:
             enriched_record = client.fetch_pull_request_record(
                 repo_full_name,
-                int(number),
+                number,
                 base_record=record,
             )
             enriched.append(enriched_record)
@@ -504,7 +722,7 @@ def enrich_pull_request_records(
                     )
                 else:
                     report["fetched"] = int(report.get("fetched", 0)) + 1
-        except GitHubRateLimitError:
+        except (GitHubRateLimitError, GitHubAuthenticationError):
             raise
         except GitHubClientError:
             if progress:
@@ -529,11 +747,28 @@ def _has_filenames(row: dict) -> bool:
     if filenames is None:
         return False
     if isinstance(filenames, str):
-        return bool(filenames.strip())
+        return filenames.strip().lower() not in {"", "[]", "nan", "none", "<na>"}
+    if isinstance(filenames, float) and math.isnan(filenames):
+        return False
+    if filenames.__class__.__name__ == "NAType":
+        return False
     try:
-        return len(filenames) > 0
+        return any(str(value).strip().lower() not in {"", "nan", "none", "<na>"} for value in filenames)
     except TypeError:
         return bool(filenames)
+
+
+def _parse_pr_number(value: object) -> int | None:
+    if value is None or value.__class__.__name__ == "NAType":
+        return None
+    try:
+        number = int(value)
+        numeric_value = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if not math.isfinite(numeric_value) or numeric_value != number or number <= 0:
+        return None
+    return number
 
 
 def mine_human_pull_requests(
@@ -595,7 +830,7 @@ def mine_human_pull_requests(
             search_items = client.search_pull_requests(
                 str(full_name), start, end, per_repo_limit=per_repo_search_limit
             )
-        except GitHubRateLimitError:
+        except (GitHubRateLimitError, GitHubAuthenticationError):
             raise
         except GitHubClientError as exc:
             if progress:
@@ -628,7 +863,7 @@ def mine_human_pull_requests(
                     },
                     include_commits=False,
                 )
-            except GitHubRateLimitError:
+            except (GitHubRateLimitError, GitHubAuthenticationError):
                 raise
             except GitHubClientError as exc:
                 if progress:
@@ -650,11 +885,12 @@ def mine_human_pull_requests(
             progress(
                 f"[github {repo_index}/{total_repos}] {full_name} done | kept={repo_mined} | cumulative={len(mined)}"
             )
-        repo_report["status"] = "completed"
+        repo_report["status"] = "partial" if repo_pr_failed else "completed"
         repo_report["kept_count"] = repo_mined
         repo_report["pr_fetch_failed_count"] = repo_pr_failed
         if report is not None:
-            report["completed_repos"] = int(report.get("completed_repos", 0)) + 1
+            if not repo_pr_failed:
+                report["completed_repos"] = int(report.get("completed_repos", 0)) + 1
             report["kept_rows"] = int(report.get("kept_rows", 0)) + repo_mined
             report["repo_reports"].append(repo_report)
     return mined

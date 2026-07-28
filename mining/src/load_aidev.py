@@ -23,7 +23,9 @@ def read_aidev_table(table: str, config: dict[str, Any]) -> pd.DataFrame:
         path = Path(data_root) / filename
     else:
         dataset = source.get("aidev_dataset", "dysavepeople/AIDev")
-        path = f"hf://datasets/{dataset}/{filename}"
+        revision = source.get("aidev_revision") or source.get("revision")
+        dataset_reference = f"{dataset}@{revision}" if revision else dataset
+        path = f"hf://datasets/{dataset_reference}/{filename}"
     return pd.read_parquet(path)
 
 

@@ -6,18 +6,48 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 
-def load_parquet(path: Path) -> pd.DataFrame:
-    if not path.exists():
+DEFAULT_OUTPUTS_DIR = Path(__file__).resolve().parents[1] / "outputs"
+
+
+class ReportInputError(RuntimeError):
+    pass
+
+
+def load_parquet_columns(path: Path, columns: list[str]) -> pd.DataFrame:
+    if not path.is_file():
         return pd.DataFrame()
-    return pd.read_parquet(path)
+    try:
+        parquet = pq.ParquetFile(path)
+        available = [column for column in columns if column in parquet.schema_arrow.names]
+        if not available:
+            return pd.DataFrame()
+        return parquet.read(columns=available).to_pandas()
+    except Exception as exc:
+        raise ReportInputError(f"Could not read parquet file {path}: {exc}") from exc
+
+
+def parquet_row_count(path: Path) -> int:
+    if not path.is_file():
+        return 0
+    try:
+        return int(pq.ParquetFile(path).metadata.num_rows)
+    except Exception as exc:
+        raise ReportInputError(f"Could not read parquet metadata for {path}: {exc}") from exc
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    if not path.exists():
+    if not path.is_file():
         return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ReportInputError(f"Could not read JSON file {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ReportInputError(f"Expected a JSON object in {path}.")
+    return payload
 
 
 def safe_unique_count(df: pd.DataFrame, column: str) -> int:
@@ -52,13 +82,86 @@ def build_report(outputs_dir: Path) -> dict[str, Any]:
     intermediate_dir = outputs_dir / "intermediate"
     raw_dir = outputs_dir / "raw"
 
-    summary = load_json(final_dir / "rebalancing_summary.json")
-    detailed = load_json(final_dir / "rebalancing_detailed_report.json")
-    agent = load_parquet(final_dir / "agent_perf_prs_matched_criteria.parquet")
-    human = load_parquet(final_dir / "human_perf_prs_matched_criteria.parquet")
-    human_typed = load_parquet(intermediate_dir / "human_prs_task_typed.parquet")
-    human_filtered = load_parquet(intermediate_dir / "human_prs_filtered.parquet")
-    raw_github = load_parquet(raw_dir / "github_human_prs.parquet")
+    summary_path = final_dir / "rebalancing_summary.json"
+    detailed_path = final_dir / "rebalancing_detailed_report.json"
+    agent_path = final_dir / "agent_perf_prs_matched_criteria.parquet"
+    human_path = final_dir / "human_perf_prs_matched_criteria.parquet"
+    human_typed_path = intermediate_dir / "human_prs_task_typed.parquet"
+    human_filtered_path = intermediate_dir / "human_prs_filtered.parquet"
+    raw_github_path = raw_dir / "github_human_prs.parquet"
+    expected_paths = (
+        summary_path,
+        detailed_path,
+        agent_path,
+        human_path,
+        human_typed_path,
+        human_filtered_path,
+        raw_github_path,
+    )
+    if not any(path.is_file() for path in expected_paths):
+        expected = ", ".join(str(path.relative_to(outputs_dir)) for path in expected_paths)
+        raise FileNotFoundError(
+            f"No rebalancing outputs found in {outputs_dir}. Expected at least one of: {expected}"
+        )
+    missing_paths = [path for path in expected_paths if not path.is_file()]
+    if missing_paths:
+        missing = ", ".join(str(path.relative_to(outputs_dir)) for path in missing_paths)
+        raise FileNotFoundError(f"Incomplete rebalancing outputs in {outputs_dir}; missing: {missing}")
+
+    summary = load_json(summary_path)
+    detailed = load_json(detailed_path)
+    summary_stage_counts = summary.get("stage_counts") or {}
+    detailed_stage_counts = detailed.get("stage_counts") or {}
+    if set(summary_stage_counts) != set(detailed_stage_counts):
+        missing_from_detailed = sorted(
+            set(summary_stage_counts) - set(detailed_stage_counts)
+        )
+        extra_in_detailed = sorted(
+            set(detailed_stage_counts) - set(summary_stage_counts)
+        )
+        details = []
+        if missing_from_detailed:
+            details.append("missing from detailed: " + ", ".join(missing_from_detailed))
+        if extra_in_detailed:
+            details.append("extra in detailed: " + ", ".join(extra_in_detailed))
+        raise ReportInputError("Stage count keys differ (" + "; ".join(details) + ").")
+    for key in sorted(set(summary_stage_counts).intersection(detailed_stage_counts)):
+        if summary_stage_counts[key] != detailed_stage_counts[key]:
+            raise ReportInputError(
+                f"Stage count {key} differs between summary "
+                f"({summary_stage_counts[key]}) and detailed report "
+                f"({detailed_stage_counts[key]})."
+            )
+    agent_rows = parquet_row_count(agent_path)
+    human_rows = parquet_row_count(human_path)
+    human_typed_rows = parquet_row_count(human_typed_path)
+    human_filtered_rows = parquet_row_count(human_filtered_path)
+    raw_github_rows = parquet_row_count(raw_github_path)
+    expected_counts = {
+        "agent final": summary.get("agent_perf_prs_after_quality_filters"),
+        "human final": summary.get("human_perf_prs_after_quality_filters"),
+        "raw GitHub": summary_stage_counts.get("raw_github_human_prs"),
+    }
+    actual_counts = {
+        "agent final": agent_rows,
+        "human final": human_rows,
+        "raw GitHub": raw_github_rows,
+    }
+    for label, expected in expected_counts.items():
+        if expected is None or isinstance(expected, bool) or not isinstance(expected, int):
+            raise ReportInputError(f"Summary is missing a valid {label} row count.")
+        if expected != actual_counts[label]:
+            raise ReportInputError(
+                f"{label} row-count mismatch: summary={expected}, parquet={actual_counts[label]}."
+            )
+    if human_filtered_rows != human_rows:
+        raise ReportInputError(
+            "Human filtered/final row-count mismatch: "
+            f"intermediate={human_filtered_rows}, final={human_rows}."
+        )
+    agent = load_parquet_columns(agent_path, ["repo_id", "user", "created_at"])
+    human = load_parquet_columns(human_path, ["repo_id", "user", "created_at"])
+    human_typed = load_parquet_columns(human_typed_path, ["task_type_source", "task_type"])
 
     source_counts = detailed.get("source_counts") or summary.get("source_counts", {})
     stage_counts = detailed.get("stage_counts") or summary.get("stage_counts", {})
@@ -79,20 +182,20 @@ def build_report(outputs_dir: Path) -> dict[str, Any]:
         "source_counts": {str(key): int(value) for key, value in source_counts.items()},
         "stage_counts": {str(key): int(value) for key, value in stage_counts.items()},
         "counts": {
-            "agent_perf_prs": int(len(agent)),
-            "human_perf_prs": int(len(human)),
-            "total_perf_prs": int(len(agent) + len(human)),
+            "agent_perf_prs": agent_rows,
+            "human_perf_prs": human_rows,
+            "total_perf_prs": agent_rows + human_rows,
             "agent_before_quality_filters": int(
-                summary.get("agent_perf_prs_before_quality_filters", len(agent))
+                summary.get("agent_perf_prs_before_quality_filters", agent_rows)
             ),
             "agent_after_quality_filters": int(
-                summary.get("agent_perf_prs_after_quality_filters", len(agent))
+                summary.get("agent_perf_prs_after_quality_filters", agent_rows)
             ),
             "human_before_quality_filters": int(
-                summary.get("human_perf_prs_before_quality_filters", len(human_typed))
+                summary.get("human_perf_prs_before_quality_filters", human_typed_rows)
             ),
-            "human_after_quality_filters": int(len(human_filtered)),
-            "raw_github_human_prs": int(len(raw_github)),
+            "human_after_quality_filters": human_filtered_rows,
+            "raw_github_human_prs": raw_github_rows,
             "repo_mining_failures": int(len(repo_failures)),
             "pr_fetch_failures": int(len(detailed.get("pr_fetch_failures", []))),
             "agent_enrichment_failures": int(agent_enrichment.get("failed", 0)),
@@ -291,27 +394,31 @@ def print_report(report: dict[str, Any]) -> None:
         print(f"- {label}: {path}")
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Inspect mined perf PR outputs.")
     parser.add_argument(
         "--outputs-dir",
         type=Path,
-        default=Path("mining/outputs"),
-        help="Directory containing the mining outputs.",
+        default=DEFAULT_OUTPUTS_DIR,
+        help=f"Directory containing the mining outputs (default: {DEFAULT_OUTPUTS_DIR}).",
     )
     parser.add_argument(
         "--json",
         action="store_true",
         help="Print the report as formatted JSON instead of text.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    report = build_report(args.outputs_dir)
+    try:
+        report = build_report(args.outputs_dir)
+    except (FileNotFoundError, ReportInputError, TypeError, ValueError) as exc:
+        parser.exit(2, f"error: {exc}\n")
     if args.json:
         print(json.dumps(report, indent=2))
     else:
         print_report(report)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

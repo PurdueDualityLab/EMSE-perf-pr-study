@@ -10,6 +10,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 from github_client import parse_repo_full_name
+from schema import atomic_write_text, write_parquet
 
 
 RESUME_STATE_FILENAME = "rebalancing_state.json"
@@ -31,8 +32,7 @@ def load_resume_state(path: Path) -> dict[str, Any]:
 
 
 def save_resume_state(path: Path, state: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    atomic_write_text(path, json.dumps(state, indent=2) + "\n")
 
 
 def load_checkpoint_dataframe(path: Path) -> pd.DataFrame:
@@ -55,8 +55,7 @@ def checkpoint_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def save_checkpoint_dataframe(df: pd.DataFrame, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    checkpoint_dataframe(df).to_parquet(path, index=False)
+    write_parquet(checkpoint_dataframe(df), path)
 
 
 def completed_repo_names_from_checkpoint(df: pd.DataFrame) -> set[str]:
@@ -75,12 +74,13 @@ def completed_repo_names_from_checkpoint(df: pd.DataFrame) -> set[str]:
 
 def initial_resume_state(signature: dict[str, Any], repo_count: int) -> dict[str, Any]:
     return {
-        "version": 1,
+        "version": 2,
         "signature": signature,
         "repo_count": int(repo_count),
         "completed_repo_names": [],
         "completed_repo_count": 0,
         "raw_rows_count": 0,
+        "raw_checkpoint_sha256": None,
         "last_completed_repo": None,
         "repo_mining_reports": [],
         "pr_failures": [],

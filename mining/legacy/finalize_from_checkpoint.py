@@ -3,9 +3,12 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 from typing import Any
 
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from author_filter import filter_by_author_with_details
 from build_rebalanced_dataset import (
@@ -68,6 +71,10 @@ def load_existing_agent_final() -> pd.DataFrame | None:
 
 
 def main() -> None:
+    log(
+        "DEPRECATED: this historical finalizer is retained for audit only; "
+        "use build_rebalanced_dataset.py for supported runs."
+    )
     parser = argparse.ArgumentParser(description="Finalize rebalanced outputs from completed GitHub checkpoint.")
     parser.add_argument("--config", required=True, type=Path)
     args = parser.parse_args()

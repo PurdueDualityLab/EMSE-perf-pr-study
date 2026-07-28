@@ -12,6 +12,7 @@ from build_rebalanced_dataset import (  # type: ignore
     configured_time_window,
     github_batch_size,
     initial_resume_state,
+    merge_repo_mining_rows,
     mine_one_repo_for_batch,
     save_repo_checkpoint,
 )
@@ -97,6 +98,31 @@ def test_save_repo_checkpoint_writes_after_each_repo(tmp_path):
 
     assert state["completed_repo_count"] == 2
     assert len(pd.read_parquet(raw_path)) == 2
+
+
+def test_completed_retry_preserves_rows_not_returned_again():
+    existing = pd.DataFrame(
+        [
+            {"repo_full_name": "owner/repo", "number": 1, "title": "old"},
+            {"repo_full_name": "owner/repo", "number": 2, "title": "keep"},
+        ]
+    )
+
+    merged = merge_repo_mining_rows(
+        existing,
+        [{"repo_full_name": "owner/repo", "number": 1, "title": "new"}],
+        "owner/repo",
+        "completed",
+    )
+    empty_retry = merge_repo_mining_rows(
+        merged,
+        [],
+        "owner/repo",
+        "completed",
+    )
+
+    assert sorted(empty_retry["number"].tolist()) == [1, 2]
+    assert empty_retry.loc[empty_retry["number"] == 1, "title"].item() == "new"
 
 
 def test_parallel_batch_worker_keeps_success_when_another_repo_fails(monkeypatch):

@@ -6,7 +6,7 @@ import pyarrow as pa
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from quality_filters import apply_quality_filters, is_config_file
+from quality_filters import apply_quality_filters, is_config_file, quality_filter_flags
 from quality_filters import apply_quality_filters_with_details
 
 
@@ -14,6 +14,18 @@ def test_config_file_detection_is_conservative():
     assert is_config_file(".github/workflows/ci.yml")
     assert is_config_file("pyproject.toml")
     assert not is_config_file("src/cache.py")
+
+
+def test_empty_quality_flags_keep_boolean_schema():
+    flags = quality_filter_flags(pd.DataFrame())
+
+    assert list(flags.columns) == [
+        "empty_filename",
+        "config_only",
+        "deleted_repo",
+        "merge_only",
+    ]
+    assert all(dtype == bool for dtype in flags.dtypes)
 
 
 def test_quality_filters_remove_expected_rows():
