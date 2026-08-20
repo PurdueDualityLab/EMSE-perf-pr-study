@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from build_rebalanced_dataset import anti_join_agentic_urls
+from collect_pull_requests import anti_join_agentic_urls
 from load_aidev import read_aidev_table
 
 

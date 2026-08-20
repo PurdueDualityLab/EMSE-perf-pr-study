@@ -1,3 +1,5 @@
+"""Internal implementation of the published AIDev attribution rules."""
+
 from __future__ import annotations
 
 import argparse

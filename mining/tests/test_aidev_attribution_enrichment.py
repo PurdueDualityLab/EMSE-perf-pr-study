@@ -7,8 +7,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import enrich_aidev_attribution as aidev  # noqa: E402
-from enrich_aidev_attribution import (  # noqa: E402
+import aidev_attribution as aidev  # noqa: E402
+from aidev_attribution import (  # noqa: E402
     PullRequestIdentity,
     RepositoryTarget,
     attribution_for_row,
@@ -265,20 +265,20 @@ def test_repository_resolution_upgrade_adoption_is_hash_limited():
     current = {
         "input_sha256": "input",
         "code_sha256": {
-            "enrich_aidev_attribution.py": "replacement",
+            "aidev_attribution.py": "replacement",
             "github_client.py": "client",
         },
     }
     existing = {
         "input_sha256": "input",
         "code_sha256": {
-            "enrich_aidev_attribution.py": aidev.REPOSITORY_RESOLUTION_PREDECESSOR_SHA256,
+            "aidev_attribution.py": aidev.REPOSITORY_RESOLUTION_PREDECESSOR_SHA256,
             "github_client.py": "client",
         },
     }
 
     assert aidev.can_adopt_repository_resolution_upgrade(existing, current) is True
-    existing["code_sha256"]["enrich_aidev_attribution.py"] = "unexpected"
+    existing["code_sha256"]["aidev_attribution.py"] = "unexpected"
     assert aidev.can_adopt_repository_resolution_upgrade(existing, current) is False
 
 
@@ -439,7 +439,7 @@ def test_empty_cli_run_and_resume_do_not_construct_github_client(tmp_path, monke
     )
 
     base_args = [
-        "enrich_aidev_attribution.py",
+        "aidev_attribution.py",
         "--input",
         str(input_path),
         "--output",

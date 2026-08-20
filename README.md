@@ -1,80 +1,21 @@
-# EMSE Performance PR Study
+# Performance Pull Request Study
 
-This repository contains the mining and selection code for the human
-performance-PR arm used in the EMSE study.
+This repository contains the reproducible data pipeline for a study of
+performance-improving pull requests authored by coding agents and humans. The
+public workflow has five stages:
 
-## Pipelines
+1. Mine pull requests from GitHub.
+2. Attribute pull requests with the published AIDev rules.
+3. Classify performance work with the AIDev task taxonomy and Luna Batch.
+4. Apply a strict observable-signal filter to human candidates.
+5. Build a deterministic 1:1 sample stratified by ISO week.
 
-| Pipeline | Entrypoint | Purpose |
-| --- | --- | --- |
-| Rebalancing | `mining/src/build_rebalanced_dataset.py` | Mine AIDev-Pop repositories through GitHub, checkpoint per repository, and build agentic and human comparison outputs. |
-| Official selection | `mining/src/build_official_selection.py` | Apply the fixed paper window, heuristic, quality filters, pinned PerfAnnotator model, and author-arm assignment without sampling. |
-| PerfMiner reproduction | `mining/src/fetch_pr_commit_manifest.py` | Freeze PR commits, extract operational PerfMiner evidence, classify commit pairs with the EASE artifact, and aggregate positive evidence to PRs. |
+The final sample contains 1,356 agentic and 1,356 human-candidate pull
+requests across 67 weekly strata. "Human candidate" means that no selected
+agent signal was observed; it is not a claim of confirmed human authorship.
 
-The pipelines are independent. Experimental diff classification and historical
-recovery scripts do not define the official population.
+See [`mining/README.md`](mining/README.md) for commands and methodology, and
+[`mining/ARTIFACTS.md`](mining/ARTIFACTS.md) for the artifact inventory.
 
-The immutable official-selection v1 snapshot used PR metadata rather than
-commit-message/diff pairs. It remains auditable but is not a reproduction of the
-published PerfMiner inference contract. See `mining/README.md` for the corrected
-commit-level pipeline.
-
-## Layout
-
-```text
-mining/
-  analysis/       Output validation and reporting
-  experimental/   Non-official diff-based experiments
-  legacy/         Superseded scripts retained for auditability
-  src/            Supported pipeline code
-  tests/          Pytest regression tests
-  tools/          Artifact maintenance and recovery utilities
-  ARTIFACTS.md     Local artifact inventory and checksums
-  config.example.yaml
-```
-
-Large datasets, model caches, outputs, local configuration, and tokens are
-ignored by Git. Their expected locations are documented in
-[`mining/ARTIFACTS.md`](mining/ARTIFACTS.md).
-
-## Setup
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements-dev.txt
-cp mining/config.example.yaml mining/config.local.yaml
-```
-
-GitHub runs require `mining/github_tokens.txt`, with one token per line. The
-file is local-only and must have restrictive permissions, for example
-`chmod 600 mining/github_tokens.txt`.
-
-## Commands
-
-```bash
-# Rebalancing pipeline
-.venv/bin/python mining/src/build_rebalanced_dataset.py --config mining/config.local.yaml
-
-# Official selection into a new, empty directory
-.venv/bin/python mining/src/build_official_selection.py \
-  --input mining/outputs_2026_06_01/raw/github_human_prs.parquet \
-  --output-dir mining/official_selection_v2
-
-# Validate existing official outputs
-.venv/bin/python mining/analysis/official_selection_report.py
-
-# Validate a newly built v2 directory
-.venv/bin/python mining/analysis/official_selection_report.py \
-  --output-dir mining/official_selection_v2
-
-# Tests
-.venv/bin/python -m pytest mining/tests -q
-```
-
-Do not rerun or resume the completed snapshot in `mining/official_selection/`.
-It was produced by the archived v1 implementation and is preserved as a study
-artifact. Current v2 runs require exact code and artifact integrity matches and
-produce a sibling `.sha256` lock that must be preserved.
-
-See [`mining/README.md`](mining/README.md) for configuration, resume semantics,
-outputs, and auxiliary tools.
+Source code is licensed under the [MIT License](LICENSE). Generated records
+retain their original source metadata and may be subject to upstream terms.

@@ -8,8 +8,8 @@ import pyarrow.parquet as pq
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import enrich_aidev_all_available_dates as incremental  # noqa: E402
-from enrich_aidev_attribution import ATTRIBUTION_FIELDS, output_schema  # noqa: E402
+import classify_agentic_prs as incremental  # noqa: E402
+from aidev_attribution import ATTRIBUTION_FIELDS, output_schema  # noqa: E402
 
 
 def raw_row(number: int, created_at: str = "2025-08-01T00:00:00Z") -> dict[str, object]:

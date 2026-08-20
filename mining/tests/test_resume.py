@@ -7,8 +7,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import schema
-import build_rebalanced_dataset
-from build_rebalanced_dataset import (  # type: ignore
+import collect_pull_requests
+from collect_pull_requests import (  # type: ignore
     build_pipeline_signature,
     initial_resume_state,
     prepare_resume_checkpoint,
@@ -238,16 +238,16 @@ def test_pending_checkpoint_journal_recovers_state_after_interruption(
     state_path = resume_state_path(output_dir)
     signature = _signature()
     state = initial_resume_state(signature, 1)
-    real_save_state = build_rebalanced_dataset.save_resume_state
+    real_save_state = collect_pull_requests.save_resume_state
 
     def fail_main_state(path, payload):
         if path == state_path:
             raise OSError("interrupted after raw replacement")
         real_save_state(path, payload)
 
-    monkeypatch.setattr(build_rebalanced_dataset, "save_resume_state", fail_main_state)
+    monkeypatch.setattr(collect_pull_requests, "save_resume_state", fail_main_state)
     with pytest.raises(OSError, match="interrupted"):
-        build_rebalanced_dataset.save_repo_checkpoint(
+        collect_pull_requests.save_repo_checkpoint(
             pd.DataFrame([{"repo_full_name": "a/b", "number": 1}]),
             raw_path,
             state_path,
@@ -259,7 +259,7 @@ def test_pending_checkpoint_journal_recovers_state_after_interruption(
 
     assert raw_path.is_file()
     assert state_path.with_name("checkpoint_pending.json").is_file()
-    monkeypatch.setattr(build_rebalanced_dataset, "save_resume_state", real_save_state)
+    monkeypatch.setattr(collect_pull_requests, "save_resume_state", real_save_state)
 
     raw, recovered_state, completed, _ = prepare_resume_checkpoint(
         output_dir=output_dir,
@@ -281,7 +281,7 @@ def test_resume_rejects_checkpoint_that_no_longer_matches_recorded_hash(tmp_path
     raw_path = output_dirs["raw"] / "github_human_prs.parquet"
     state_path = resume_state_path(output_dir)
     signature = _signature()
-    build_rebalanced_dataset.save_repo_checkpoint(
+    collect_pull_requests.save_repo_checkpoint(
         pd.DataFrame([{"repo_full_name": "a/b", "number": 1}]),
         raw_path,
         state_path,

@@ -17,7 +17,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from enrich_aidev_attribution import (
+from aidev_attribution import (
     ATTRIBUTION_FIELDS,
     AIDEV_PAPER_URL,
     METHOD_VERSION,
@@ -249,7 +249,7 @@ def validate_existing_against_plan(
 def run_pending_enrichment(args: argparse.Namespace, pending_path: Path, pending_output_path: Path) -> None:
     command = [
         sys.executable,
-        str(Path(__file__).with_name("enrich_aidev_attribution.py")),
+        str(Path(__file__).with_name("aidev_attribution.py")),
         "--input",
         str(pending_path),
         "--output",

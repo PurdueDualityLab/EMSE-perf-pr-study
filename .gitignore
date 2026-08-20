@@ -7,6 +7,13 @@ mining/official_selection_*/
 mining/aidev_attribution/
 mining/aidev_attribution_all_available_dates/
 mining/perfminer_reproduction/
+mining/aidev_human_candidates_v1/
+mining/aidev_weekly_balanced_sample_v1/
+mining/agentic_method_a/
+mining/experiments/
+mining/manual_review/
+mining/runs/
+mining/release_bundle/
 
 # Local backups and query caches
 mining/backups/

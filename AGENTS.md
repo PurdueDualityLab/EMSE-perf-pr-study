@@ -16,12 +16,16 @@ This repository is a small Python research/mining project for rebuilding the hum
 
 ## Important code paths
 
-- `mining/src/build_rebalanced_dataset.py`: main entrypoint and orchestration logic. Handles config loading, resume state, batching, GitHub mining, filtering, and final outputs.
+- `mining/src/collect_pull_requests.py`: GitHub mining entrypoint. Handles config loading, resume state, batching, mining, filtering, and raw outputs.
 - `mining/src/github_client.py`: GitHub API access, token rotation, rate-limit handling, PR search/fetch logic.
 - `mining/src/resume.py`: checkpoint and resume-state behavior.
 - `mining/src/quality_filters.py`: row-removal rules for dataset quality filtering.
 - `mining/src/author_filter.py`: agent-vs-human author filtering.
 - `mining/src/classify_task_type.py`: task-type attachment/classification.
+- `mining/src/classify_agentic_prs.py`: published-rule AIDev attribution across the raw snapshot.
+- `mining/src/classify_performance_prs.py`: AIDev-compatible task classification through the Batch API.
+- `mining/src/select_human_candidates.py`: strict observable-signal filtering for human candidates.
+- `mining/src/build_balanced_sample.py`: deterministic weekly 1:1 sampling.
 - `mining/src/schema.py`: shared column-name constants and output helpers.
 
 ## Working conventions
@@ -39,8 +43,8 @@ This repository is a small Python research/mining project for rebuilding the hum
 
 ## Run commands
 
-- Main pipeline: `python mining/src/build_rebalanced_dataset.py --config mining/config.local.yaml`
-- Report helper: `python mining/analysis/rebalancing_report.py`
+- Mining: `python mining/src/collect_pull_requests.py --config mining/config.local.yaml`
+- Publication validation: `python mining/tools/publish_artifacts.py --dry-run`
 
 ## PR review focus
 

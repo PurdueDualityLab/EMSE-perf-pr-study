@@ -6,8 +6,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import build_rebalanced_dataset
-from build_rebalanced_dataset import (  # type: ignore
+import collect_pull_requests
+from collect_pull_requests import (  # type: ignore
     chunked,
     configured_time_window,
     github_batch_size,
@@ -153,7 +153,7 @@ def test_parallel_batch_worker_keeps_success_when_another_repo_fails(monkeypatch
         )
         return [{"repo_full_name": name, "number": 1, "filenames": ["src/a.py"]}]
 
-    monkeypatch.setattr(build_rebalanced_dataset, "mine_human_pull_requests", fake_mine)
+    monkeypatch.setattr(collect_pull_requests, "mine_human_pull_requests", fake_mine)
     window = TimeWindow(
         start=pd.Timestamp("2025-01-01T00:00:00Z"),
         end=pd.Timestamp("2025-01-02T00:00:00Z"),

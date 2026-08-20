@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from sample_aidev_performance_weekly import (
+from build_balanced_sample import (
     DEFAULT_SEED,
     add_weekly_strata,
     build_balanced_sample_frames,

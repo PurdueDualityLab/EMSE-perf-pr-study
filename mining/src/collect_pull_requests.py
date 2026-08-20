@@ -1,3 +1,5 @@
+"""Collect the frozen GitHub pull-request population used by the study."""
+
 from __future__ import annotations
 
 import argparse
@@ -1175,7 +1177,7 @@ def run_pipeline(config: dict[str, Any], limit_repos: int | None = None) -> dict
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build rebalanced human perf PR dataset.")
+    parser = argparse.ArgumentParser(description="Mine and filter pull requests from GitHub.")
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--limit-repos", type=int)
     args = parser.parse_args()

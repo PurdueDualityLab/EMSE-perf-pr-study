@@ -1,4 +1,4 @@
-"""Reproduce AIDev's public Conventional-Commit-plus-LLM task classifier."""
+"""Internal AIDev-compatible task-type classifier used by the Batch runner."""
 
 from __future__ import annotations
 

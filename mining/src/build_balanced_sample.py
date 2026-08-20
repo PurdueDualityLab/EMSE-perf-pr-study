@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 
-from filter_aidev_human_candidates import (
+from select_human_candidates import (
     ATTRIBUTION_COLUMNS,
     IDENTITY_COLUMNS,
     matching_attribution_rows,

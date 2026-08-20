@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import classify_aidev_task_type_luna as aidev  # noqa: E402
+import aidev_task_classifier as aidev  # noqa: E402
 
 
 def test_title_label_matches_public_aidev_regex():

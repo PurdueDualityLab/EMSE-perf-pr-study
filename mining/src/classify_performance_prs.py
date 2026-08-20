@@ -1,4 +1,4 @@
-"""Resumable OpenAI Batch API runner for AIDev's task-type cascade."""
+"""Classify pull-request task types with the AIDev-compatible Luna Batch cascade."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-import classify_aidev_task_type_luna as aidev
+import aidev_task_classifier as aidev
 from schema import atomic_write_text, write_parquet
 
 

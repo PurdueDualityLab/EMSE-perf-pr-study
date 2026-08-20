@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from filter_aidev_human_candidates import (
+from select_human_candidates import (
     METHOD_NAME,
     build_human_candidate_dataset,
     classify_human_candidates,
