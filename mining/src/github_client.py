@@ -450,10 +450,18 @@ class GitHubClient:
         start: date,
         end: date,
         result_limit: int | None = None,
+        *,
+        search_qualifiers: str | None = None,
+        strict: bool = False,
     ) -> list[dict]:
         if end < start:
             return []
-        query = f"repo:{repo_full_name} is:pr created:{start.isoformat()}..{end.isoformat()}"
+        query_parts = [f"repo:{repo_full_name}", "is:pr"]
+        normalized_qualifiers = " ".join(str(search_qualifiers or "").split())
+        if normalized_qualifiers:
+            query_parts.append(normalized_qualifiers)
+        query_parts.append(f"created:{start.isoformat()}..{end.isoformat()}")
+        query = " ".join(query_parts)
         params = {
             "q": query,
             "sort": "created",
@@ -475,13 +483,32 @@ class GitHubClient:
 
         payload = request_page(1)
         if not isinstance(payload, dict):
+            if strict:
+                raise GitHubClientError(
+                    f"GitHub search for {repo_full_name} on {start.isoformat()}..{end.isoformat()} "
+                    "returned a non-object response."
+                )
             return []
 
         raw_total = payload.get("total_count")
-        try:
-            total_count = int(raw_total) if raw_total is not None else None
-        except (TypeError, ValueError):
-            total_count = None
+        if strict:
+            if isinstance(raw_total, bool) or not isinstance(raw_total, int) or raw_total < 0:
+                raise GitHubClientError(
+                    f"GitHub search for {repo_full_name} on {start.isoformat()}..{end.isoformat()} "
+                    f"returned invalid total_count={raw_total!r}."
+                )
+            incomplete_value = payload.get("incomplete_results")
+            if not isinstance(incomplete_value, bool):
+                raise GitHubClientError(
+                    f"GitHub search for {repo_full_name} on {start.isoformat()}..{end.isoformat()} "
+                    "returned invalid incomplete_results."
+                )
+            total_count = raw_total
+        else:
+            try:
+                total_count = int(raw_total) if raw_total is not None else None
+            except (TypeError, ValueError):
+                total_count = None
         incomplete = bool(payload.get("incomplete_results", False))
         exceeds_cap = total_count is not None and total_count > SEARCH_RESULT_CAP
 
@@ -490,7 +517,12 @@ class GitHubClient:
                 raise GitHubClientError(reason + "; the one-day range cannot be subdivided.")
             midpoint = start + timedelta(days=(end - start).days // 2)
             left = self.search_pull_requests_for_range(
-                repo_full_name, start, midpoint, result_limit=result_limit
+                repo_full_name,
+                start,
+                midpoint,
+                result_limit=result_limit,
+                search_qualifiers=normalized_qualifiers,
+                strict=strict,
             )
             if result_limit is not None and len(left) >= result_limit:
                 return left[:result_limit]
@@ -500,6 +532,8 @@ class GitHubClient:
                 midpoint + timedelta(days=1),
                 end,
                 result_limit=right_limit,
+                search_qualifiers=normalized_qualifiers,
+                strict=strict,
             )
             return left + right
 
@@ -528,9 +562,34 @@ class GitHubClient:
                 if target_count is None
                 else min(target_count, result_limit)
             )
-        collected = list(payload.get("items") or [])
+        raw_items = payload.get("items")
+        if strict and not isinstance(raw_items, list):
+            raise GitHubClientError(
+                f"GitHub search for {repo_full_name} on {start.isoformat()}..{end.isoformat()} "
+                "returned invalid items."
+            )
+        collected = list(raw_items or [])
+        seen_numbers: set[int] = set()
+        if strict:
+            for item in collected:
+                number = item.get("number") if isinstance(item, dict) else None
+                if isinstance(number, bool) or not isinstance(number, int) or number <= 0:
+                    raise GitHubClientError(
+                        f"GitHub search for {repo_full_name} returned an item without a valid PR number."
+                    )
+                if number in seen_numbers:
+                    raise GitHubClientError(
+                        f"GitHub search for {repo_full_name} returned duplicate PR number {number}."
+                    )
+                seen_numbers.add(number)
+            if total_count is not None and len(collected) > total_count:
+                raise GitHubClientError(
+                    f"GitHub search for {repo_full_name} returned more items than total_count."
+                )
         if target_count is not None:
             collected = collected[:target_count]
+            if strict:
+                seen_numbers = {item["number"] for item in collected}
         page = 2
         while True:
             if target_count is not None and len(collected) >= target_count:
@@ -543,10 +602,53 @@ class GitHubClient:
                     f"GitHub search for {repo_full_name} on {start.isoformat()}..{end.isoformat()} "
                     "returned incomplete_results"
                 )
-            items = page_payload.get("items", []) if isinstance(page_payload, dict) else []
+            if strict and not isinstance(page_payload, dict):
+                raise GitHubClientError(
+                    f"GitHub search page {page} for {repo_full_name} returned a non-object response."
+                )
+            raw_page_items = page_payload.get("items", []) if isinstance(page_payload, dict) else []
+            if strict:
+                page_incomplete = page_payload.get("incomplete_results")
+                page_total = page_payload.get("total_count")
+                if not isinstance(page_incomplete, bool):
+                    raise GitHubClientError(
+                        f"GitHub search page {page} for {repo_full_name} returned invalid incomplete_results."
+                    )
+                if (
+                    isinstance(page_total, bool)
+                    or not isinstance(page_total, int)
+                    or page_total != total_count
+                ):
+                    raise GitHubClientError(
+                        f"GitHub search page {page} for {repo_full_name} returned inconsistent total_count."
+                    )
+            if strict and not isinstance(raw_page_items, list):
+                raise GitHubClientError(
+                    f"GitHub search page {page} for {repo_full_name} returned invalid items."
+                )
+            items = raw_page_items or []
             if not items:
                 break
+            if strict:
+                page_numbers: set[int] = set()
+                for item in items:
+                    number = item.get("number") if isinstance(item, dict) else None
+                    if isinstance(number, bool) or not isinstance(number, int) or number <= 0:
+                        raise GitHubClientError(
+                            f"GitHub search page {page} for {repo_full_name} returned an item "
+                            "without a valid PR number."
+                        )
+                    if number in page_numbers or number in seen_numbers:
+                        raise GitHubClientError(
+                            f"GitHub search for {repo_full_name} returned duplicate PR number {number}."
+                        )
+                    page_numbers.add(number)
+                seen_numbers.update(page_numbers)
             collected.extend(items)
+            if strict and total_count is not None and len(collected) > total_count:
+                raise GitHubClientError(
+                    f"GitHub search for {repo_full_name} returned more items than total_count."
+                )
             if target_count is not None:
                 collected = collected[:target_count]
             if len(items) < 100:
@@ -561,6 +663,9 @@ class GitHubClient:
 
     def fetch_pull_request(self, repo_full_name: str, number: int) -> dict:
         return self.request(f"/repos/{repo_full_name}/pulls/{number}")
+
+    def fetch_repository(self, repo_full_name: str) -> dict:
+        return self.request(f"/repos/{repo_full_name}")
 
     def fetch_pull_files(self, repo_full_name: str, number: int) -> list[dict]:
         files: list[dict] = []

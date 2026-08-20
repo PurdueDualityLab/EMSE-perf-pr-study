@@ -4,7 +4,7 @@ This inventory identifies the local study artifacts that must be preserved.
 Generated data remains outside Git because of its size. Checksums are lowercase
 SHA-256 values.
 
-Verify the locked raw and official files from the repository root with:
+Verify the locked study artifacts from the repository root with:
 
 ```bash
 sha256sum -c mining/artifacts.sha256
@@ -46,18 +46,49 @@ The v1 manifest records these reproducibility pins:
 - Inference device: CPU
 - Positive-label convention: class ID `1` is performance-improving; the upstream config contains only generic label names.
 
+## AIDev Attribution
+
+Location: `mining/aidev_attribution/`
+
+Status: completed on 2026-08-03 for all 2,774 repositories in the official
+window input. Preserve this directory as an immutable generated output.
+
+| Artifact | Rows | SHA-256 |
+| --- | ---: | --- |
+| `aidev_window.parquet` | 633,350 | `8eb98287cb57f6c0d308ce80a6448fc840c618cbb40a255211bc88d62a3a800d` |
+| `aidev_window.state.json` | n/a | `cee7913348f91b946eaf98fad3a0b0785b2f9a4d81bb149274e05522301dcd3f` |
+| `aidev_window.summary.json` | n/a | `aef154afa5bbbcd7b8b0d86e6798f822145fbc4dc10a368a533cf074d1b901ca` |
+
+The output contains 33,632 `agentic`, 599,569 `human_candidate`, and 149
+`unresolved` rows. All unresolved rows belong to the deleted
+`agentmark-ai/agentmark` repository; its immutable repository ID was verified,
+but the five searches could not be run. The generating enricher SHA-256 is
+`cc5785bf5e3c9c8d60b91c2606b9363d4773bed7ee44160e168b384f3fcc4081`.
+The historical coverage and live-search drift analysis is recorded in
+`mining/analysis/aidev_attribution_findings.md`.
+
 ## Preserved Local Data
 
 | Location | Purpose | Policy |
 | --- | --- | --- |
 | `mining/outputs_2026_06_01/` | Recovered full raw mining input | Preserve in place. |
 | `mining/query_cache/` | Exploratory datasets, model cache, and resumable parts | Preserve in place; contents are not official outputs. |
+| `mining/query_cache/models/perfannotator-mini-ease-2026/` | Exact EASE 2026 Figshare model, tokenizer, config, and operating point | Preserve in place; all eight files are verified before inference. |
+| `mining/aidev_attribution/` | Completed published-rule attribution for the official date-window input | Immutable generated output; preserve state and summary with the Parquet. |
+| `mining/perfminer_reproduction/` | Corrected commit-level manifest, evidence, predictions, and PR aggregation | Generated v2 research outputs; preserve completed state and summaries. |
 | `mining/official_selection/` | Completed official v1 population | Immutable. |
 | `mining/github_tokens.txt` | Local GitHub credentials | Never copy into artifacts, logs, Git, or backups. |
 
 Exploratory query-cache files are intentionally not checksum-locked because the
 directory contains mutable checkpoints. Completed study outputs are locked
 above.
+
+The EASE model bundle has weights SHA-256
+`c8e71790c6dc286562df297b40405d5c7ee8ad8bb0ca1fb47490949f6b5a47dd`
+and extracted tree SHA-256
+`9a0107e3fde617214c7d58cffda8dc29043adfcdeeee63331c51f458b05b40a6`.
+It differs from the older Hugging Face artifact recorded by official-selection
+v1; the two checkpoints are not interchangeable.
 
 ## External Backup
 

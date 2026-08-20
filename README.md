@@ -9,9 +9,15 @@ performance-PR arm used in the EMSE study.
 | --- | --- | --- |
 | Rebalancing | `mining/src/build_rebalanced_dataset.py` | Mine AIDev-Pop repositories through GitHub, checkpoint per repository, and build agentic and human comparison outputs. |
 | Official selection | `mining/src/build_official_selection.py` | Apply the fixed paper window, heuristic, quality filters, pinned PerfAnnotator model, and author-arm assignment without sampling. |
+| PerfMiner reproduction | `mining/src/fetch_pr_commit_manifest.py` | Freeze PR commits, extract operational PerfMiner evidence, classify commit pairs with the EASE artifact, and aggregate positive evidence to PRs. |
 
 The pipelines are independent. Experimental diff classification and historical
 recovery scripts do not define the official population.
+
+The immutable official-selection v1 snapshot used PR metadata rather than
+commit-message/diff pairs. It remains auditable but is not a reproduction of the
+published PerfMiner inference contract. See `mining/README.md` for the corrected
+commit-level pipeline.
 
 ## Layout
 

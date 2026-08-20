@@ -158,8 +158,10 @@ class SubdividingSearchClient(GitHubClient):
     def __init__(self):
         super().__init__(tokens=["token-one"], sleep_seconds=0)
         self.queries = []
+        self.full_queries = []
 
     def request(self, path, params=None):
+        self.full_queries.append(params["q"])
         date_range = params["q"].split("created:", 1)[1]
         self.queries.append(date_range)
         if date_range == "2025-01-01..2025-01-04":
@@ -262,6 +264,87 @@ def test_search_pull_requests_recursively_subdivides_ranges_over_cap():
         "2025-01-02..2025-01-02",
         "2025-01-03..2025-01-04",
     ]
+
+
+def test_search_qualifiers_are_preserved_when_ranges_are_subdivided():
+    client = SubdividingSearchClient()
+
+    client.search_pull_requests_for_range(
+        "owner/repo",
+        date(2025, 1, 1),
+        date(2025, 1, 4),
+        search_qualifiers="head:codex/",
+    )
+
+    assert len(client.full_queries) == 5
+    assert all("repo:owner/repo is:pr head:codex/ created:" in query for query in client.full_queries)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        [],
+        {"incomplete_results": False, "items": []},
+        {"total_count": "invalid", "incomplete_results": False, "items": []},
+        {"total_count": True, "incomplete_results": False, "items": []},
+        {"total_count": -1, "incomplete_results": False, "items": []},
+        {"total_count": 0, "incomplete_results": "false", "items": []},
+        {"total_count": 0, "incomplete_results": False, "items": {}},
+        {"total_count": 0, "incomplete_results": False, "items": [{"number": 1}]},
+    ],
+)
+def test_strict_search_rejects_malformed_payloads(monkeypatch, payload):
+    client = GitHubClient(tokens=["token-one"], sleep_seconds=0)
+    monkeypatch.setattr(client, "request", lambda path, params=None: payload)
+
+    with pytest.raises(GitHubClientError):
+        client.search_pull_requests_for_range(
+            "owner/repo",
+            date(2025, 1, 1),
+            date(2025, 1, 2),
+            search_qualifiers="head:codex/",
+            strict=True,
+        )
+
+
+def test_strict_search_rejects_duplicate_results_across_pages(monkeypatch):
+    client = GitHubClient(tokens=["token-one"], sleep_seconds=0)
+    first_items = [{"number": number} for number in range(1, 101)]
+
+    def fake_request(path, params=None):
+        items = first_items if params["page"] == 1 else [{"number": 100}]
+        return {"total_count": 101, "incomplete_results": False, "items": items}
+
+    monkeypatch.setattr(client, "request", fake_request)
+
+    with pytest.raises(GitHubClientError, match="duplicate PR number"):
+        client.search_pull_requests_for_range(
+            "owner/repo",
+            date(2025, 1, 1),
+            date(2025, 1, 2),
+            search_qualifiers="head:codex/",
+            strict=True,
+        )
+
+
+def test_strict_search_rejects_later_page_overdelivery(monkeypatch):
+    client = GitHubClient(tokens=["token-one"], sleep_seconds=0)
+    first_items = [{"number": number} for number in range(1, 101)]
+
+    def fake_request(path, params=None):
+        items = first_items if params["page"] == 1 else [{"number": 101}, {"number": 102}]
+        return {"total_count": 101, "incomplete_results": False, "items": items}
+
+    monkeypatch.setattr(client, "request", fake_request)
+
+    with pytest.raises(GitHubClientError, match="more items than total_count"):
+        client.search_pull_requests_for_range(
+            "owner/repo",
+            date(2025, 1, 1),
+            date(2025, 1, 2),
+            search_qualifiers="head:codex/",
+            strict=True,
+        )
 
 
 def test_search_pull_requests_subdivides_incomplete_ranges(monkeypatch):

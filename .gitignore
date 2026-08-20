@@ -4,6 +4,9 @@ mining/outputs/
 mining/outputs_*/
 mining/official_selection/
 mining/official_selection_*/
+mining/aidev_attribution/
+mining/aidev_attribution_all_available_dates/
+mining/perfminer_reproduction/
 
 # Local backups and query caches
 mining/backups/
