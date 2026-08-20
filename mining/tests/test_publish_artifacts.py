@@ -30,3 +30,11 @@ def test_assert_portable_rejects_home_path(tmp_path):
 
     with pytest.raises(ValueError, match="absolute user path"):
         publish.assert_portable(metadata)
+
+
+def test_dataset_card_declares_balanced_sample_as_default_config():
+    card = publish.dataset_card()
+
+    assert "config_name: balanced-sample" in card
+    assert "path: data/sample/balanced_sample.parquet" in card
+    assert "default: true" in card

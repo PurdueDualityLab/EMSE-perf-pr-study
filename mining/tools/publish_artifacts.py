@@ -86,6 +86,9 @@ def assert_portable(path: Path) -> None:
 def dataset_card() -> str:
     return """---
 license: other
+pretty_name: Performance Pull Request Study
+size_categories:
+- 1M<n<10M
 task_categories:
 - text-classification
 tags:
@@ -93,6 +96,48 @@ tags:
 - pull-requests
 - performance
 - coding-agents
+configs:
+- config_name: balanced-sample
+  data_files:
+  - split: sample
+    path: data/sample/balanced_sample.parquet
+  default: true
+- config_name: agentic-sample
+  data_files:
+  - split: sample
+    path: data/sample/agentic_sample.parquet
+- config_name: human-sample
+  data_files:
+  - split: sample
+    path: data/sample/human_sample.parquet
+- config_name: human-filter
+  data_files:
+  - split: decisions
+    path: data/human/decisions.parquet
+  - split: candidates
+    path: data/human/human_candidates.parquet
+  - split: excluded
+    path: data/human/excluded.parquet
+- config_name: sampling-frame
+  data_files:
+  - split: frame
+    path: data/sample/sampling_manifest.parquet
+- config_name: weekly-strata
+  data_files:
+  - split: strata
+    path: data/sample/weekly_strata.parquet
+- config_name: performance-classification
+  data_files:
+  - split: full
+    path: data/performance/task_type_decisions.parquet
+- config_name: agentic-attribution
+  data_files:
+  - split: full
+    path: data/agentic/aidev_attribution.parquet
+- config_name: raw
+  data_files:
+  - split: full
+    path: data/raw/github_pull_requests.parquet
 ---
 
 # Performance Pull Request Study
@@ -118,6 +163,23 @@ explicit API errors, which are not included among performance-labeled rows.
 The `data/` directory follows the five pipeline stages. `metadata/` contains
 sanitized summaries, a manifest, and checksums. Operational checkpoints, API
 payloads, retries, secrets, and local paths are intentionally excluded.
+
+The `balanced-sample` subset is the default. Other subsets expose the full
+mining, attribution, classification, filtering, and sampling artifacts without
+combining tables that have different schemas.
+
+```python
+from datasets import load_dataset
+
+sample = load_dataset(
+    "rcalvome/EMSE-perf-pr-study",
+    "balanced-sample",
+    token=True,
+)
+```
+
+The Hub Dataset Viewer requires a PRO or Enterprise account for private
+datasets. This limitation does not affect authenticated downloads or loading.
 
 ## Terms
 
