@@ -49,6 +49,13 @@ def test_dataset_card_declares_both_optimization_catalogs():
     assert "path: data/catalog/updated_optimization_catalog.csv" in card
 
 
+def test_dataset_card_declares_curated_labels():
+    card = publish.dataset_card()
+
+    assert "config_name: curated-labels" in card
+    assert "path: data/curated/pull_request_labels.parquet" in card
+
+
 def test_inspect_table_reads_csv_rows_and_columns(tmp_path):
     table = tmp_path / "catalog.csv"
     table.write_text("pattern,description\nCaching,Reuse values\n", encoding="utf-8")

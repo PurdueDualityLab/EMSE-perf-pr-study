@@ -17,6 +17,7 @@ directories, caches, secrets, and historical experiments are excluded.
 | Sampling | `sample/balanced_sample.parquet` | 2,712 | `8f72f6d4d92a6817abbbcdc06db61ec45e0674560eaca93c6071e1f85166d078` |
 | Sampling | `sample/sampling_manifest.parquet` | 26,036 | `4ef5ff011a65162ae7717a064eb8dcf34aab6c14d69f1eb7fb46e8a20d3096c2` |
 | Sampling | `sample/weekly_strata.parquet` | 67 | `d3a7db0c0fd1f1abab1e1d4239958c94074605723ff1609712e729ba7477ca62` |
+| Curated labels | `curated/pull_request_labels.parquet` | 1,603,213 | `f058825dfbc1c56f621a03ccef9480d06dcedab13e138e7e4cd97fbd1a60117a` |
 | RQ1 catalog | `catalog/original_optimization_catalog.csv` | 43 | `a951a9acf91ebe9a775009e95d187a3ea59f5a4ae4b2875d5ebc9788c1bc6d1e` |
 | RQ1 catalog | `catalog/updated_optimization_catalog.csv` | 58 | `ecd45d96500fa6663d21d0b280e77be7dfd8528544d7cbddf4522efc36e91c10` |
 
@@ -27,3 +28,8 @@ verifies table row counts and hashes before an upload can start.
 The final cohort is 1:1 balanced: 1,356 agentic and 1,356 human-candidate
 performance PRs. Human candidates are negative under the selected observable
 signals, not verified human authors.
+
+The curated-label table has one compact row per mined PR. It combines AIDev
+attribution and task-type labels with the performance indicator, strict human
+filter decision, and sampling fields. Human-filter and sampling values are null
+outside the populations evaluated by those stages.

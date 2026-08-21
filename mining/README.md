@@ -105,6 +105,23 @@ without replacement to the same quota in each ISO week using seed
 `emse-primary-human-sample-v1` and ordering hash
 `SHA256(seed + NUL + repo_id + NUL + number)`.
 
+## Curated Labels
+
+Build the compact PR-level label table after completing all five stages:
+
+```bash
+.venv/bin/python mining/src/build_curated_labels.py \
+  --attribution mining/aidev_attribution_all_available_dates/aidev_all_available_dates.parquet \
+  --task-types mining/experiments/aidev_luna_full_v1/task_type_decisions_with_retry.parquet \
+  --human-decisions mining/aidev_human_candidates_v1/decisions.parquet \
+  --sampling-manifest mining/aidev_weekly_balanced_sample_v1/sampling_manifest.parquet \
+  --output mining/curated_labels_v1/pull_request_labels.parquet
+```
+
+This table has one row per mined PR and combines attribution, task type,
+performance, human-filter, and sampling labels without duplicating PR title or
+body text. Stage-specific fields are null where that stage did not apply.
+
 ## Validation and Publication
 
 ```bash

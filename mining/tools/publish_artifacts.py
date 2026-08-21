@@ -42,6 +42,7 @@ ARTIFACTS = (
     Artifact("mining/aidev_weekly_balanced_sample_v1/balanced_sample.parquet", "data/sample/balanced_sample.parquet", "weekly_sampling", 2_712, "8f72f6d4d92a6817abbbcdc06db61ec45e0674560eaca93c6071e1f85166d078"),
     Artifact("mining/aidev_weekly_balanced_sample_v1/sampling_manifest.parquet", "data/sample/sampling_manifest.parquet", "weekly_sampling", 26_036, "4ef5ff011a65162ae7717a064eb8dcf34aab6c14d69f1eb7fb46e8a20d3096c2"),
     Artifact("mining/aidev_weekly_balanced_sample_v1/weekly_strata.parquet", "data/sample/weekly_strata.parquet", "weekly_sampling", 67, "d3a7db0c0fd1f1abab1e1d4239958c94074605723ff1609712e729ba7477ca62"),
+    Artifact("mining/curated_labels_v1/pull_request_labels.parquet", "data/curated/pull_request_labels.parquet", "curated_labels", 1_603_213, "f058825dfbc1c56f621a03ccef9480d06dcedab13e138e7e4cd97fbd1a60117a"),
     Artifact("analysis/rq1_optimization_patterns/catalog/original_optimization_catalog.csv", "data/catalog/original_optimization_catalog.csv", "rq1_catalog", 43, "a951a9acf91ebe9a775009e95d187a3ea59f5a4ae4b2875d5ebc9788c1bc6d1e", "csv"),
     Artifact("analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv", "data/catalog/updated_optimization_catalog.csv", "rq1_catalog", 58, "ecd45d96500fa6663d21d0b280e77be7dfd8528544d7cbddf4522efc36e91c10", "csv"),
 )
@@ -138,6 +139,10 @@ configs:
   data_files:
   - split: full
     path: data/agentic/aidev_attribution.parquet
+- config_name: curated-labels
+  data_files:
+  - split: full
+    path: data/curated/pull_request_labels.parquet
 - config_name: raw
   data_files:
   - split: full
@@ -182,6 +187,11 @@ combining tables that have different schemas.
 
 The optimization catalog subsets expose the original and study-refined RQ1
 taxonomies as separate tables.
+
+The `curated-labels` subset provides one compact row per pull request with
+agentic attribution, task type, the derived performance indicator, strict
+human-filter decisions, and sampling labels. Human-filter and sampling fields
+are null for pull requests outside the populations evaluated by those stages.
 
 ```python
 from datasets import load_dataset
