@@ -1,104 +1,61 @@
 # Performance Pull Request Study
 
-This repository provides a reproducible Python pipeline for identifying and
-sampling performance-improving pull requests authored by coding agents and
-human candidates. It combines GitHub mining, the published AIDev attribution
-rules, AIDev-compatible task classification, strict observable-signal
-filtering, and deterministic temporal sampling.
-
-## Pipeline
-
-The workflow has five stages:
-
-1. **Pull request mining:** collect and checkpoint GitHub pull requests for the
-   selected repositories and time window.
-2. **Agentic attribution:** apply the published AIDev rules and preserve
-   historical AIDev positives.
-3. **Performance classification:** reproduce AIDev's Conventional Commit
-   cascade and classify unmatched pull requests through the Batch API.
-4. **Human-candidate filtering:** exclude observable bot, coding-agent,
-   AI-authorship, AI-review, and generated-metadata signals.
-5. **Weekly balanced sampling:** retain every agentic performance pull request
-   and sample human candidates to the same quota within each ISO week.
-
-## Results
-
-| Artifact | Pull requests |
-| --- | ---: |
-| Raw GitHub snapshot | 1,603,213 |
-| Agentic attribution | 78,696 |
-| Performance classification | 29,483 |
-| Agentic performance cohort | 1,356 |
-| Strict human-candidate cohort | 24,680 |
-| Final balanced sample | 2,712 |
-
-The final sample contains 1,356 agentic and 1,356 human-candidate performance
-pull requests across 67 ISO-week strata. "Human candidate" means that no
-selected observable agent signal was found; it does not establish confirmed
-human authorship.
+This repository groups the source code, generated-data reference, and LaTeX
+report for the performance pull request study. Detailed pipeline commands and
+artifact metadata live in the corresponding directories rather than in this
+root overview.
 
 ## Repository Structure
 
 ```text
-mining/
-  src/                 Five-stage pipeline and shared helpers
-  tests/               Pytest regression tests
-  tools/               Artifact validation and publication tooling
-  ARTIFACTS.md          Official artifact inventory and checksums
-  config.example.yaml  Mining configuration template
+.
+├── mining/              Data collection, classification, filtering, sampling,
+│   ├── src/             and publication pipeline
+│   ├── tests/           Pytest regression tests
+│   ├── tools/           Artifact validation and publication utilities
+│   ├── README.md        Pipeline commands and methodology
+│   └── ARTIFACTS.md     Published artifact inventory and checksums
+├── data/                Private Hugging Face dataset submodule
+├── report/              Overleaf LaTeX report submodule
+├── AGENTS.md            Repository guidance for coding agents
+├── requirements.txt     Pinned Python dependencies
+├── LICENSE              Source-code license
+└── README.md            Repository structure overview
 ```
 
-Generated datasets, checkpoints, API payloads, caches, local configuration,
-and credentials are intentionally excluded from Git.
+## Mining
 
-## Quick Start
+[`mining/`](mining/) contains the reproducible Python pipeline. Its
+[`README.md`](mining/README.md) documents setup, stage inputs, execution,
+resume behavior, validation, and publication. Generated outputs, checkpoints,
+caches, local configuration, and credentials are excluded from Git.
 
-Python 3.12 is the tested environment.
+## Data
 
-```bash
-python -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cp mining/config.example.yaml mining/config.local.yaml
-cp mining/github_tokens.example.txt mining/github_tokens.txt
-```
+[`data/`](data/) is a Git submodule pointing to the private Hugging Face
+dataset:
 
-Add one GitHub token per line to the ignored token file, then start the mining
-stage from the repository root:
+https://huggingface.co/datasets/rcalvome/EMSE-perf-pr-study
 
-```bash
-.venv/bin/python mining/src/collect_pull_requests.py \
-  --config mining/config.local.yaml
-```
+Access requires authorization for the private dataset. The submodule pins the
+exact dataset revision used by this repository. Its local checkout may use
+sparse checkout to avoid materializing the large Parquet files.
 
-The remaining stage commands, inputs, and resume behavior are documented in
-[`mining/README.md`](mining/README.md).
+## Report
 
-## Validation
+[`report/`](report/) is a Git submodule connected to the private Overleaf
+project containing the LaTeX report, figures, references, and build files:
 
-Run the regression suite and validate the complete artifact allowlist with:
+https://www.overleaf.com/project/6a08c1aaa379b791cc6da4c2
 
-```bash
-.venv/bin/python -m pytest mining/tests -q
-.venv/bin/python mining/tools/publish_artifacts.py --dry-run
-```
+Access requires authorization for the private Overleaf project. Changes to the
+report are committed and pushed inside the submodule first; the parent
+repository then records the updated report commit.
 
-The publication validator checks file presence, row counts, schemas, SHA-256
-digests, and metadata portability before any upload is allowed.
+## Supporting Files
 
-## Data Access
-
-The approved artifacts are stored in the private Hugging Face dataset
-[`rcalvome/EMSE-perf-pr-study`](https://huggingface.co/datasets/rcalvome/EMSE-perf-pr-study).
-Authenticated users can download individual Parquet files or load a declared
-dataset subset. `balanced-sample` is the default subset.
-
-The Hub Dataset Viewer is unavailable for private datasets without a PRO or
-Enterprise account; this does not affect authenticated downloads. See
-[`mining/ARTIFACTS.md`](mining/ARTIFACTS.md) for the exact artifact inventory
-and checksums.
-
-## License
-
-The processing code is licensed under the [MIT License](LICENSE). Generated
-records retain their original source metadata and may be subject to GitHub and
-source-repository terms.
+- [`requirements.txt`](requirements.txt) contains the pinned Python runtime and
+  test dependencies.
+- [`AGENTS.md`](AGENTS.md) records repository-specific maintenance guidance.
+- [`LICENSE`](LICENSE) contains the MIT license for the processing code.
+- [`.gitmodules`](.gitmodules) defines the private data and report submodules.
