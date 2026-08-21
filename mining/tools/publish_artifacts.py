@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
 import pyarrow.parquet as pq
 
 
@@ -26,6 +27,7 @@ class Artifact:
     stage: str
     rows: int
     sha256: str
+    format: str = "parquet"
 
 
 ARTIFACTS = (
@@ -40,6 +42,8 @@ ARTIFACTS = (
     Artifact("mining/aidev_weekly_balanced_sample_v1/balanced_sample.parquet", "data/sample/balanced_sample.parquet", "weekly_sampling", 2_712, "8f72f6d4d92a6817abbbcdc06db61ec45e0674560eaca93c6071e1f85166d078"),
     Artifact("mining/aidev_weekly_balanced_sample_v1/sampling_manifest.parquet", "data/sample/sampling_manifest.parquet", "weekly_sampling", 26_036, "4ef5ff011a65162ae7717a064eb8dcf34aab6c14d69f1eb7fb46e8a20d3096c2"),
     Artifact("mining/aidev_weekly_balanced_sample_v1/weekly_strata.parquet", "data/sample/weekly_strata.parquet", "weekly_sampling", 67, "d3a7db0c0fd1f1abab1e1d4239958c94074605723ff1609712e729ba7477ca62"),
+    Artifact("analysis/rq1_optimization_patterns/catalog/original_optimization_catalog.csv", "data/catalog/original_optimization_catalog.csv", "rq1_catalog", 43, "a951a9acf91ebe9a775009e95d187a3ea59f5a4ae4b2875d5ebc9788c1bc6d1e", "csv"),
+    Artifact("analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv", "data/catalog/updated_optimization_catalog.csv", "rq1_catalog", 58, "ecd45d96500fa6663d21d0b280e77be7dfd8528544d7cbddf4522efc36e91c10", "csv"),
 )
 
 SUMMARIES = {
@@ -138,6 +142,14 @@ configs:
   data_files:
   - split: full
     path: data/raw/github_pull_requests.parquet
+- config_name: optimization-catalog-original
+  data_files:
+  - split: catalog
+    path: data/catalog/original_optimization_catalog.csv
+- config_name: optimization-catalog-updated
+  data_files:
+  - split: catalog
+    path: data/catalog/updated_optimization_catalog.csv
 ---
 
 # Performance Pull Request Study
@@ -168,6 +180,9 @@ The `balanced-sample` subset is the default. Other subsets expose the full
 mining, attribution, classification, filtering, and sampling artifacts without
 combining tables that have different schemas.
 
+The optimization catalog subsets expose the original and study-refined RQ1
+taxonomies as separate tables.
+
 ```python
 from datasets import load_dataset
 
@@ -190,6 +205,16 @@ repository terms.
 """
 
 
+def inspect_table(path: Path, format: str) -> tuple[int, list[str]]:
+    if format == "parquet":
+        parquet = pq.ParquetFile(path)
+        return parquet.metadata.num_rows, parquet.schema.names
+    if format == "csv":
+        frame = pd.read_csv(path)
+        return len(frame), list(frame.columns)
+    raise ValueError(f"Unsupported artifact format: {format}")
+
+
 def build_bundle(bundle_dir: Path) -> tuple[list[dict[str, Any]], list[tuple[Path, str]]]:
     bundle_dir.mkdir(parents=True, exist_ok=True)
     path_map = {
@@ -202,7 +227,7 @@ def build_bundle(bundle_dir: Path) -> tuple[list[dict[str, Any]], list[tuple[Pat
         path = ROOT / artifact.local_path
         if not path.is_file():
             raise FileNotFoundError(path)
-        actual_rows = pq.ParquetFile(path).metadata.num_rows
+        actual_rows, columns = inspect_table(path, artifact.format)
         if actual_rows != artifact.rows:
             raise ValueError(f"Row-count mismatch for {path}: {actual_rows} != {artifact.rows}")
         actual_hash = sha256_file(path)
@@ -212,10 +237,11 @@ def build_bundle(bundle_dir: Path) -> tuple[list[dict[str, Any]], list[tuple[Pat
             {
                 "path": artifact.remote_path,
                 "stage": artifact.stage,
+                "format": artifact.format,
                 "rows": actual_rows,
                 "bytes": path.stat().st_size,
                 "sha256": actual_hash,
-                "columns": pq.ParquetFile(path).schema.names,
+                "columns": columns,
             }
         )
         uploads.append((path, artifact.remote_path))

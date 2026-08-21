@@ -38,3 +38,30 @@ def test_dataset_card_declares_balanced_sample_as_default_config():
     assert "config_name: balanced-sample" in card
     assert "path: data/sample/balanced_sample.parquet" in card
     assert "default: true" in card
+
+
+def test_dataset_card_declares_both_optimization_catalogs():
+    card = publish.dataset_card()
+
+    assert "config_name: optimization-catalog-original" in card
+    assert "path: data/catalog/original_optimization_catalog.csv" in card
+    assert "config_name: optimization-catalog-updated" in card
+    assert "path: data/catalog/updated_optimization_catalog.csv" in card
+
+
+def test_inspect_table_reads_csv_rows_and_columns(tmp_path):
+    table = tmp_path / "catalog.csv"
+    table.write_text("pattern,description\nCaching,Reuse values\n", encoding="utf-8")
+
+    assert publish.inspect_table(table, "csv") == (1, ["pattern", "description"])
+
+
+def test_artifact_allowlist_contains_only_the_two_catalog_csvs():
+    csv_paths = {
+        artifact.remote_path for artifact in publish.ARTIFACTS if artifact.format == "csv"
+    }
+
+    assert csv_paths == {
+        "data/catalog/original_optimization_catalog.csv",
+        "data/catalog/updated_optimization_catalog.csv",
+    }
