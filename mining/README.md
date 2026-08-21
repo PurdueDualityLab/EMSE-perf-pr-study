@@ -7,7 +7,7 @@ repository root.
 
 ```bash
 python -m venv .venv
-.venv/bin/pip install -r requirements.txt -r requirements-dev.txt
+.venv/bin/pip install -r requirements.txt
 cp mining/config.example.yaml mining/config.local.yaml
 cp mining/github_tokens.example.txt mining/github_tokens.txt
 ```

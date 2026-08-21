@@ -1,3 +1,6 @@
 [submodule "report"]
 	path = report
 	url = https://git@git.overleaf.com/6a08c1aaa379b791cc6da4c2
+[submodule "data"]
+	path = data
+	url = git@hf.co:datasets/rcalvome/EMSE-perf-pr-study
