@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "analysis" / "rq1_optimization_patterns"))
 
-from analyze_agreement import analyze, cohen_kappa  # noqa: E402
+from analyze_rq1_agreement import analyze, cohen_kappa  # noqa: E402
 
 
 def test_cohen_kappa_known_example():
@@ -14,6 +14,10 @@ def test_cohen_kappa_known_example():
     second = pd.Series(["a", "b", "b", "b"])
 
     assert cohen_kappa(first, second) == pytest.approx(0.5)
+
+
+def test_cohen_kappa_is_undefined_for_constant_identical_labels():
+    assert cohen_kappa(pd.Series(["a", "a"]), pd.Series(["a", "a"])) is None
 
 
 def test_analyze_reports_overall_and_per_arm_agreement():

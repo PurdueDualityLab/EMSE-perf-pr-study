@@ -8,8 +8,11 @@ Gemini 3.1 Pro Preview Batch API classifiers, and supporting analysis notebooks.
 - `run_rq1.py`: prepares, submits, monitors, and collects the RQ1 batch.
 - `run_rq1_gemini.py`: runs one logical Gemini classification over the same RQ1
   sample and handles provider job limits internally.
-- `analyze_agreement.py`: calculates agreement and Cohen's kappa globally and
+- `analyze_rq1_agreement.py`: calculates agreement and Cohen's kappa globally and
   by sample arm, then exports agreements and human-review candidates.
+- `adjudicate_gemini_parent_labels.py`: applies an explicitly authorized,
+  auditable correction when Gemini returns a catalog sub-pattern under the wrong
+  high-level parent.
 - `catalog/`: original and updated optimization-pattern taxonomies.
 - `pattern_analysis.ipynb`: distribution and statistical analyses.
 - `compare_pattern.py` and `label_analysis.ipynb`: agreement and manual-review
@@ -46,7 +49,7 @@ are ignored by Git.
 After both models have classified the same sample with the same prompt version:
 
 ```bash
-.venv/bin/python analysis/rq1_optimization_patterns/analyze_agreement.py \
+.venv/bin/python analysis/rq1_optimization_patterns/analyze_rq1_agreement.py \
   --gpt analysis/rq1_optimization_patterns/results_gpt/optimization_pattern_labels.parquet \
   --gemini analysis/rq1_optimization_patterns/results_gemini/optimization_pattern_labels.parquet \
   --sample data/data/sample/balanced_sample.parquet \
@@ -54,8 +57,23 @@ After both models have classified the same sample with the same prompt version:
 ```
 
 The summary reports exact agreement and Cohen's kappa globally and separately
-for agentic and human-candidate PRs. Disagreements are exported for human
-adjudication; the script does not select either model as a fallback.
+for agentic and human-candidate PRs. Disagreements are exported to
+`disagreements.parquet`, and `adjudication_template.csv` provides empty decision
+and notes columns for human review. The script does not select either model as a
+fallback.
+
+The completed run contains 2,260 labels from each model. Hierarchical agreement
+is 70.0% (1,582/2,260; Cohen's kappa 0.6764), with 69.82% agreement for agentic
+PRs and 70.18% for human-candidate PRs. The remaining 678 model disagreements
+require human adjudication.
+
+Gemini produced 20 persistent responses whose sub-pattern was in the catalog
+but whose high-level parent was inconsistent with the catalog hierarchy. After
+four model attempts, the study owner authorized preserving each returned
+sub-pattern and replacing only its high-level parent with the sub-pattern's
+unique catalog parent. The complete audit is stored in
+`results_gemini/manual_parent_adjudications.csv`; the correction is reproducible
+with `adjudicate_gemini_parent_labels.py`.
 
 Both runners use medium reasoning, a 4,096-token output limit, and the same
 structured schema. Gemini uses temperature zero. GPT-5.6-sol does not support

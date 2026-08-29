@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +51,16 @@ def sha256_file(path: Path) -> str:
 def sha256_json(value: Any) -> str:
     encoded = json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+        temporary = Path(handle.name)
+        handle.write(json.dumps(value, indent=2, sort_keys=True) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
 
 
 def semantic_schema() -> dict[str, Any]:
@@ -108,6 +119,12 @@ def build_input(sample_path: Path, evidence_dir: Path) -> pd.DataFrame:
     arm_counts = sample["sample_arm"].value_counts().to_dict()
     if set(arm_counts) != {"agentic", "human_candidate"} or len(set(arm_counts.values())) != 1:
         raise ValueError("RQ1 requires the final 1:1 balanced sample.")
+    sample_ids = set(map(tuple, sample[["repo_id", "number"]].to_numpy()))
+    status_ids = set(map(tuple, status[["repo_id", "number"]].to_numpy()))
+    if status.duplicated(["repo_id", "number"]).any() or status_ids != sample_ids:
+        raise ValueError("RQ1 evidence status does not exactly match the official sample.")
+    if not status["status"].isin(["complete", "not_found"]).all():
+        raise ValueError("RQ1 evidence contains partial or identity-mismatched rows.")
     patches = (
         files.assign(patch=files["patch"].fillna(""))
         .sort_values(["repo_id", "number", "file_index"], kind="mergesort")
@@ -361,7 +378,9 @@ def submit_batch(output_dir: Path) -> dict[str, Any]:
     metadata_path = output_dir / "prepare_metadata.json"
     state_path = output_dir / "batch_state.json"
     if state_path.exists():
-        raise FileExistsError("Batch state already exists; refusing to submit twice.")
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        if state.get("batch_id"):
+            raise FileExistsError("Batch was already submitted.")
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     if sha256_file(payload_path) != metadata["batch_input_sha256"]:
         raise ValueError("Batch input changed after preparation.")
@@ -369,24 +388,24 @@ def submit_batch(output_dir: Path) -> dict[str, Any]:
         raise ValueError("Catalog snapshot changed after preparation.")
     if sha256_file(output_dir / "batch_manifest.parquet") != metadata["manifest_sha256"]:
         raise ValueError("Batch manifest changed after preparation.")
+    else:
+        state = {**metadata, "local_status": "prepared"}
+        atomic_write_json(state_path, state)
     client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    with payload_path.open("rb") as handle:
-        uploaded = client.files.create(file=handle, purpose="batch")
+    if not state.get("input_file_id"):
+        with payload_path.open("rb") as handle:
+            uploaded = client.files.create(file=handle, purpose="batch")
+        state.update(input_file_id=uploaded.id, local_status="uploaded")
+        atomic_write_json(state_path, state)
     batch = client.batches.create(
-        input_file_id=uploaded.id,
+        input_file_id=state["input_file_id"],
         endpoint=ENDPOINT,
         completion_window="24h",
         metadata={"description": "RQ1 GPT-5.6-sol optimization-pattern classification"},
     )
-    state = {
-        **metadata,
-        "input_file_id": uploaded.id,
-        "batch_id": batch.id,
-        "status": batch.status,
-        "created_at": batch.created_at,
-        "expires_at": batch.expires_at,
-    }
-    state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    state.update(batch_id=batch.id, status=batch.status, local_status="submitted",
+                 created_at=batch.created_at, expires_at=batch.expires_at)
+    atomic_write_json(state_path, state)
     return state
 
 
@@ -404,16 +423,18 @@ def batch_status(output_dir: Path) -> dict[str, Any]:
         "expires_at": batch.expires_at,
     }
     state.update(status)
-    state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    atomic_write_json(state_path, state)
     return status
 
 
 def _output_text(body: dict[str, Any]) -> str:
-    for output in body.get("output", []):
-        for content in output.get("content", []):
-            if content.get("type") == "output_text":
-                return str(content.get("text") or "")
-    raise ValueError("Batch response has no output_text content.")
+    if body.get("status") == "incomplete" or body.get("incomplete_details"):
+        raise ValueError("Batch response is incomplete.")
+    texts = [str(content.get("text") or "") for output in body.get("output", [])
+             for content in output.get("content", []) if content.get("type") == "output_text"]
+    if not texts:
+        raise ValueError("Batch response has no output_text content.")
+    return "".join(texts)
 
 
 def write_summary(frame: pd.DataFrame, output_dir: Path) -> None:
@@ -456,6 +477,8 @@ def collect_batch(output_dir: Path) -> pd.DataFrame:
     if sha256_file(manifest_path) != metadata["manifest_sha256"]:
         raise ValueError("Batch manifest does not match prepared hash.")
     manifest = pd.read_parquet(manifest_path)
+    if manifest["custom_id"].isna().any() or not manifest["custom_id"].is_unique:
+        raise ValueError("Batch manifest contains invalid or duplicate custom IDs.")
     manifest_by_id = manifest.set_index("custom_id").to_dict("index")
     taxonomy = taxonomy_labels(load_taxonomy(catalog_path))
     valid_high = set(taxonomy)
@@ -514,6 +537,8 @@ def collect_batch(output_dir: Path) -> pd.DataFrame:
             }
         )
     frame = pd.DataFrame(labels).sort_values(["repo_id", "number"]).reset_index(drop=True)
+    if len(frame) != len(manifest) or frame["custom_id"].duplicated().any():
+        raise ValueError("Collected rows do not exactly preserve the batch manifest.")
     frame.to_parquet(output_dir / "optimization_pattern_labels.parquet", index=False)
     write_summary(frame, output_dir)
     return frame
@@ -527,6 +552,10 @@ def prepare_retry(source_dir: Path, output_dir: Path) -> Path:
     if errors.empty:
         raise ValueError("Source run has no errors to retry.")
     metadata = json.loads((source_dir / "prepare_metadata.json").read_text(encoding="utf-8"))
+    if sha256_file(source_dir / "batch_input.jsonl") != metadata["batch_input_sha256"]:
+        raise ValueError("Source batch input changed after preparation.")
+    if sha256_file(source_dir / "batch_manifest.parquet") != metadata["manifest_sha256"]:
+        raise ValueError("Source batch manifest changed after preparation.")
     requests = {}
     for line in (source_dir / "batch_input.jsonl").read_text(encoding="utf-8").splitlines():
         item = json.loads(line)

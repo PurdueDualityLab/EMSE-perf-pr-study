@@ -27,7 +27,7 @@ def cohen_kappa(first: pd.Series, second: pd.Series) -> float | None:
         for label in set(first_proportions.index) | set(second_proportions.index)
     )
     if expected == 1.0:
-        return 1.0 if observed == 1.0 else None
+        return None
     return (observed - expected) / (1.0 - expected)
 
 
@@ -184,6 +184,22 @@ def main() -> None:
     comparison[~comparison["full_match"]].to_parquet(
         args.output_dir / "disagreements.parquet", index=False
     )
+    adjudication = comparison.loc[
+        ~comparison["full_match"],
+        [
+            *KEY_COLUMNS,
+            "sample_arm",
+            "high_level_pattern_gpt",
+            "sub_pattern_gpt",
+            "high_level_pattern_gemini",
+            "sub_pattern_gemini",
+        ],
+    ].copy()
+    adjudication["adjudication_status"] = "pending_human_review"
+    adjudication["adjudicated_high_level_pattern"] = ""
+    adjudication["adjudicated_sub_pattern"] = ""
+    adjudication["adjudication_notes"] = ""
+    adjudication.to_csv(args.output_dir / "adjudication_template.csv", index=False)
     (args.output_dir / "agreement_summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )

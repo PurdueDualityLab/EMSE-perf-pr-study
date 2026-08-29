@@ -18,6 +18,16 @@ def test_internal_jobs_are_deterministic_disjoint_and_complete():
     assert [line for job in jobs for line in job] == lines
 
 
+def test_internal_jobs_honor_estimated_token_budget():
+    lines = ["x" * 40 + "\n" for _ in range(5)]
+
+    jobs = split_jsonl_lines(
+        lines, max_requests=100, max_bytes=10_000, max_estimated_tokens=20
+    )
+
+    assert [len(job) for job in jobs] == [1, 1, 1, 1, 1]
+
+
 def test_request_uses_gemini_json_schema():
     request = request_for("Classify this PR")
     config = request["generation_config"]
@@ -74,3 +84,20 @@ def test_missing_job_output_becomes_explicit_error(tmp_path, monkeypatch):
 
     assert result["classification_status"].tolist() == ["error"]
     assert result["key"].tolist() == ["1:2"]
+
+
+def test_non_stop_response_becomes_error(tmp_path, monkeypatch):
+    pd.DataFrame([{"repo_id": 1, "number": 2, "key": "1:2"}]).to_parquet(
+        tmp_path / "batch_manifest.parquet", index=False
+    )
+    (tmp_path / "prepare_metadata.json").write_text(
+        json.dumps({"model": "gemini", "catalog_file": "catalog.csv"})
+    )
+    monkeypatch.setattr("run_rq1_gemini.load_taxonomy", lambda _: pd.DataFrame())
+    monkeypatch.setattr("run_rq1_gemini.taxonomy_labels", lambda _: {"A": ["a"]})
+    output = json.dumps({"key": "1:2", "response": {"candidates": [{"finishReason": "MAX_TOKENS"}]}})
+
+    result = _parse_outputs(tmp_path, [output], {"1:2"})
+
+    assert result["classification_status"].tolist() == ["error"]
+    assert "MAX_TOKENS" in result.iloc[0]["error"]

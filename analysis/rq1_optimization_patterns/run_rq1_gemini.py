@@ -29,13 +29,18 @@ from run_rq1 import (
     sha256_json,
     study_contract,
     taxonomy_labels,
+    atomic_write_json,
 )
 
 DEFAULT_MODEL = "gemini-3.1-pro-preview"
 THINKING_LEVEL = "MEDIUM"
 MAX_REQUESTS_PER_JOB = 1_000
 MAX_BYTES_PER_JOB = 1_500_000_000
+MAX_ESTIMATED_TOKENS_PER_JOB = 4_500_000
+ESTIMATED_CHARS_PER_TOKEN = 4
 TERMINAL_STATES = {
+    "ACTIVE",
+    "FAILED",
     "JOB_STATE_SUCCEEDED",
     "JOB_STATE_PARTIALLY_SUCCEEDED",
     "JOB_STATE_FAILED",
@@ -79,22 +84,33 @@ def split_jsonl_lines(
     lines: list[str],
     max_requests: int = MAX_REQUESTS_PER_JOB,
     max_bytes: int = MAX_BYTES_PER_JOB,
+    max_estimated_tokens: int = MAX_ESTIMATED_TOKENS_PER_JOB,
 ) -> list[list[str]]:
-    if max_requests < 1 or max_bytes < 1:
+    if max_requests < 1 or max_bytes < 1 or max_estimated_tokens < 1:
         raise ValueError("Gemini job limits must be positive.")
     jobs: list[list[str]] = []
     current: list[str] = []
     current_bytes = 0
+    current_tokens = 0
     for line in lines:
         line_bytes = len(line.encode("utf-8"))
+        line_tokens = (line_bytes + ESTIMATED_CHARS_PER_TOKEN - 1) // ESTIMATED_CHARS_PER_TOKEN
         if line_bytes > max_bytes:
             raise ValueError("One Gemini request exceeds the per-job byte limit.")
-        if current and (len(current) >= max_requests or current_bytes + line_bytes > max_bytes):
+        if line_tokens > max_estimated_tokens:
+            raise ValueError("One Gemini request exceeds the per-job token budget.")
+        if current and (
+            len(current) >= max_requests
+            or current_bytes + line_bytes > max_bytes
+            or current_tokens + line_tokens > max_estimated_tokens
+        ):
             jobs.append(current)
             current = []
             current_bytes = 0
+            current_tokens = 0
         current.append(line)
         current_bytes += line_bytes
+        current_tokens += line_tokens
     if current:
         jobs.append(current)
     return jobs
@@ -173,6 +189,11 @@ def prepare_batch(
                 "input_file": str(path.relative_to(output_dir)),
                 "requests": len(job_lines),
                 "input_sha256": sha256_file(path),
+                "estimated_tokens": sum(
+                    (len(line.encode("utf-8")) + ESTIMATED_CHARS_PER_TOKEN - 1)
+                    // ESTIMATED_CHARS_PER_TOKEN
+                    for line in job_lines
+                ),
                 "status": "prepared",
                 "attempt": 1,
             }
@@ -215,7 +236,7 @@ def _load_state(output_dir: Path) -> tuple[Path, dict[str, Any]]:
 
 
 def _write_state(path: Path, state: dict[str, Any]) -> None:
-    path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    atomic_write_json(path, state)
 
 
 def submit_batch(output_dir: Path) -> dict[str, Any]:
@@ -223,32 +244,40 @@ def submit_batch(output_dir: Path) -> dict[str, Any]:
     if sha256_file(output_dir / "batch_manifest.parquet") != metadata["manifest_sha256"]:
         raise ValueError("Batch manifest changed after preparation.")
     state_path, state = _load_state(output_dir)
+    active_states = {
+        "submitted", "JOB_STATE_PENDING", "JOB_STATE_QUEUED", "JOB_STATE_RUNNING",
+    }
+    if any(job.get("batch_name") and job.get("status") in active_states for job in state["jobs"]):
+        return run_status(output_dir)
     with _client() as client:
         for job in state["jobs"]:
-            if job["status"] != "prepared":
+            if job["status"] not in {"prepared", "uploaded"}:
                 continue
             input_path = output_dir / job["input_file"]
             if sha256_file(input_path) != job["input_sha256"]:
                 raise ValueError("Gemini job input changed after preparation.")
-            uploaded = client.files.upload(
-                file=input_path,
-                config=types.UploadFileConfig(
-                    display_name=f"rq1-gemini-{job['index']:04d}", mime_type="application/jsonl"
-                ),
-            )
+            if not job.get("input_file_name"):
+                uploaded = client.files.upload(
+                    file=input_path,
+                    config=types.UploadFileConfig(
+                        display_name=f"rq1-gemini-{job['index']:04d}", mime_type="application/jsonl"
+                    ),
+                )
+                job.update(input_file_name=uploaded.name, status="uploaded")
+                _write_state(state_path, state)
             batch = client.batches.create(
                 model=metadata["model"],
-                src=uploaded.name,
+                src=job["input_file_name"],
                 config={"display_name": f"rq1-gemini-{job['index']:04d}"},
             )
             job.update(
                 {
-                    "input_file_name": uploaded.name,
                     "batch_name": batch.name,
-                    "status": batch.state.value if batch.state else None,
+                    "status": batch.state.value if batch.state else "submitted",
                 }
             )
             _write_state(state_path, state)
+            break
     return run_status(output_dir)
 
 
@@ -290,6 +319,8 @@ def _parse_outputs(
 ) -> pd.DataFrame:
     metadata = json.loads((output_dir / "prepare_metadata.json").read_text(encoding="utf-8"))
     manifest = pd.read_parquet(output_dir / "batch_manifest.parquet")
+    if manifest["key"].isna().any() or not manifest["key"].is_unique:
+        raise ValueError("Gemini manifest contains invalid or duplicate keys.")
     by_key = manifest.set_index("key").to_dict("index")
     expected = set(by_key) if expected_keys is None else expected_keys
     if not expected.issubset(by_key):
@@ -309,6 +340,9 @@ def _parse_outputs(
                 if item.get("error") or not item.get("response"):
                     raise ValueError(json.dumps(item.get("error") or "Missing response"))
                 response = item["response"]
+                finish_reason = ((response.get("candidates") or [{}])[0].get("finishReason"))
+                if finish_reason and finish_reason != "STOP":
+                    raise ValueError(f"Gemini response did not finish normally: {finish_reason}")
                 label = PatternLabel.model_validate_json(_response_text(response))
                 if label.high_level_pattern not in taxonomy or label.sub_pattern not in taxonomy[label.high_level_pattern]:
                     raise ValueError("Response label is not in the catalog.")
@@ -345,12 +379,15 @@ def collect_batch(output_dir: Path) -> pd.DataFrame:
         raise ValueError("Batch manifest changed after preparation.")
     outputs = []
     expected_keys = set()
+    active_attempt = max(job["attempt"] for job in state["jobs"])
     with _client() as client:
         for job in state["jobs"]:
+            if job["attempt"] != active_attempt:
+                continue
             input_lines = (output_dir / job["input_file"]).read_text(encoding="utf-8").splitlines()
             job_keys = {json.loads(line)["key"] for line in input_lines}
             expected_keys.update(job_keys)
-            if job["status"] not in {"JOB_STATE_SUCCEEDED", "JOB_STATE_PARTIALLY_SUCCEEDED"} or not job.get("output_file_name"):
+            if job["status"] not in {"ACTIVE", "JOB_STATE_SUCCEEDED", "JOB_STATE_PARTIALLY_SUCCEEDED"} or not job.get("output_file_name"):
                 continue
             output = client.files.download(file=job["output_file_name"]).decode("utf-8")
             path = output_dir / ".provider" / f"output-{job['index']:04d}-attempt-{job['attempt']:02d}.jsonl"

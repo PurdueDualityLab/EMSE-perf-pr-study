@@ -1047,7 +1047,7 @@ def build():
     rebuild_if_changed(""ui.py"")
     package()
 ","Faster build times, Smaller build size",Changes in configuration related with build
-Build & Compilation & Infrastructure Optimization,Enable Lazy loading for resource ,"Enabling lazy loading means deferring the loading of a resource until the moment it is actually needed. Instead of allocating memory or performing expensive initialization upfront, the system loads the resource on demand. This reduces startup cost and overall resource usage.","Before:
+Build & Compilation & Infrastructure Optimization,Enable Lazy loading for resource,"Enabling lazy loading means deferring the loading of a resource until the moment it is actually needed. Instead of allocating memory or performing expensive initialization upfront, the system loads the resource on demand. This reduces startup cost and overall resource usage.","Before:
 class ImageProcessor:
     def __init__(self, path):
         self.data = load_image(path)
@@ -1176,7 +1176,7 @@ Most fetched data is never accessed by users;
 High ""Time to Interactive"" metrics;
 Large initial bundle/payload size;
 Analytics show users view <10% of fetched data."
-"Network, Database, and Data Access Optimization", Relational Query Consolidation (N+1),"Replace multiple sequential queries that traverse relationships with a single query that uses relational operations (JOINs, subqueries, or includes) to fetch related data together, eliminating separate round-trips by leveraging the database's ability to perform set-based operations.","// Before: N+1
+"Network, Database, and Data Access Optimization",Relational Query Consolidation (N+1),"Replace multiple sequential queries that traverse relationships with a single query that uses relational operations (JOINs, subqueries, or includes) to fetch related data together, eliminating separate round-trips by leveraging the database's ability to perform set-based operations.","// Before: N+1
 const user = await prisma.user.findUnique({ where: { id } });
 const posts = await user.posts();
 
