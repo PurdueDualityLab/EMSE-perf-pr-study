@@ -1,0 +1,10 @@
+input:
+  balanced_sample: data/data/sample/balanced_sample.parquet
+  expected_rows: 2260
+  expected_sha256: 10f46fae9c880325f6574ca308f1857a4798c2ac1548bd0511502cb8687b357f
+
+github:
+  token_file: mining/github_tokens.txt
+
+output:
+  dir: mining/sample_evidence_v1

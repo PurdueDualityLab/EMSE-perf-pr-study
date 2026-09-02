@@ -16,12 +16,14 @@ from select_human_candidates import (
     require_unique_identities,
     sha256_file,
 )
+from quality_filters import quality_filter_flags
 from schema import atomic_write_text, write_parquet
 
 
-METHOD_NAME = "aidev_performance_weekly_balanced_v1"
+METHOD_NAME = "aidev_performance_weekly_balanced"
 METHOD_VERSION = 1
 DEFAULT_SEED = "emse-primary-human-sample-v1"
+QUALITY_FILTER_ORDER = ("empty_filename", "config_only", "deleted_repo", "merge_only")
 MANIFEST_COLUMNS = (
     *IDENTITY_COLUMNS,
     "html_url",
@@ -63,6 +65,26 @@ def add_weekly_strata(frame: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def apply_sampling_quality_filters(
+    frame: pd.DataFrame, arm: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    flags = quality_filter_flags(frame)
+    keep = pd.Series(True, index=frame.index)
+    exclusions = []
+    for reason in QUALITY_FILTER_ORDER:
+        removed = keep & flags[reason]
+        if removed.any():
+            rows = frame.loc[removed, [*IDENTITY_COLUMNS, "html_url", "created_at"]].copy()
+            rows["sample_arm"] = arm
+            rows["exclusion_reason"] = reason
+            exclusions.append(rows)
+        keep &= ~flags[reason]
+    excluded = pd.concat(exclusions, ignore_index=True) if exclusions else pd.DataFrame(
+        columns=[*IDENTITY_COLUMNS, "html_url", "created_at", "sample_arm", "exclusion_reason"]
+    )
+    return frame.loc[keep].copy(), excluded
+
+
 def _manifest_for_arm(
     frame: pd.DataFrame,
     arm: str,
@@ -100,10 +122,18 @@ def build_balanced_sample_frames(
         raise ValueError("Sampling seed must not be empty.")
     require_unique_identities(agentic, "Agentic population")
     require_unique_identities(humans, "Human-candidate population")
-    agent_keys = set(map(tuple, agentic[list(IDENTITY_COLUMNS)].itertuples(index=False, name=None)))
-    human_keys = set(map(tuple, humans[list(IDENTITY_COLUMNS)].itertuples(index=False, name=None)))
-    if agent_keys & human_keys:
+    input_agent_keys = set(
+        map(tuple, agentic[list(IDENTITY_COLUMNS)].itertuples(index=False, name=None))
+    )
+    input_human_keys = set(
+        map(tuple, humans[list(IDENTITY_COLUMNS)].itertuples(index=False, name=None))
+    )
+    if input_agent_keys & input_human_keys:
         raise ValueError("Agentic and human-candidate populations overlap.")
+    agentic_input_rows = len(agentic)
+    human_input_rows = len(humans)
+    agentic, agentic_excluded = apply_sampling_quality_filters(agentic, "agentic")
+    humans, human_excluded = apply_sampling_quality_filters(humans, "human_candidate")
 
     agentic_strata = add_weekly_strata(agentic)
     human_strata = add_weekly_strata(humans)
@@ -208,6 +238,15 @@ def build_balanced_sample_frames(
         "human_sample": human_sample,
         "balanced_sample": balanced_sample,
         "weekly": weekly,
+        "quality_exclusions": pd.concat(
+            [agentic_excluded, human_excluded], ignore_index=True
+        ),
+        "population_counts": {
+            "agentic_before_quality_filters": agentic_input_rows,
+            "agentic_after_quality_filters": len(agentic),
+            "human_before_quality_filters": human_input_rows,
+            "human_after_quality_filters": len(humans),
+        },
     }
 
 
@@ -255,6 +294,10 @@ def _write_outputs(frames: dict[str, Any], output_dir: Path) -> dict[str, dict[s
         "agentic_sample": (output_dir / "agentic_sample.parquet", frames["agentic_sample"]),
         "human_sample": (output_dir / "human_sample.parquet", frames["human_sample"]),
         "balanced_sample": (output_dir / "balanced_sample.parquet", frames["balanced_sample"]),
+        "quality_exclusions": (
+            output_dir / "quality_exclusions.parquet",
+            frames["quality_exclusions"],
+        ),
     }
     metadata: dict[str, dict[str, object]] = {}
     for name, (path, frame) in outputs.items():
@@ -288,6 +331,7 @@ def build_weekly_balanced_sample(
         output_dir / "agentic_sample.parquet",
         output_dir / "human_sample.parquet",
         output_dir / "balanced_sample.parquet",
+        output_dir / "quality_exclusions.parquet",
         output_dir / "summary.json",
     )
     if not overwrite and any(path.exists() for path in output_paths):
@@ -307,6 +351,7 @@ def build_weekly_balanced_sample(
         "hash_contract": "SHA256(seed + NUL + repo_id + NUL + number)",
         "stratification": "ISO week of created_at in UTC",
         "sampling": "All agentic PRs; human candidates sampled without replacement to the agentic weekly quota.",
+        "eligibility": "Legacy filename, config-only, deleted-repository, and merge-only filters are applied before weekly sampling.",
         "inputs": {
             "task_type": {
                 "path": str(task_type_path.resolve()),
@@ -330,6 +375,14 @@ def build_weekly_balanced_sample(
             "balanced_sample": len(frames["balanced_sample"]),
             "agentic_nonempty_weeks": len(weekly),
             "deficient_weeks": 0,
+            **frames["population_counts"],
+            "quality_exclusions": len(frames["quality_exclusions"]),
+        },
+        "quality_exclusion_counts": {
+            f"{arm}:{reason}": int(count)
+            for (arm, reason), count in frames["quality_exclusions"].groupby(
+                ["sample_arm", "exclusion_reason"]
+            ).size().items()
         },
         "weekly_strata": weekly.to_dict("records"),
         "outputs": outputs,

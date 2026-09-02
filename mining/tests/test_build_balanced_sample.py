@@ -20,6 +20,9 @@ def row(repo_id, number, created_at):
         "number": number,
         "html_url": f"https://github.com/owner/repo/pull/{number}",
         "created_at": created_at,
+        "filenames": ["src/main.py"],
+        "commit_messages": ["perf: optimize"],
+        "deleted_repo": False,
     }
 
 
@@ -115,3 +118,24 @@ def test_weekly_sampling_rejects_overlapping_populations():
 
     with pytest.raises(ValueError, match="overlap"):
         build_balanced_sample_frames(population, population)
+
+
+def test_quality_filters_run_before_weekly_sampling():
+    agentic = pd.DataFrame(
+        [
+            row(1, 1, "2025-01-01T00:00:00Z"),
+            {**row(1, 2, "2025-01-02T00:00:00Z"), "filenames": []},
+        ]
+    )
+    humans = pd.DataFrame(
+        [
+            row(2, 1, "2025-01-01T00:00:00Z"),
+            row(2, 2, "2025-01-02T00:00:00Z"),
+        ]
+    )
+
+    result = build_balanced_sample_frames(agentic, humans)
+
+    assert len(result["balanced_sample"]) == 2
+    assert result["population_counts"]["agentic_after_quality_filters"] == 1
+    assert result["quality_exclusions"]["exclusion_reason"].tolist() == ["empty_filename"]

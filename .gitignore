@@ -14,6 +14,7 @@ mining/experiments/
 mining/manual_review/
 mining/runs/
 mining/release_bundle/
+mining/sample_evidence_v1/
 
 # Local backups and query caches
 mining/backups/
@@ -31,6 +32,9 @@ mining/github_tokens.txt
 
 # Local runtime configuration
 mining/config.local.yaml
+mining/config.evidence.local.yaml
+analysis/rq1_optimization_patterns/results/
+analysis/rq1_optimization_patterns/results_*/
 
 # Python bytecode and test caches
 __pycache__/

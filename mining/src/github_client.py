@@ -296,9 +296,9 @@ class GitHubClient:
     def token(self) -> str:
         return self.token_pool.tokens[self.last_token_index]
 
-    def _headers(self, token: str) -> dict[str, str]:
+    def _headers(self, token: str, accept: str = "application/vnd.github+json") -> dict[str, str]:
         return {
-            "Accept": "application/vnd.github+json",
+            "Accept": accept,
             "Authorization": f"Bearer {token}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
@@ -328,14 +328,25 @@ class GitHubClient:
                 return retry_after
         return self.retry_backoff_seconds * (2 ** retry_number)
 
-    def request(self, path: str, params: dict | None = None) -> dict | list:
+    def request_response(
+        self,
+        path: str,
+        params: dict | None = None,
+        *,
+        accept: str = "application/vnd.github+json",
+    ) -> requests.Response:
         url = path if path.startswith("https://") else f"{self.api_base}{path}"
         transient_retries = 0
         while True:
             token_index, token = self.token_pool.acquire_waiting(url, progress=print)
             self.last_token_index = token_index
             try:
-                response = self.session.get(url, headers=self._headers(token), params=params, timeout=20)
+                response = self.session.get(
+                    url,
+                    headers=self._headers(token, accept),
+                    params=params,
+                    timeout=20,
+                )
             except (requests.Timeout, requests.ConnectionError) as exc:
                 if transient_retries >= self.max_retries:
                     raise GitHubClientError(
@@ -398,7 +409,35 @@ class GitHubClient:
             except Exception as exc:
                 raise GitHubClientError(f"GitHub request failed for {url}: {exc}") from exc
             time.sleep(self.sleep_seconds)
-            return response.json()
+            return response
+
+    def request(self, path: str, params: dict | None = None) -> dict | list:
+        return self.request_response(path, params).json()
+
+    def request_paginated_list(
+        self,
+        path: str,
+        params: dict | None = None,
+        *,
+        item_key: str | None = None,
+    ) -> list[dict]:
+        values: list[dict] = []
+        page = 1
+        while True:
+            page_params = {**(params or {}), "per_page": 100, "page": page}
+            payload = self.request(path, page_params)
+            if item_key is not None:
+                if not isinstance(payload, dict) or not isinstance(payload.get(item_key), list):
+                    raise GitHubClientError(f"GitHub response for {path} is missing list {item_key!r}.")
+                items = payload[item_key]
+            else:
+                if not isinstance(payload, list):
+                    raise GitHubClientError(f"GitHub response for {path} is not a list.")
+                items = payload
+            values.extend(item for item in items if isinstance(item, dict))
+            if len(items) < 100:
+                return values
+            page += 1
 
     def search_pull_requests(
         self,

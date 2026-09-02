@@ -19,6 +19,11 @@ fsspec==2026.4.0
 # Hugging Face
 huggingface_hub==0.36.2
 
+# Analysis APIs
+openai==2.8.1
+google-genai==2.19.0
+pydantic==2.13.4
+
 # tiktoken
 tiktoken==0.12.0
 

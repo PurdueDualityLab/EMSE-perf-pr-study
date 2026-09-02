@@ -100,7 +100,9 @@ candidates and excludes 3,447 records.
   --output-dir mining/aidev_weekly_balanced_sample_v1
 ```
 
-All 1,356 agentic performance PRs are retained. Human candidates are sampled
+The legacy filename, config-only, deleted-repository, and merge-only filters
+are applied before sampling. All 1,130 eligible agentic performance PRs are
+retained, and human candidates are sampled
 without replacement to the same quota in each ISO week using seed
 `emse-primary-human-sample-v1` and ordering hash
 `SHA256(seed + NUL + repo_id + NUL + number)`.

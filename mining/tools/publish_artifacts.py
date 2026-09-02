@@ -37,14 +37,15 @@ ARTIFACTS = (
     Artifact("mining/aidev_human_candidates_v1/decisions.parquet", "data/human/decisions.parquet", "human_filtering", 28_127, "72922a804a87063867927f12dc39e8eabfb3a1230905153aa9ff31ba13b5105b"),
     Artifact("mining/aidev_human_candidates_v1/human_candidates.parquet", "data/human/human_candidates.parquet", "human_filtering", 24_680, "b08525d2c6e634c6ed667000bf24d22cc956b85ca5a844a6acbbeb24ff79637f"),
     Artifact("mining/aidev_human_candidates_v1/excluded_from_human_candidates.parquet", "data/human/excluded.parquet", "human_filtering", 3_447, "5c6813a81251e963bac43ec03f5a5249d24d4ab5125b2734544d399a1b9a6e19"),
-    Artifact("mining/aidev_weekly_balanced_sample_v1/agentic_sample.parquet", "data/sample/agentic_sample.parquet", "weekly_sampling", 1_356, "d2e18627c868a67491c7580d50cb57d275ec21813c41d4e68d80701849eb1cb1"),
-    Artifact("mining/aidev_weekly_balanced_sample_v1/human_sample.parquet", "data/sample/human_sample.parquet", "weekly_sampling", 1_356, "1891c8c679ee82df50fe910e2379b4ff55a6f310e7a2662524ccfc71e44da6e5"),
-    Artifact("mining/aidev_weekly_balanced_sample_v1/balanced_sample.parquet", "data/sample/balanced_sample.parquet", "weekly_sampling", 2_712, "8f72f6d4d92a6817abbbcdc06db61ec45e0674560eaca93c6071e1f85166d078"),
-    Artifact("mining/aidev_weekly_balanced_sample_v1/sampling_manifest.parquet", "data/sample/sampling_manifest.parquet", "weekly_sampling", 26_036, "4ef5ff011a65162ae7717a064eb8dcf34aab6c14d69f1eb7fb46e8a20d3096c2"),
-    Artifact("mining/aidev_weekly_balanced_sample_v1/weekly_strata.parquet", "data/sample/weekly_strata.parquet", "weekly_sampling", 67, "d3a7db0c0fd1f1abab1e1d4239958c94074605723ff1609712e729ba7477ca62"),
+    Artifact("mining/aidev_weekly_balanced_sample_v1/agentic_sample.parquet", "data/sample/agentic_sample.parquet", "weekly_sampling", 1_130, "66643a58480668ef62295e1d3cf3c162cb89a79a81d6741fac7bec2ddbb1820e"),
+    Artifact("mining/aidev_weekly_balanced_sample_v1/human_sample.parquet", "data/sample/human_sample.parquet", "weekly_sampling", 1_130, "66970968eba6666b752f1306fe204d215f424e8aab086d71bfc78084e06ea835"),
+    Artifact("mining/aidev_weekly_balanced_sample_v1/balanced_sample.parquet", "data/sample/balanced_sample.parquet", "weekly_sampling", 2_260, "10f46fae9c880325f6574ca308f1857a4798c2ac1548bd0511502cb8687b357f"),
+    Artifact("mining/aidev_weekly_balanced_sample_v1/sampling_manifest.parquet", "data/sample/sampling_manifest.parquet", "weekly_sampling", 25_365, "ad11ad502cc689608278993225bb59e1568e51377d710fed3da072f649b3a1b5"),
+    Artifact("mining/aidev_weekly_balanced_sample_v1/weekly_strata.parquet", "data/sample/weekly_strata.parquet", "weekly_sampling", 65, "670eabaaf28672a10966de3112067000ebfc70f6e0aa0016249191da5e878027"),
+    Artifact("mining/aidev_weekly_balanced_sample_v1/quality_exclusions.parquet", "data/sample/quality_exclusions.parquet", "weekly_sampling", 671, "09a67ecf51e4cb4945b5f00ab65939708cdf912fed437600a0c82cf05c6b055b"),
     Artifact("mining/curated_labels_v1/pull_request_labels.parquet", "data/curated/pull_request_labels.parquet", "curated_labels", 1_603_213, "f058825dfbc1c56f621a03ccef9480d06dcedab13e138e7e4cd97fbd1a60117a"),
     Artifact("analysis/rq1_optimization_patterns/catalog/original_optimization_catalog.csv", "data/catalog/original_optimization_catalog.csv", "rq1_catalog", 43, "a951a9acf91ebe9a775009e95d187a3ea59f5a4ae4b2875d5ebc9788c1bc6d1e", "csv"),
-    Artifact("analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv", "data/catalog/updated_optimization_catalog.csv", "rq1_catalog", 58, "ecd45d96500fa6663d21d0b280e77be7dfd8528544d7cbddf4522efc36e91c10", "csv"),
+    Artifact("analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv", "data/catalog/updated_optimization_catalog.csv", "rq1_catalog", 58, "8a4b2e59a83a3994ee228515ba47ce2712c43112df3070640ea0b3ef7fcf803c", "csv"),
 )
 
 SUMMARIES = {
@@ -166,10 +167,10 @@ agentic and human-candidate performance pull requests.
 
 - Raw pull requests: 1,603,213
 - Performance pull requests: 29,483
-- Agentic performance pull requests: 1,356
+- Eligible agentic performance pull requests after legacy quality filters: 1,130
 - Strict human candidates: 24,680
-- Final balanced sample: 1,356 agentic and 1,356 human candidates
-- Weekly strata: 67 ISO weeks in UTC
+- Final balanced sample: 1,130 agentic and 1,130 human candidates
+- Weekly strata: 65 ISO weeks in UTC
 
 "Human candidate" means no selected observable coding-agent signal was found;
 it does not establish human authorship. The performance classifier retains six
