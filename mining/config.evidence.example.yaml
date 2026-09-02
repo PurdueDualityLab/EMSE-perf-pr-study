@@ -7,4 +7,4 @@ github:
   token_file: mining/github_tokens.txt
 
 output:
-  dir: mining/sample_evidence_v1
+  dir: mining/sample_evidence

@@ -44,12 +44,12 @@ reasoning. Primary type preserves a single-label comparison with prior analyses.
 ```bash
 .venv/bin/python analysis/rq2_validation/run_rq2.py prepare-sample \
   --source-sample data/data/sample/balanced_sample.parquet \
-  --evidence-dir mining/sample_evidence_v1/final \
+  --evidence-dir mining/sample_evidence/final \
   --output-dir analysis/rq2_validation/sample
 
 .venv/bin/python analysis/rq2_validation/run_rq2.py prepare \
   --sample analysis/rq2_validation/sample/balanced_sample.parquet \
-  --evidence-dir mining/sample_evidence_v1/final \
+  --evidence-dir mining/sample_evidence/final \
   --output-dir analysis/rq2_validation/results_gpt
 
 .venv/bin/python analysis/rq2_validation/run_rq2.py submit \

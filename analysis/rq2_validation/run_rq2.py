@@ -390,7 +390,7 @@ def prepare_analysis_sample(
     )
     exclusions.to_parquet(exclusions_path, index=False)
     metadata = {
-        "method": "rq2_complete_observability_balanced_subset_v1",
+        "method": "rq2_complete_observability_balanced_subset",
         "source_sample": str(source_sample_path),
         "source_sample_sha256": sha256_file(source_sample_path),
         "evidence_status_sha256": sha256_file(evidence_dir / "collection_status.parquet"),

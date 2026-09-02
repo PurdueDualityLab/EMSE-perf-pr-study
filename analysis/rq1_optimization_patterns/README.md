@@ -26,7 +26,7 @@ Gemini 3.1 Pro Preview Batch API classifiers, and supporting analysis notebooks.
 ```bash
 .venv/bin/python analysis/rq1_optimization_patterns/run_rq1.py prepare \
   --sample data/data/sample/balanced_sample.parquet \
-  --evidence-dir mining/sample_evidence_v1/final \
+  --evidence-dir mining/sample_evidence/final \
   --catalog analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv \
   --output-dir analysis/rq1_optimization_patterns/results_gpt
 

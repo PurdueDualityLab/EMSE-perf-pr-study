@@ -14,7 +14,7 @@ mining/experiments/
 mining/manual_review/
 mining/runs/
 mining/release_bundle/
-mining/sample_evidence_v1/
+mining/sample_evidence/
 
 # Local backups and query caches
 mining/backups/
