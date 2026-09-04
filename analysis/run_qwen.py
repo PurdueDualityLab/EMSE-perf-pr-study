@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -71,6 +72,7 @@ def provider_config(
     schema: dict[str, Any],
     think: bool,
     num_ctx: int,
+    num_predict: int = 4_096,
 ) -> dict[str, Any]:
     return {
         "provider_config_version": 1,
@@ -84,10 +86,18 @@ def provider_config(
             "temperature": 0,
             "seed": 42,
             "num_ctx": num_ctx,
-            "num_predict": 4_096,
+            "num_predict": num_predict,
         },
         "response_schema_sha256": run_rq1.sha256_json(schema),
     }
+
+
+def bounded_rq2_retry_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    bounded = copy.deepcopy(schema)
+    properties = bounded["properties"]
+    properties["validation_types"]["maxItems"] = len(run_rq2.VALIDATION_TYPES)
+    properties["evidence_sources"]["maxItems"] = len(run_rq2.EVIDENCE_SOURCES)
+    return bounded
 
 
 def ollama_chat(
@@ -98,6 +108,7 @@ def ollama_chat(
     schema: dict[str, Any],
     think: bool,
     num_ctx: int,
+    num_predict: int,
     timeout: float,
 ) -> dict[str, Any]:
     payload = {
@@ -114,7 +125,7 @@ def ollama_chat(
             "temperature": 0,
             "seed": 42,
             "num_ctx": num_ctx,
-            "num_predict": 4_096,
+            "num_predict": num_predict,
         },
     }
     request = urllib.request.Request(
@@ -280,18 +291,147 @@ def prepare_study(study: Study, config: dict[str, Any]) -> tuple[pd.DataFrame, p
 
 def _validated_label(study: Study, content: str, taxonomy: dict[str, list[str]] | None) -> BaseModel:
     if study.name == "rq1":
-        label = run_rq1.PatternLabel.model_validate_json(content)
         assert taxonomy is not None
+        return pattern_label_with_adjudication(content, taxonomy)[0]
+    return run_rq2.ValidationLabel.model_validate_json(content)
+
+
+def pattern_label_with_adjudication(
+    content: str, taxonomy: dict[str, list[str]]
+) -> tuple[run_rq1.PatternLabel, dict[str, str] | None]:
+    label = run_rq1.PatternLabel.model_validate_json(content)
+    if (
+        label.high_level_pattern in taxonomy
+        and label.sub_pattern in taxonomy[label.high_level_pattern]
+    ):
+        return label, None
+    candidates = [
+        (parent, sub_pattern)
+        for parent, sub_patterns in taxonomy.items()
+        for sub_pattern in sub_patterns
+        if sub_pattern == label.sub_pattern
+        or sub_pattern.rstrip(")") == label.sub_pattern.rstrip(")")
+        or sub_pattern.startswith(label.sub_pattern)
+    ]
+    if len(candidates) != 1:
         if label.high_level_pattern not in taxonomy:
             raise ValueError(f"Unknown high-level pattern: {label.high_level_pattern}")
-        if label.sub_pattern not in taxonomy[label.high_level_pattern]:
-            raise ValueError(f"Invalid sub-pattern for {label.high_level_pattern}: {label.sub_pattern}")
-        return label
-    return run_rq2.ValidationLabel.model_validate_json(content)
+        raise ValueError(
+            f"Invalid sub-pattern for {label.high_level_pattern}: {label.sub_pattern}"
+        )
+    parent, sub_pattern = candidates[0]
+    corrected = label.model_copy(
+        update={"high_level_pattern": parent, "sub_pattern": sub_pattern}
+    )
+    return corrected, {
+        "original_high_level_pattern": label.high_level_pattern,
+        "original_sub_pattern": label.sub_pattern,
+        "corrected_high_level_pattern": parent,
+        "corrected_sub_pattern": sub_pattern,
+        "adjudication_rule": "Preserve the model sub-pattern and use its unique catalog parent.",
+        "authorization": "Study owner approved deterministic unique-parent adjudication.",
+    }
+
+
+def validation_label_with_normalization(
+    content: str,
+) -> tuple[run_rq2.ValidationLabel, dict[str, Any] | None]:
+    value = json.loads(content)
+    changes = {}
+    for field in ("validation_types", "evidence_sources"):
+        original = value.get(field)
+        if not isinstance(original, list):
+            continue
+        normalized = list(dict.fromkeys(original))
+        if normalized != original:
+            changes[field] = {"original": original, "normalized": normalized}
+            value[field] = normalized
+    label = run_rq2.ValidationLabel.model_validate(value)
+    if not changes:
+        return label, None
+    return label, {
+        "changes": changes,
+        "normalization_rule": "Remove duplicate set-like labels while preserving first-seen order.",
+        "authorization": "Study owner approved semantics-preserving duplicate normalization.",
+    }
 
 
 def _checkpoint_path(study: Study, custom_id: str) -> Path:
     return study.output_dir / "responses" / f"{custom_id.replace(':', '-')}.json"
+
+
+def record_adjudication(output_dir: Path, custom_id: str, value: dict[str, str]) -> None:
+    path = output_dir / "taxonomy_adjudications.json"
+    rows = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+    by_id = {row["custom_id"]: row for row in rows}
+    by_id[custom_id] = {"custom_id": custom_id, **value}
+    atomic_write_json(path, [by_id[key] for key in sorted(by_id)])
+
+
+def record_normalization(output_dir: Path, custom_id: str, value: dict[str, Any]) -> None:
+    path = output_dir / "label_normalizations.json"
+    rows = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+    by_id = {row["custom_id"]: row for row in rows}
+    by_id[custom_id] = {"custom_id": custom_id, **value}
+    atomic_write_json(path, [by_id[key] for key in sorted(by_id)])
+
+
+def adjudicate_error_checkpoints(
+    study: Study,
+    manifest: pd.DataFrame,
+    taxonomy: dict[str, list[str]],
+) -> int:
+    corrected = 0
+    for custom_id in manifest["custom_id"]:
+        path = _checkpoint_path(study, custom_id)
+        if not path.exists():
+            continue
+        checkpoint = json.loads(path.read_text(encoding="utf-8"))
+        if checkpoint.get("classification_status") != "error" or not checkpoint.get("response"):
+            continue
+        content = (checkpoint["response"].get("message") or {}).get("content", "")
+        try:
+            label, adjudication = pattern_label_with_adjudication(content, taxonomy)
+        except ValueError:
+            continue
+        if adjudication is None:
+            continue
+        checkpoint["original_error"] = checkpoint.get("error")
+        checkpoint["error"] = None
+        checkpoint["classification_status"] = "classified"
+        checkpoint["label"] = label.model_dump()
+        checkpoint["taxonomy_adjudication"] = adjudication
+        atomic_write_json(path, checkpoint)
+        record_adjudication(study.output_dir, custom_id, adjudication)
+        corrected += 1
+    return corrected
+
+
+def normalize_rq2_error_checkpoints(study: Study, manifest: pd.DataFrame) -> int:
+    corrected = 0
+    for custom_id in manifest["custom_id"]:
+        path = _checkpoint_path(study, custom_id)
+        if not path.exists():
+            continue
+        checkpoint = json.loads(path.read_text(encoding="utf-8"))
+        if checkpoint.get("classification_status") != "error" or not checkpoint.get("response"):
+            continue
+        content = (checkpoint["response"].get("message") or {}).get("content", "")
+        try:
+            label, normalization = validation_label_with_normalization(content)
+        except (ValueError, json.JSONDecodeError):
+            continue
+        if normalization is None:
+            continue
+        checkpoint["original_error"] = checkpoint.get("error")
+        checkpoint["error"] = None
+        checkpoint["classification_status"] = "classified"
+        checkpoint["label"] = label.model_dump()
+        checkpoint["label_normalization"] = normalization
+        atomic_write_json(path, checkpoint)
+        record_normalization(study.output_dir, custom_id, normalization)
+        corrected += 1
+    return corrected
 
 
 def collect_checkpoints(study: Study, manifest: pd.DataFrame, metadata: dict[str, Any]) -> pd.DataFrame:
@@ -308,6 +448,9 @@ def collect_checkpoints(study: Study, manifest: pd.DataFrame, metadata: dict[str
             "classification_status": checkpoint["classification_status"],
             "attempts": checkpoint["attempts"],
             "error": checkpoint.get("error"),
+            "response_provider_config_sha256": checkpoint.get(
+                "response_provider_config_sha256", item["provider_config_sha256"]
+            ),
         }
         response = checkpoint.get("response") or {}
         row.update(
@@ -348,10 +491,68 @@ def write_outputs(study: Study, manifest: pd.DataFrame, metadata: dict[str, Any]
     return result
 
 
+def select_manifest(manifest: pd.DataFrame, limit_per_arm: int | None) -> pd.DataFrame:
+    if limit_per_arm is None:
+        return manifest
+    selected = (
+        manifest.sort_values(["sample_arm", "repo_id", "number"], kind="mergesort")
+        .groupby("sample_arm", sort=True, group_keys=False)
+        .head(limit_per_arm)
+    )
+    expected = manifest["sample_arm"].nunique() * limit_per_arm
+    if len(selected) != expected:
+        raise ValueError("Smoke selection does not contain the requested rows for every sample arm.")
+    return selected.sort_values(["repo_id", "number"], kind="mergesort").reset_index(drop=True)
+
+
 def run_study(study: Study, args: argparse.Namespace) -> bool:
     schema = study.module.semantic_schema()
-    config = provider_config(args.model, args.ollama_url, schema, args.think, args.num_ctx)
+    config = provider_config(
+        args.model, args.ollama_url, schema, args.think, args.num_ctx, args.num_predict
+    )
     frame, manifest, metadata = prepare_study(study, config)
+    run_manifest = select_manifest(manifest, args.limit_per_arm)
+    retry_config = None
+    request_schema = schema
+    if args.retry_errors_num_predict is not None:
+        error_ids = []
+        for custom_id in manifest["custom_id"]:
+            path = _checkpoint_path(study, custom_id)
+            if not path.exists():
+                continue
+            checkpoint = json.loads(path.read_text(encoding="utf-8"))
+            if checkpoint.get("classification_status") == "error":
+                error_ids.append(custom_id)
+        run_manifest = manifest[manifest["custom_id"].isin(error_ids)].copy()
+        if study.name == "rq2" and args.bound_rq2_retry_lists:
+            request_schema = bounded_rq2_retry_schema(schema)
+        retry_config = provider_config(
+            args.model,
+            args.ollama_url,
+            request_schema,
+            args.think,
+            args.num_ctx,
+            args.retry_errors_num_predict,
+        )
+        atomic_write_json(
+            study.output_dir / "retry_provider_config.json",
+            {
+                "errors_selected": len(run_manifest),
+                "bounded_rq2_lists": request_schema != schema,
+                "provider_config": retry_config,
+                "provider_config_sha256": run_rq1.sha256_json(retry_config),
+            },
+        )
+    if args.limit_per_arm is not None:
+        atomic_write_json(
+            study.output_dir / "smoke_metadata.json",
+            {
+                "limit_per_arm": args.limit_per_arm,
+                "requests": len(run_manifest),
+                "custom_ids": run_manifest["custom_id"].tolist(),
+                "full_manifest_requests": len(manifest),
+            },
+        )
     rows = frame.assign(
         custom_id=lambda value: value["repo_id"].astype(str) + ":" + value["number"].astype(str)
     ).set_index("custom_id").to_dict("index")
@@ -359,8 +560,12 @@ def run_study(study: Study, args: argparse.Namespace) -> bool:
     if study.name == "rq1":
         taxonomy_frame = run_rq1.load_taxonomy(study.output_dir / metadata["catalog_file"])
         taxonomy = run_rq1.taxonomy_labels(taxonomy_frame)
+        if args.adjudicate_unique_parents:
+            adjudicate_error_checkpoints(study, manifest, taxonomy)
+    elif args.normalize_duplicate_labels:
+        normalize_rq2_error_checkpoints(study, manifest)
     consecutive_errors = 0
-    for item in manifest.to_dict("records"):
+    for item in run_manifest.to_dict("records"):
         if STOP_REQUESTED:
             return False
         checkpoint_path = _checkpoint_path(study, item["custom_id"])
@@ -369,20 +574,49 @@ def run_study(study: Study, args: argparse.Namespace) -> bool:
             checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
             if checkpoint.get("classification_status") == "classified":
                 continue
+            if (
+                args.defer_length_errors
+                and args.retry_errors_num_predict is None
+                and (checkpoint.get("response") or {}).get("done_reason") == "length"
+            ):
+                continue
             if int(checkpoint.get("attempts", 0)) >= args.max_attempts:
                 continue
         row = rows[item["custom_id"]]
         prompt = study.module.prompt_for(row, taxonomy_frame) if study.name == "rq1" else study.module.prompt_for(row)
         attempts = int(checkpoint.get("attempts", 0)) + 1
+        if checkpoint and args.retry_errors_num_predict is not None:
+            history_path = (
+                study.output_dir / "response_history"
+                / f"{item['custom_id'].replace(':', '-')}-attempt-{attempts - 1}.json"
+            )
+            if not history_path.exists():
+                atomic_write_json(history_path, checkpoint)
         started = time.monotonic()
         response = None
+        request_config = retry_config or config
         try:
             response = ollama_chat(
                 config["endpoint"], args.model, study.module.SYSTEM_INSTRUCTION,
-                prompt, schema, args.think, args.num_ctx, args.timeout,
+                prompt,
+                request_schema,
+                args.think,
+                args.num_ctx,
+                request_config["options"]["num_predict"],
+                args.timeout,
             )
             content = (response.get("message") or {}).get("content", "")
-            label = _validated_label(study, content, taxonomy)
+            if study.name == "rq1" and args.adjudicate_unique_parents:
+                assert taxonomy is not None
+                label, adjudication = pattern_label_with_adjudication(content, taxonomy)
+                normalization = None
+            elif study.name == "rq2" and args.normalize_duplicate_labels:
+                label, normalization = validation_label_with_normalization(content)
+                adjudication = None
+            else:
+                label = _validated_label(study, content, taxonomy)
+                adjudication = None
+                normalization = None
         except Exception as error:
             atomic_write_json(
                 checkpoint_path,
@@ -394,15 +628,14 @@ def run_study(study: Study, args: argparse.Namespace) -> bool:
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                     "error": f"{type(error).__name__}: {error}"[:1_000],
                     "response": response,
+                    "response_provider_config_sha256": run_rq1.sha256_json(request_config),
                 },
             )
             consecutive_errors += 1
             if consecutive_errors >= args.max_consecutive_errors:
                 raise RuntimeError(f"Stopping after {consecutive_errors} consecutive Ollama errors.") from error
         else:
-            atomic_write_json(
-                checkpoint_path,
-                {
+            checkpoint_value = {
                     "custom_id": item["custom_id"],
                     "classification_status": "classified",
                     "attempts": attempts,
@@ -410,15 +643,22 @@ def run_study(study: Study, args: argparse.Namespace) -> bool:
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                     "label": label.model_dump(),
                     "response": response,
-                },
-            )
+                    "response_provider_config_sha256": run_rq1.sha256_json(request_config),
+                }
+            if adjudication is not None:
+                checkpoint_value["taxonomy_adjudication"] = adjudication
+                record_adjudication(study.output_dir, item["custom_id"], adjudication)
+            if normalization is not None:
+                checkpoint_value["label_normalization"] = normalization
+                record_normalization(study.output_dir, item["custom_id"], normalization)
+            atomic_write_json(checkpoint_path, checkpoint_value)
             consecutive_errors = 0
-        completed = len(collect_checkpoints(study, manifest, metadata))
+        completed = len(collect_checkpoints(study, run_manifest, metadata))
         atomic_write_json(
             study.output_dir / "run_state.json",
-            {"study": study.name, "completed_checkpoints": completed, "requests": len(manifest)},
+            {"study": study.name, "completed_checkpoints": completed, "requests": len(run_manifest)},
         )
-    write_outputs(study, manifest, metadata)
+    write_outputs(study, manifest if args.retry_errors_num_predict is not None else run_manifest, metadata)
     return True
 
 
@@ -439,13 +679,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rq1-catalog", type=Path, default=ROOT / "analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv")
     parser.add_argument("--rq2-sample", type=Path, default=ROOT / "analysis/rq2_validation/sample/balanced_sample.parquet")
     parser.add_argument("--num-ctx", type=int, default=65_536)
+    parser.add_argument("--num-predict", type=int, default=4_096)
     parser.add_argument("--timeout", type=float, default=900)
     parser.add_argument("--max-attempts", type=int, default=3)
     parser.add_argument("--max-consecutive-errors", type=int, default=5)
+    parser.add_argument("--limit-per-arm", type=int)
+    parser.add_argument("--adjudicate-unique-parents", action="store_true")
+    parser.add_argument("--normalize-duplicate-labels", action="store_true")
+    parser.add_argument("--defer-length-errors", action="store_true")
+    parser.add_argument("--retry-errors-num-predict", type=int)
+    parser.add_argument("--bound-rq2-retry-lists", action="store_true")
     parser.add_argument("--think", action=argparse.BooleanOptionalAction, default=True)
     args = parser.parse_args()
-    if args.max_attempts < 1 or args.max_consecutive_errors < 1 or args.num_ctx < 1 or args.timeout <= 0:
+    if (
+        args.max_attempts < 1
+        or args.max_consecutive_errors < 1
+        or args.num_ctx < 1
+        or args.num_predict < 1
+        or (args.retry_errors_num_predict is not None and args.retry_errors_num_predict < 1)
+        or args.timeout <= 0
+        or (args.limit_per_arm is not None and args.limit_per_arm < 1)
+    ):
         parser.error("attempt limits, num-ctx, and timeout must be positive")
+    if args.bound_rq2_retry_lists and args.retry_errors_num_predict is None:
+        parser.error("--bound-rq2-retry-lists requires --retry-errors-num-predict")
     return args
 
 
