@@ -46,6 +46,12 @@ ARTIFACTS = (
     Artifact("mining/curated_labels_v1/pull_request_labels.parquet", "data/curated/pull_request_labels.parquet", "curated_labels", 1_603_213, "f058825dfbc1c56f621a03ccef9480d06dcedab13e138e7e4cd97fbd1a60117a"),
     Artifact("analysis/rq1_optimization_patterns/catalog/original_optimization_catalog.csv", "data/catalog/original_optimization_catalog.csv", "rq1_catalog", 43, "a951a9acf91ebe9a775009e95d187a3ea59f5a4ae4b2875d5ebc9788c1bc6d1e", "csv"),
     Artifact("analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv", "data/catalog/updated_optimization_catalog.csv", "rq1_catalog", 58, "8a4b2e59a83a3994ee228515ba47ce2712c43112df3070640ea0b3ef7fcf803c", "csv"),
+    Artifact("analysis/rq1_optimization_patterns/results_gpt/optimization_pattern_labels_complete.parquet", "data/rq1/optimization_pattern_labels_gpt.parquet", "rq1_model_labels", 2_260, "6a34304ec4de221cd28108265b6d5787c5d684d2f444240253ff8cc898ce632b"),
+    Artifact("analysis/rq1_optimization_patterns/results_gemini/optimization_pattern_labels.parquet", "data/rq1/optimization_pattern_labels_gemini.parquet", "rq1_model_labels", 2_260, "fcb5e01a0da93f7718e6f2fa1dd4417c8e467b8c5b1c9da7df70205d4ec4e96a"),
+    Artifact("analysis/rq1_optimization_patterns/results_qwen/optimization_pattern_labels.parquet", "data/rq1/optimization_pattern_labels_qwen.parquet", "rq1_model_labels", 2_260, "69df410be22b738fbaef95385e04f8df755564e6a12578a85870ca9e833f719f"),
+    Artifact("analysis/rq2_validation/results_gpt/validation_labels_complete.parquet", "data/rq2/performance_validation_labels_gpt.parquet", "rq2_model_labels", 2_258, "88fe2f918cc4d436a459f0c13ea5718a6ef37f896884088d552d8a876801f2a6"),
+    Artifact("analysis/rq2_validation/results_gemini/validation_labels.parquet", "data/rq2/performance_validation_labels_gemini.parquet", "rq2_model_labels", 2_258, "0a8e964ac6d9623e916e3478a9f1c688ec4c8667af5c74fbc79fe97bc7e675aa"),
+    Artifact("analysis/rq2_validation/results_qwen/validation_labels.parquet", "data/rq2/performance_validation_labels_qwen.parquet", "rq2_model_labels", 2_258, "7e455ad4028bcecdfd42ec3a74443195fdf3667b20c9b5f995415a06211eeb33"),
 )
 
 SUMMARIES = {
@@ -156,6 +162,22 @@ configs:
   data_files:
   - split: catalog
     path: data/catalog/updated_optimization_catalog.csv
+- config_name: rq1-model-labels
+  data_files:
+  - split: gpt
+    path: data/rq1/optimization_pattern_labels_gpt.parquet
+  - split: gemini
+    path: data/rq1/optimization_pattern_labels_gemini.parquet
+  - split: qwen
+    path: data/rq1/optimization_pattern_labels_qwen.parquet
+- config_name: rq2-model-labels
+  data_files:
+  - split: gpt
+    path: data/rq2/performance_validation_labels_gpt.parquet
+  - split: gemini
+    path: data/rq2/performance_validation_labels_gemini.parquet
+  - split: qwen
+    path: data/rq2/performance_validation_labels_qwen.parquet
 ---
 
 # Performance Pull Request Study
@@ -188,6 +210,12 @@ combining tables that have different schemas.
 
 The optimization catalog subsets expose the original and study-refined RQ1
 taxonomies as separate tables.
+
+The `rq1-model-labels` and `rq2-model-labels` subsets expose the complete,
+validated outputs from GPT-5.6-sol, Gemini 3.1 Pro Preview, and Qwen3.8 27B as
+separate splits. These are model-specific labels for agreement analysis, not a
+human-adjudicated ground truth. Provider responses, prompts, and operational
+retry checkpoints are intentionally excluded.
 
 The `curated-labels` subset provides one compact row per pull request with
 agentic attribution, task type, the derived performance indicator, strict

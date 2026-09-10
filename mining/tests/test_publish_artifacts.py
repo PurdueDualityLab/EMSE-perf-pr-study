@@ -56,6 +56,20 @@ def test_dataset_card_declares_curated_labels():
     assert "path: data/curated/pull_request_labels.parquet" in card
 
 
+def test_dataset_card_declares_model_specific_rq_labels():
+    card = publish.dataset_card()
+
+    assert "config_name: rq1-model-labels" in card
+    assert "path: data/rq1/optimization_pattern_labels_gpt.parquet" in card
+    assert "path: data/rq1/optimization_pattern_labels_gemini.parquet" in card
+    assert "path: data/rq1/optimization_pattern_labels_qwen.parquet" in card
+    assert "config_name: rq2-model-labels" in card
+    assert "path: data/rq2/performance_validation_labels_gpt.parquet" in card
+    assert "path: data/rq2/performance_validation_labels_gemini.parquet" in card
+    assert "path: data/rq2/performance_validation_labels_qwen.parquet" in card
+    assert "human-adjudicated ground truth" in card
+
+
 def test_inspect_table_reads_csv_rows_and_columns(tmp_path):
     table = tmp_path / "catalog.csv"
     table.write_text("pattern,description\nCaching,Reuse values\n", encoding="utf-8")
