@@ -1,7 +1,8 @@
 # RQ1 Optimization Patterns
 
-This directory contains the optimization-pattern catalog, GPT-5.6-sol and
-Gemini 3.1 Pro Preview Batch API classifiers, and supporting analysis notebooks.
+This directory contains the optimization-pattern catalog, GPT-5.6-sol, Gemini
+3.1 Pro Preview, and Qwen3.8-27B classifiers, consensus construction, and
+supporting analyses.
 
 ## Contents
 
@@ -10,6 +11,9 @@ Gemini 3.1 Pro Preview Batch API classifiers, and supporting analysis notebooks.
   sample and handles provider job limits internally.
 - `analyze_rq1_agreement.py`: calculates agreement and Cohen's kappa globally and
   by sample arm, then exports agreements and human-review candidates.
+- `build_rq1_consensus.py`: builds strict atomic two-of-three consensus labels.
+- `analyze_rq1_comparison.py`: compares study arms and exports statistical
+  tables, a machine-readable summary, and a figure.
 - `adjudicate_gemini_parent_labels.py`: applies an explicitly authorized,
   auditable correction when Gemini returns a catalog sub-pattern under the wrong
   high-level parent.
@@ -89,3 +93,24 @@ responses into the same logical result. OpenAI exposes `prepare-retry` and
 `merge-retry`. Agreement requires the complete balanced sample and refuses to
 calculate kappa while either model still has errors or the study contracts and
 per-row input hashes differ.
+
+## Consensus and Comparison
+
+After all three model-specific label tables are complete:
+
+```bash
+.venv/bin/python analysis/rq1_optimization_patterns/build_rq1_consensus.py
+.venv/bin/python analysis/rq1_optimization_patterns/analyze_rq1_comparison.py
+```
+
+Consensus is computed over the atomic `(high_level_pattern, sub_pattern)` pair.
+Rows without an exact two-of-three majority remain unresolved. The primary
+comparison preserves the previous paper's chi-square, Cramer's V, permutation,
+and rarefaction analyses. The generated grouped-bar figure also preserves the
+previous ordering, normalization, labels, and layout while reading the new
+consensus table.
+
+The machine-readable output additionally includes repository-cluster bootstrap
+intervals and category-level Fisher tests with Holm correction. These are
+retained as optional robustness instruments and are not part of the paper's
+primary RQ1 analysis.

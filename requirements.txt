@@ -4,6 +4,10 @@ numpy==2.5.1
 # pandas
 pandas==3.0.3
 
+# Statistical analysis and plotting
+scipy==1.18.1
+matplotlib==3.11.2
+
 # Apache Arrow
 pyarrow==24.0.0
 

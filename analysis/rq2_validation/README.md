@@ -1,9 +1,8 @@
 # RQ2 Performance Validation
 
 This directory classifies the performance-validation evidence reported in a
-complete-observability subset of the balanced PR sample used by RQ1. GPT-5.6-sol
-and Gemini 3.1 Pro Preview classify every PR independently through their Batch
-APIs.
+complete-observability subset of the balanced PR sample used by RQ1. GPT-5.6-sol,
+Gemini 3.1 Pro Preview, and Qwen3.8-27B classify every PR independently.
 
 ## Method
 
@@ -103,3 +102,31 @@ OpenAI completed 1,233 requests before its credit balance was exhausted; an
 identity-preserving retry classified the remaining 1,025. Gemini completed four
 provider jobs and required one retry for a response truncated at the output-token
 limit. Both final outputs contain 2,258 classified rows with no schema errors.
+
+## Consensus and Comparison
+
+```bash
+.venv/bin/python analysis/rq2_validation/build_rq2_consensus.py \
+  --gpt analysis/rq2_validation/results_gpt/validation_labels_complete.parquet \
+  --gemini analysis/rq2_validation/results_gemini/validation_labels.parquet \
+  --qwen analysis/rq2_validation/results_qwen/validation_labels.parquet \
+  --sample analysis/rq2_validation/sample/balanced_sample.parquet \
+  --output-dir analysis/rq2_validation/consensus
+
+.venv/bin/python analysis/rq2_validation/analyze_rq2_comparison.py \
+  --consensus analysis/rq2_validation/consensus/rq2_consensus.parquet \
+  --output-dir analysis/rq2_validation/comparison
+```
+
+Stage 1 takes the majority validation-presence vote. Stage 2 requires two
+positive models to agree on the complete
+`(primary_validation_type, validation_types)` value. The analysis preserves
+unresolved positives and excludes them from type comparisons. The primary
+comparison preserves the previous paper's chi-square and Cramer's V analyses,
+including Yates's correction for validation presence. The generated figure
+preserves the previous primary-type ordering, normalization, labels, and layout.
+
+The machine-readable output additionally includes repository-cluster bootstrap
+intervals, Fisher tests with Holm correction, and non-exclusive type summaries.
+These are retained as optional robustness instruments and are not part of the
+paper's primary RQ2 analysis.
