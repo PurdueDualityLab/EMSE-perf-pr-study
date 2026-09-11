@@ -1,0 +1,16 @@
+id,html_url,author_type,agent,pattern,sub_pattern,validation_type,is_merged,n_dims,dims
+3215330137,https://github.com/nnstreamer/nntrainer/pull/3312,AI Agent,Cursor,I/O and Synchronization,Enable Multi-threading,benchmark,False,5,D1|D2|D3|D8|D0
+3217675934,https://github.com/gmathi/NovelLibrary/pull/246,AI Agent,Cursor,Build & Compilation & Infrastructure Optimization,Enable Build-Time Optimizations,static-analysis,False,4,D1|D2|D6|D9
+3133585449,https://github.com/test-zeus-ai/testzeus-hercules/pull/61,AI Agent,Devin,I/O and Synchronization,Concurrency Control / Rate Limiting,benchmark,False,3,D1|D9|D0
+2297969098,https://github.com/yamadashy/repomix/pull/309,Human,Human,I/O and Synchronization,Enable Multi-threading,benchmark,True,2,D1|D6
+3006534682,https://github.com/saturday06/VRM-Addon-for-Blender/pull/797,AI Agent,Devin,Memory and Data Locality Optimizations,Caching,profiling,False,2,D1|D4
+2425248848,https://github.com/oven-sh/bun/pull/18585,Human,Human,Memory and Data Locality Optimizations,Use Smaller Data Types,benchmark,True,2,D1|D2
+3206422165,https://github.com/saturday06/VRM-Addon-for-Blender/pull/964,AI Agent,Devin,Code Smells and Structural Simplification,Remove Unnecessary Method Calls,benchmark,False,2,D1|D0
+3155001680,https://github.com/sourcebot-dev/sourcebot/pull/357,AI Agent,Devin,"Network, Database, and Data Access Optimization",Batch API Requests (N+1),static-analysis,False,2,D1|D5
+3235100943,https://github.com/buger/probe/pull/56,AI Agent,Devin,Memory and Data Locality Optimizations,Optimize Object Use,static-analysis,True,2,D1|D3
+3006562482,https://github.com/saturday06/VRM-Addon-for-Blender/pull/800,AI Agent,Devin,Memory and Data Locality Optimizations,Caching,profiling,False,2,D1|D4
+3262865664,https://github.com/mochilang/mochi/pull/13059,AI Agent,OpenAI_Codex,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,benchmark,False,2,D1|D3
+3006544045,https://github.com/saturday06/VRM-Addon-for-Blender/pull/798,AI Agent,Devin,Memory and Data Locality Optimizations,Caching,profiling,False,2,D1|D4
+3006507938,https://github.com/saturday06/VRM-Addon-for-Blender/pull/796,AI Agent,Devin,Memory and Data Locality Optimizations,Caching,profiling,False,2,D1|D4
+3160620876,https://github.com/onnx/onnx/pull/7057,AI Agent,Copilot,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,benchmark,False,2,D1|D2
+3006445782,https://github.com/saturday06/VRM-Addon-for-Blender/pull/795,AI Agent,Devin,Memory and Data Locality Optimizations,Caching,profiling,False,2,D1|D4

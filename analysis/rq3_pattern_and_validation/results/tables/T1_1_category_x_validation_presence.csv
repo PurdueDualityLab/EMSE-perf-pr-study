@@ -1,0 +1,10 @@
+Category,n,AI Agent n,AI Agent validated,Human n,Human validated,All validated
+Memory and Data Locality Optimizations,114,92,52.2%,22,86.4%,58.8%
+Algorithm-Level Optimizations,78,63,36.5%,15,66.7%,42.3%
+Code Smells and Structural Simplification,43,33,27.3%,10,20.0%,25.6%
+Build & Compilation & Infrastructure Optimization,34,28,57.1%,6,66.7%,58.8%
+I/O and Synchronization,34,22,45.5%,12,58.3%,50.0%
+"Network, Database, and Data Access Optimization",21,15,93.3%,6,50.0%,81.0%
+Control-Flow and Branching Optimizations,19,15,13.3%,4,75.0%,26.3%
+Data Structure Selection and Adaptation,12,10,60.0%,2,50.0%,58.3%
+Loop Transformations,2,2,0.0%,0,–,0.0%

@@ -1,0 +1,10 @@
+id,html_url,author_type,agent,pattern,sub_pattern,validation_type,is_merged,n_dims,dims
+3096249565,https://github.com/microsoft/HydraLab/pull/695,AI Agent,Copilot,I/O and Synchronization,Concurrency Control / Rate Limiting,none,False,1,D1
+3185988908,https://github.com/mochilang/mochi/pull/3943,AI Agent,OpenAI_Codex,Algorithm-Level Optimizations,Select Algorithm Based on Instruction Speed,none,True,1,D1
+3246122368,https://github.com/Stirling-Tools/Stirling-PDF/pull/3992,AI Agent,OpenAI_Codex,I/O and Synchronization,Concurrency Control / Rate Limiting,none,False,1,D1
+3214281732,https://github.com/mochilang/mochi/pull/6522,AI Agent,OpenAI_Codex,Code Smells and Structural Simplification,Remove Unnecessary Method Calls,none,True,1,D8
+3253657829,https://github.com/MontrealAI/AGI-Alpha-Agent-v0/pull/3666,AI Agent,OpenAI_Codex,I/O and Synchronization,Polling,none,True,1,D1
+3198941408,https://github.com/lunasaw/gb28181-proxy/pull/38,AI Agent,Cursor,Memory and Data Locality Optimizations,Caching,none,True,3,D1|D2|D3
+3240006620,https://github.com/onflow/flow-go/pull/7598,AI Agent,Devin,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,none,True,1,D1
+2419106029,https://github.com/getsentry/sentry/pull/87963,Human,Human,Data Structure Selection and Adaptation,Darwinian Data Structure Selection,none,False,1,D1
+2607579182,https://github.com/gofiber/fiber/pull/3532,Human,Human,Code Smells and Structural Simplification,Remove long method by extracting new method,none,True,1,D1

@@ -1,0 +1,10 @@
+Category,n validated,D1,D2,D3,D4,D5,D6,D7,D8,D9,D0,≥1 dim,mean #dims
+Memory and Data Locality Optimizations,19,37%,5%,21%,0%,5%,0%,0%,0%,0%,0%,52.6%,0.68
+Algorithm-Level Optimizations,10,70%,0%,10%,0%,10%,0%,0%,0%,0%,20%,70.0%,1.10
+I/O and Synchronization,7,43%,0%,0%,0%,0%,14%,0%,0%,0%,0%,42.9%,0.57
+Build & Compilation & Infrastructure Optimization,4,25%,0%,0%,0%,0%,0%,25%,0%,0%,25%,50.0%,0.75
+Control-Flow and Branching Optimizations,3,33%,0%,0%,0%,0%,0%,0%,0%,0%,0%,33.3%,0.33
+"Network, Database, and Data Access Optimization",3,0%,0%,0%,0%,0%,0%,0%,0%,33%,33%,33.3%,0.67
+Code Smells and Structural Simplification,2,50%,0%,0%,0%,0%,0%,0%,0%,0%,0%,50.0%,0.50
+Data Structure Selection and Adaptation,1,100%,0%,0%,0%,0%,0%,0%,0%,0%,0%,100.0%,1.00
+All,49,43%,2%,10%,0%,4%,2%,2%,0%,2%,8%,53.1%,0.73

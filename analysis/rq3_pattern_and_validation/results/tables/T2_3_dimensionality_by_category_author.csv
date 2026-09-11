@@ -1,0 +1,17 @@
+pattern,author_type,count,mean,median,max
+Algorithm-Level Optimizations,AI Agent,23,0.78,1.0,2
+Algorithm-Level Optimizations,Human,10,1.1,1.0,2
+Build & Compilation & Infrastructure Optimization,AI Agent,16,0.81,0.0,4
+Build & Compilation & Infrastructure Optimization,Human,4,0.75,0.5,2
+Code Smells and Structural Simplification,AI Agent,9,0.67,0.0,2
+Code Smells and Structural Simplification,Human,2,0.5,0.5,1
+Control-Flow and Branching Optimizations,AI Agent,2,0.5,0.5,1
+Control-Flow and Branching Optimizations,Human,3,0.33,0.0,1
+Data Structure Selection and Adaptation,AI Agent,6,0.17,0.0,1
+Data Structure Selection and Adaptation,Human,1,1.0,1.0,1
+I/O and Synchronization,AI Agent,10,1.1,0.5,5
+I/O and Synchronization,Human,7,0.57,0.0,2
+Memory and Data Locality Optimizations,AI Agent,48,0.48,0.0,2
+Memory and Data Locality Optimizations,Human,19,0.68,1.0,2
+"Network, Database, and Data Access Optimization",AI Agent,14,0.36,0.0,2
+"Network, Database, and Data Access Optimization",Human,3,0.67,0.0,2

@@ -1,0 +1,7 @@
+validation_type,AI Agent,Human,All
+benchmark,11.4,31.2,15.7
+profiling,2.1,0.0,1.7
+static-analysis,30.7,28.6,30.3
+anecdotal,1.4,3.9,2.0
+none,54.3,36.4,50.4
+n,280,77,357
