@@ -1,0 +1,110 @@
+{
+  "files": {
+    "rq1_labels.csv": {
+      "arms": {
+        "agentic": 1130,
+        "human_candidate": 1130
+      },
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "repo_full_name",
+        "html_url",
+        "gpt_high_level_pattern",
+        "gpt_sub_pattern",
+        "gemini_high_level_pattern",
+        "gemini_sub_pattern",
+        "qwen_high_level_pattern",
+        "qwen_sub_pattern",
+        "consensus_status",
+        "consensus_vote_count",
+        "consensus_coalition",
+        "consensus_high_level_pattern",
+        "consensus_sub_pattern",
+        "included_in_analysis",
+        "inclusion_reason"
+      ],
+      "rows": 2260,
+      "sha256": "5d702b2c98d1927b14164434e12b54d6ff9e88b30b8a9c4d1821f62e210e88a0",
+      "source": "analysis/rq1_optimization_patterns/consensus/rq1_consensus.parquet",
+      "source_sha256": "87ad899b6b81eeffad6143d0969180d08be64fb3cf6138ed91d337211e52f92b"
+    },
+    "rq2_exclusions.csv": {
+      "arms": {
+        "agentic": 1,
+        "human_candidate": 1
+      },
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "exclusion_reason",
+        "paired_with_repo_id",
+        "paired_with_number"
+      ],
+      "rows": 2,
+      "sha256": "352d564fb028fd8cfbcacb83ffa4def9223339642c9d189a511853c029f05352",
+      "source": "analysis/rq2_validation/sample/evidence_exclusions.parquet",
+      "source_sha256": "75b8506e71a6d230b6bcd41a80e26ed3d3c2211a801378d1edbecfec62433703"
+    },
+    "rq2_labels.csv": {
+      "arms": {
+        "agentic": 1129,
+        "human_candidate": 1129
+      },
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "repo_full_name",
+        "html_url",
+        "gpt_model",
+        "gpt_classification_status",
+        "gpt_validation_present",
+        "gpt_primary_validation_type",
+        "gpt_validation_types",
+        "gemini_model",
+        "gemini_classification_status",
+        "gemini_validation_present",
+        "gemini_primary_validation_type",
+        "gemini_validation_types",
+        "qwen_model",
+        "qwen_classification_status",
+        "qwen_validation_present",
+        "qwen_primary_validation_type",
+        "qwen_validation_types",
+        "stage1_status",
+        "stage1_positive_votes",
+        "stage1_negative_votes",
+        "stage1_coalition",
+        "consensus_validation_present",
+        "stage2_status",
+        "stage2_vote_count",
+        "stage2_coalition",
+        "consensus_primary_validation_type",
+        "consensus_validation_types",
+        "consensus_status",
+        "included_in_stage2_analysis",
+        "inclusion_reason"
+      ],
+      "rows": 2258,
+      "sha256": "60de92f0f12355a44f6d21d8e1ec4db03c19ebac9702cfbb2800cfe2d7fd40e3",
+      "source": "analysis/rq2_validation/consensus/rq2_consensus.parquet",
+      "source_sha256": "a29be9abd41fdd11dde7f9e7bff9a56685b059362421d05476649afd58f5ee9d"
+    }
+  },
+  "models": {
+    "gemini": "gemini-3.1-pro-preview",
+    "gpt": "gpt-5.6-sol",
+    "qwen": "qwen3.8:27b"
+  },
+  "summary": {
+    "rq1_resolved": 2083,
+    "rq1_unresolved": 177,
+    "rq2_negative": 419,
+    "rq2_positive": 1839,
+    "rq2_resolved_positive_types": 1707,
+    "rq2_unresolved_positive_types": 132
+  }
+}

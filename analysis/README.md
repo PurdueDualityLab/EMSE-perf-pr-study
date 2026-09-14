@@ -1,10 +1,15 @@
 # Research Question Analysis
 
 This directory contains the RQ1 optimization-pattern and RQ2
-performance-validation analysis code. Generated model responses, manual-review
-exports, figures, and result tables are excluded from Git.
+performance-validation analysis code. Compact classification labels are published
+in [`classification_labels/`](classification_labels/README.md). Full datasets and
+model artifacts remain in the private Hugging Face dataset; generated provider
+responses and operational artifacts are excluded from these label exports.
 
 ## Layout
+
+- `classification_labels/`: compact RQ1/RQ2 model labels, consensus, and inclusion
+  decisions, with provenance and checksums.
 
 - `rq1_optimization_patterns/`: optimization-pattern labeling, agreement, and
   analysis code, plus the original and revised taxonomies required by the
