@@ -8,8 +8,8 @@ responses and operational artifacts are excluded from these label exports.
 
 ## Layout
 
-- `classification_labels/`: compact RQ1/RQ2 model labels, consensus, and inclusion
-  decisions, with provenance and checksums.
+- `classification_labels/`: compact RQ1/RQ2 model labels and consensus, RQ3
+  extracted metric labels, and inclusion decisions, with provenance and checksums.
 
 - `rq1_optimization_patterns/`: optimization-pattern labeling, agreement, and
   analysis code, plus the original and revised taxonomies required by the

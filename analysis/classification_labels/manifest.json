@@ -92,6 +92,57 @@
       "sha256": "60de92f0f12355a44f6d21d8e1ec4db03c19ebac9702cfbb2800cfe2d7fd40e3",
       "source": "analysis/rq2_validation/consensus/rq2_consensus.parquet",
       "source_sha256": "a29be9abd41fdd11dde7f9e7bff9a56685b059362421d05476649afd58f5ee9d"
+    },
+    "rq3_labels.csv": {
+      "arms": {
+        "agentic": 1048,
+        "human_candidate": 1033
+      },
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "html_url",
+        "pattern",
+        "sub_pattern",
+        "rq1_label_source",
+        "validation_present",
+        "validation_type",
+        "in_metric_layer",
+        "in_type_layer",
+        "D0",
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9",
+        "n_dims",
+        "n_dims_specific",
+        "dims",
+        "D0_nodiff",
+        "D1_nodiff",
+        "D2_nodiff",
+        "D3_nodiff",
+        "D4_nodiff",
+        "D5_nodiff",
+        "D6_nodiff",
+        "D7_nodiff",
+        "D8_nodiff",
+        "D9_nodiff",
+        "n_dims_nodiff",
+        "n_dims_description_only"
+      ],
+      "label_method": "Deterministic D0-D9 quantitative-claim extraction, not LLM classification",
+      "published_source_path": "data/rq3/current/data/rq3_pr_level.csv",
+      "published_source_revision": "4464afd020ece2a619649a185460fde9d02625fd",
+      "rows": 2081,
+      "sha256": "2452bcb2c4f3e4cac730fb188de20eda66a0c125c37981ee48ac4fb11b4eb84c",
+      "source": "analysis/rq3_pattern_and_validation/current/data/rq3_pr_level.csv",
+      "source_sha256": "743bb3d5e56435811cc2556fb85a7a20570e60365d4873c89611935feb09ae8d"
     }
   },
   "models": {
@@ -105,6 +156,10 @@
     "rq2_negative": 419,
     "rq2_positive": 1839,
     "rq2_resolved_positive_types": 1707,
-    "rq2_unresolved_positive_types": 132
+    "rq2_unresolved_positive_types": 132,
+    "rq3_analytic": 2081,
+    "rq3_metric_layer": 1699,
+    "rq3_resolved_type_layer": 1581,
+    "rq3_unresolved_positive_types": 118
   }
 }
