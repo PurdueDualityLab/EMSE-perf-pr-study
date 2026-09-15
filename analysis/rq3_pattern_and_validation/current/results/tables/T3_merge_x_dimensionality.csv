@@ -1,0 +1,5 @@
+Author,Merged,n,≥1 dim,mean #dims,median #dims,median time-to-merge (days)
+agentic,False,407,54.1%,1.00,1,
+agentic,True,451,48.1%,0.84,0,0.28
+human_candidate,False,242,54.1%,0.90,1,
+human_candidate,True,599,51.8%,0.80,1,0.84

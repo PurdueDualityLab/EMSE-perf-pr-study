@@ -1,0 +1,29 @@
+{
+  "complete_consensus": 2126,
+  "exact_majority": 865,
+  "full_unanimous": 1261,
+  "rows": 2258,
+  "source_sha256": {
+    "gemini": "0a8e964ac6d9623e916e3478a9f1c688ec4c8667af5c74fbc79fe97bc7e675aa",
+    "gpt": "88fe2f918cc4d436a459f0c13ea5718a6ef37f896884088d552d8a876801f2a6",
+    "qwen": "7e455ad4028bcecdfd42ec3a74443195fdf3667b20c9b5f995415a06211eeb33",
+    "sample": "01460f42a1f1b63ac40d4ed3302140cf3d125a4d8aafba22244d5bf64c688b59"
+  },
+  "stage1_negative": 419,
+  "stage1_positive": 1839,
+  "stage1_positive_by_arm": {
+    "agentic": 929,
+    "human_candidate": 910
+  },
+  "stage2_consensus": 1707,
+  "stage2_consensus_by_arm": {
+    "agentic": 870,
+    "human_candidate": 837
+  },
+  "stage2_unresolved": 132,
+  "stage2_unresolved_by_arm": {
+    "agentic": 59,
+    "human_candidate": 73
+  },
+  "unresolved": 132
+}

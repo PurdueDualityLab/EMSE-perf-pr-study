@@ -1,0 +1,10 @@
+Category,n,agentic n,agentic validated,human_candidate n,human_candidate validated,All validated
+Memory and Data Locality Optimizations,691,347,85.6%,344,85.2%,85.4%
+Algorithm-Level Optimizations,437,222,85.1%,215,82.8%,84.0%
+Code Smells and Structural Simplification,290,135,83.0%,155,73.5%,77.9%
+I/O and Synchronization,215,92,63.0%,123,83.7%,74.9%
+Build & Compilation & Infrastructure Optimization,175,99,75.8%,76,69.7%,73.1%
+"Network, Database, and Data Access Optimization",166,92,80.4%,74,83.8%,81.9%
+Data Structure Selection and Adaptation,55,35,80.0%,20,95.0%,85.5%
+Control-Flow and Branching Optimizations,39,21,95.2%,18,83.3%,89.7%
+Loop Transformations,13,5,100.0%,8,50.0%,69.2%

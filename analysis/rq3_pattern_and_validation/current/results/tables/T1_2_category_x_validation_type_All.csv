@@ -1,0 +1,10 @@
+pattern,benchmark,profiling,static-reasoning,anecdotal,none,unresolved,n
+Memory and Data Locality Optimizations,41.5,1.9,36.3,0.3,14.6,5.4,691
+Algorithm-Level Optimizations,40.5,1.4,35.9,0.7,16.0,5.5,437
+Code Smells and Structural Simplification,35.2,1.4,34.8,0.7,22.1,5.9,290
+I/O and Synchronization,26.0,0.5,42.8,0.0,25.1,5.6,215
+Build & Compilation & Infrastructure Optimization,44.0,0.6,21.1,0.0,26.9,7.4,175
+"Network, Database, and Data Access Optimization",31.9,3.0,41.0,0.6,18.1,5.4,166
+Data Structure Selection and Adaptation,54.5,1.8,23.6,0.0,14.5,5.5,55
+Control-Flow and Branching Optimizations,30.8,0.0,51.3,0.0,10.3,7.7,39
+Loop Transformations,53.8,0.0,15.4,0.0,30.8,0.0,13

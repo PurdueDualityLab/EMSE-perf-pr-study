@@ -1,0 +1,3 @@
+sample_arm,Algorithm-Level Optimizations,Build & Compilation & Infrastructure Optimization,Code Smells and Structural Simplification,Control-Flow and Branching Optimizations,Data Structure Selection and Adaptation,I/O and Synchronization,Loop Transformations,Memory and Data Locality Optimizations,"Network, Database, and Data Access Optimization"
+agentic,220.07345175228036,88.13010081613058,146.04416706673067,19.640422467594814,27.698031685069612,108.77772443590975,6.5468074891982715,348.4915986557849,83.59769563130101
+human_candidate,216.92654824771964,86.86989918386942,143.95583293326933,19.359577532405186,27.301968314930388,107.22227556409025,6.4531925108017285,343.5084013442151,82.40230436869899

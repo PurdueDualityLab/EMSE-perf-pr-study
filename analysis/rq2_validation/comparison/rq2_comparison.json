@@ -1,0 +1,568 @@
+{
+  "rows": 2258,
+  "stage1_presence": {
+    "agentic_events": 929,
+    "agentic_rate": 0.8228520814880426,
+    "agentic_total": 1129,
+    "expected_cells": [
+      [
+        919.5,
+        209.5
+      ],
+      [
+        919.5,
+        209.5
+      ]
+    ],
+    "fisher_odds_ratio": 1.1178626373626375,
+    "fisher_p": 0.329862271282449,
+    "human_candidate_events": 910,
+    "human_candidate_rate": 0.8060230292294066,
+    "human_candidate_total": 1129,
+    "label": "validation_present",
+    "odds_ratio": 1.1178626373626375,
+    "odds_ratio_ci95": [
+      0.9039691822148365,
+      1.382366678640123
+    ],
+    "pearson_chi2": 0.9494523977309448,
+    "pearson_p": 0.3298587239266756,
+    "phi_cramers_v": 0.020505701401331292,
+    "risk_difference": 0.016829052258635957,
+    "risk_difference_ci95": [
+      -0.02853671066518082,
+      0.06208068074512352
+    ],
+    "risk_ratio": 1.0208791208791208,
+    "risk_ratio_ci95": [
+      0.981450944800792,
+      1.0618912590261593
+    ],
+    "table": [
+      [
+        929,
+        200
+      ],
+      [
+        910,
+        219
+      ]
+    ]
+  },
+  "stage1_rows": 2258,
+  "stage2_per_primary": [
+    {
+      "agentic_events": 391,
+      "agentic_rate": 0.4494252873563218,
+      "agentic_total": 870,
+      "expected_cells": [
+        [
+          441.3708260105448,
+          428.6291739894552
+        ],
+        [
+          424.6291739894552,
+          412.3708260105448
+        ]
+      ],
+      "fisher_odds_ratio": 0.6220942753543567,
+      "fisher_p": 1.2524814577532008e-06,
+      "holm_adjusted_p": 3.7574443732596026e-06,
+      "holm_reject_0_05": true,
+      "human_candidate_events": 475,
+      "human_candidate_rate": 0.5675029868578255,
+      "human_candidate_total": 837,
+      "label": "benchmark",
+      "odds_ratio": 0.6220942753543567,
+      "odds_ratio_ci95": [
+        0.5138483157996148,
+        0.7531430492798985
+      ],
+      "pearson_chi2": 23.325721601968144,
+      "pearson_p": 1.3675885100319965e-06,
+      "phi_cramers_v": 0.11689630492632987,
+      "risk_difference": -0.11807769950150371,
+      "risk_difference_ci95": [
+        -0.18401677451937015,
+        -0.051077178846507865
+      ],
+      "risk_ratio": 0.791934664246824,
+      "risk_ratio_ci95": [
+        0.7206129804489362,
+        0.8703153141163428
+      ],
+      "table": [
+        [
+          391,
+          479
+        ],
+        [
+          475,
+          362
+        ]
+      ]
+    },
+    {
+      "agentic_events": 16,
+      "agentic_rate": 0.01839080459770115,
+      "agentic_total": 870,
+      "expected_cells": [
+        [
+          16.309314586994727,
+          853.6906854130053
+        ],
+        [
+          15.690685413005273,
+          821.3093145869947
+        ]
+      ],
+      "fisher_odds_ratio": 0.9613583138173302,
+      "fisher_p": 1.0,
+      "holm_adjusted_p": 1.0,
+      "holm_reject_0_05": false,
+      "human_candidate_events": 16,
+      "human_candidate_rate": 0.019115890083632018,
+      "human_candidate_total": 837,
+      "label": "profiling",
+      "odds_ratio": 0.9613583138173302,
+      "odds_ratio_ci95": [
+        0.47761492431135233,
+        1.9350521947744186
+      ],
+      "pearson_chi2": 0.0,
+      "pearson_p": 1.0,
+      "phi_cramers_v": 0.0,
+      "risk_difference": -0.0007250854859308688,
+      "risk_difference_ci95": [
+        -0.01947404461640235,
+        0.017864315293673792
+      ],
+      "risk_ratio": 0.9620689655172414,
+      "risk_ratio_ci95": [
+        0.48427966567902136,
+        1.9112441839027854
+      ],
+      "table": [
+        [
+          16,
+          854
+        ],
+        [
+          16,
+          821
+        ]
+      ]
+    },
+    {
+      "agentic_events": 459,
+      "agentic_rate": 0.5275862068965518,
+      "agentic_total": 870,
+      "expected_cells": [
+        [
+          406.713532513181,
+          463.286467486819
+        ],
+        [
+          391.286467486819,
+          445.713532513181
+        ]
+      ],
+      "fisher_odds_ratio": 1.640591693043085,
+      "fisher_p": 4.391898119924788e-07,
+      "holm_adjusted_p": 1.7567592479699151e-06,
+      "holm_reject_0_05": true,
+      "human_candidate_events": 339,
+      "human_candidate_rate": 0.4050179211469534,
+      "human_candidate_total": 837,
+      "label": "static-reasoning",
+      "odds_ratio": 1.640591693043085,
+      "odds_ratio_ci95": [
+        1.3543539589700433,
+        1.9873247207316724
+      ],
+      "pearson_chi2": 25.253504395487987,
+      "pearson_p": 5.026815245081073e-07,
+      "phi_cramers_v": 0.12163094080806856,
+      "risk_difference": 0.12256828574959838,
+      "risk_difference_ci95": [
+        0.05572884037322279,
+        0.18829732181458586
+      ],
+      "risk_ratio": 1.3026243515410438,
+      "risk_ratio_ci95": [
+        1.1746379452269275,
+        1.4445559230592668
+      ],
+      "table": [
+        [
+          459,
+          411
+        ],
+        [
+          339,
+          498
+        ]
+      ]
+    },
+    {
+      "agentic_events": 4,
+      "agentic_rate": 0.004597701149425287,
+      "agentic_total": 870,
+      "expected_cells": [
+        [
+          5.606326889279438,
+          864.3936731107206
+        ],
+        [
+          5.393673110720562,
+          831.6063268892794
+        ]
+      ],
+      "fisher_odds_ratio": 0.5476740349719564,
+      "fisher_p": 0.3777901618026286,
+      "holm_adjusted_p": 0.7555803236052572,
+      "holm_reject_0_05": false,
+      "human_candidate_events": 7,
+      "human_candidate_rate": 0.008363201911589008,
+      "human_candidate_total": 837,
+      "label": "anecdotal",
+      "odds_ratio": 0.5476740349719564,
+      "odds_ratio_ci95": [
+        0.15973627580455158,
+        1.877762875537862
+      ],
+      "pearson_chi2": 0.44813024463446793,
+      "pearson_p": 0.5032242112944385,
+      "phi_cramers_v": 0.016202624503254975,
+      "risk_difference": -0.0037655007621637208,
+      "risk_difference_ci95": [
+        -0.015372280811634331,
+        0.007704742315996875
+      ],
+      "risk_ratio": 0.5497536945812808,
+      "risk_ratio_ci95": [
+        0.16152638840255587,
+        1.871082042350585
+      ],
+      "table": [
+        [
+          4,
+          866
+        ],
+        [
+          7,
+          830
+        ]
+      ]
+    }
+  ],
+  "stage2_per_validation_type": [
+    {
+      "agentic_events": 392,
+      "agentic_rate": 0.45057471264367815,
+      "agentic_total": 870,
+      "expected_cells": [
+        [
+          443.40949033391917,
+          426.59050966608083
+        ],
+        [
+          426.59050966608083,
+          410.40949033391917
+        ]
+      ],
+      "fisher_odds_ratio": 0.6159205896255318,
+      "fisher_p": 7.617524575627984e-07,
+      "holm_adjusted_p": 3.0470098302511936e-06,
+      "holm_reject_0_05": true,
+      "human_candidate_events": 478,
+      "human_candidate_rate": 0.5710872162485066,
+      "human_candidate_total": 837,
+      "label": "benchmark",
+      "odds_ratio": 0.6159205896255318,
+      "odds_ratio_ci95": [
+        0.5087094415890541,
+        0.7457266205629343
+      ],
+      "pearson_chi2": 24.31132564266867,
+      "pearson_p": 8.195576749975891e-07,
+      "phi_cramers_v": 0.11934041939603678,
+      "risk_difference": -0.1205125036048284,
+      "risk_difference_ci95": [
+        -0.18641413601062107,
+        -0.05352678170515013
+      ],
+      "risk_ratio": 0.7889770595873611,
+      "risk_ratio_ci95": [
+        0.7182107931056578,
+        0.8667160206036377
+      ],
+      "table": [
+        [
+          392,
+          478
+        ],
+        [
+          478,
+          359
+        ]
+      ]
+    },
+    {
+      "agentic_events": 61,
+      "agentic_rate": 0.07011494252873564,
+      "agentic_total": 870,
+      "expected_cells": [
+        [
+          66.76625659050967,
+          803.2337434094903
+        ],
+        [
+          64.23374340949033,
+          772.7662565905097
+        ]
+      ],
+      "fisher_odds_ratio": 0.8261875331096592,
+      "fisher_p": 0.31753228543993095,
+      "holm_adjusted_p": 0.31753228543993095,
+      "holm_reject_0_05": false,
+      "human_candidate_events": 70,
+      "human_candidate_rate": 0.08363201911589008,
+      "human_candidate_total": 837,
+      "label": "profiling",
+      "odds_ratio": 0.8261875331096592,
+      "odds_ratio_ci95": [
+        0.5780133737252047,
+        1.1809170356503458
+      ],
+      "pearson_chi2": 0.9175555684402208,
+      "pearson_p": 0.33811761977204274,
+      "phi_cramers_v": 0.023184590367016675,
+      "risk_difference": -0.013517076587154439,
+      "risk_difference_ci95": [
+        -0.04937253244398798,
+        0.02231355149094663
+      ],
+      "risk_ratio": 0.8383743842364534,
+      "risk_ratio_ci95": [
+        0.6027750193147513,
+        1.1660596169743285
+      ],
+      "table": [
+        [
+          61,
+          809
+        ],
+        [
+          70,
+          767
+        ]
+      ]
+    },
+    {
+      "agentic_events": 774,
+      "agentic_rate": 0.8896551724137931,
+      "agentic_total": 870,
+      "expected_cells": [
+        [
+          755.8347978910369,
+          114.16520210896309
+        ],
+        [
+          727.1652021089631,
+          109.83479789103691
+        ]
+      ],
+      "fisher_odds_ratio": 1.4555712270803949,
+      "fisher_p": 0.009819914430223882,
+      "holm_adjusted_p": 0.019639828860447763,
+      "holm_reject_0_05": true,
+      "human_candidate_events": 709,
+      "human_candidate_rate": 0.8470728793309439,
+      "human_candidate_total": 837,
+      "label": "static-reasoning",
+      "odds_ratio": 1.4555712270803949,
+      "odds_ratio_ci95": [
+        1.0961846290629773,
+        1.9327835301936211
+      ],
+      "pearson_chi2": 6.416584303481587,
+      "pearson_p": 0.011305941386681678,
+      "phi_cramers_v": 0.061310547126225814,
+      "risk_difference": 0.04258229308284922,
+      "risk_difference_ci95": [
+        -0.0027683579775237277,
+        0.08767831619658795
+      ],
+      "risk_ratio": 1.050269928505423,
+      "risk_ratio_ci95": [
+        1.0120212429360236,
+        1.0899641983034127
+      ],
+      "table": [
+        [
+          774,
+          96
+        ],
+        [
+          709,
+          128
+        ]
+      ]
+    },
+    {
+      "agentic_events": 32,
+      "agentic_rate": 0.0367816091954023,
+      "agentic_total": 870,
+      "expected_cells": [
+        [
+          46.37961335676626,
+          823.6203866432337
+        ],
+        [
+          44.62038664323374,
+          792.3796133567663
+        ]
+      ],
+      "fisher_odds_ratio": 0.5035395008292545,
+      "fisher_p": 0.0023922009790191255,
+      "holm_adjusted_p": 0.007176602937057377,
+      "holm_reject_0_05": true,
+      "human_candidate_events": 59,
+      "human_candidate_rate": 0.07048984468339307,
+      "human_candidate_total": 837,
+      "label": "anecdotal",
+      "odds_ratio": 0.5035395008292545,
+      "odds_ratio_ci95": [
+        0.3239017670916908,
+        0.7828053275905676
+      ],
+      "pearson_chi2": 8.948038423861657,
+      "pearson_p": 0.0027776769277955194,
+      "phi_cramers_v": 0.0724014325978111,
+      "risk_difference": -0.033708235487990776,
+      "risk_difference_ci95": [
+        -0.06369137766286079,
+        -0.003576932856006826
+      ],
+      "risk_ratio": 0.5218001168907072,
+      "risk_ratio_ci95": [
+        0.34294918300652916,
+        0.7939233433950825
+      ],
+      "table": [
+        [
+          32,
+          838
+        ],
+        [
+          59,
+          778
+        ]
+      ]
+    }
+  ],
+  "stage2_positive_consensus_rows": 1707,
+  "stage2_primary": {
+    "bootstrap_iterations": 2000,
+    "bootstrap_seed": 20260911,
+    "chi2": 26.382999452775593,
+    "cramers_v": 0.12432123727173644,
+    "cramers_v_cluster_bootstrap_ci95": [
+      0.04489313507248661,
+      0.23321964762773997
+    ],
+    "degrees_of_freedom": 3,
+    "expected_cells": [
+      [
+        441.3708260105448,
+        16.309314586994727,
+        406.713532513181,
+        5.606326889279438
+      ],
+      [
+        424.6291739894552,
+        15.690685413005273,
+        391.286467486819,
+        5.393673110720562
+      ]
+    ],
+    "minimum_expected_cell": 5.393673110720562,
+    "p_value": 7.929028333533636e-06,
+    "table": {
+      "columns": [
+        "benchmark",
+        "profiling",
+        "static-reasoning",
+        "anecdotal"
+      ],
+      "data": [
+        [
+          391,
+          16,
+          459,
+          4
+        ],
+        [
+          475,
+          16,
+          339,
+          7
+        ]
+      ],
+      "index": [
+        "agentic",
+        "human_candidate"
+      ]
+    }
+  },
+  "stage2_unresolved": {
+    "agentic_events": 59,
+    "agentic_rate": 0.06350914962325081,
+    "agentic_total": 929,
+    "expected_cells": [
+      [
+        66.68189233278956,
+        862.3181076672105
+      ],
+      [
+        65.31810766721044,
+        844.6818923327895
+      ]
+    ],
+    "fisher_odds_ratio": 0.7775625885687293,
+    "fisher_p": 0.17586663129200883,
+    "human_candidate_events": 73,
+    "human_candidate_rate": 0.08021978021978023,
+    "human_candidate_total": 910,
+    "label": "stage2_unresolved",
+    "odds_ratio": 0.7775625885687293,
+    "odds_ratio_ci95": [
+      0.5446603693585298,
+      1.110056125166167
+    ],
+    "pearson_chi2": 1.6840632912233333,
+    "pearson_p": 0.19438541046223207,
+    "phi_cramers_v": 0.03026135288850084,
+    "risk_difference": -0.016710630596529413,
+    "risk_difference_ci95": [
+      -0.05013027981913905,
+      0.01677476553348771
+    ],
+    "risk_ratio": 0.7916893994131265,
+    "risk_ratio_ci95": [
+      0.5687546081988425,
+      1.1020079593341792
+    ],
+    "table": [
+      [
+        59,
+        870
+      ],
+      [
+        73,
+        837
+      ]
+    ]
+  }
+}

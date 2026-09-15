@@ -1,0 +1,16 @@
+id,html_url,author_type,agent,pattern,sub_pattern,validation_type,is_merged,n_dims,dims
+3285152006.0,https://github.com/CapSoftware/Cap/pull/1598,agentic,cursor,I/O and Synchronization,Non-Blocking I/O,static-reasoning,True,6,D1|D2|D3|D4|D5|D9
+3674979570.0,https://github.com/lambdaclass/ethrex/pull/6639,human_candidate,,Memory and Data Locality Optimizations,Caching,benchmark,False,6,D0|D1|D2|D3|D4|D9
+2773449949.0,https://github.com/rustfs/rustfs/pull/461,agentic,cursor,I/O and Synchronization,Concurrency Control / Rate Limiting,benchmark,False,6,D1|D2|D3|D4|D5|D9
+3216071185.0,https://github.com/chrxh/alien/pull/409,agentic,github_copilot,Algorithm-Level Optimizations,Select Algorithm Based on Instruction Speed,static-reasoning,True,5,D0|D1|D3|D6|D9
+2765973761.0,https://github.com/rustfs/rustfs/pull/449,agentic,cursor,Memory and Data Locality Optimizations,Buffering,benchmark,False,5,D1|D3|D5|D6|D9
+3551391032.0,https://github.com/NethermindEth/nethermind/pull/11241,agentic,claude_code,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,benchmark,True,5,D0|D1|D4|D5|D8
+2999017683.0,https://github.com/dotnet/fsharp/pull/19072,agentic,github_copilot,Memory and Data Locality Optimizations,Caching,benchmark,True,5,D0|D1|D3|D5|D7
+3777258211.0,https://github.com/modular/modular/pull/6633,agentic,claude_code,Memory and Data Locality Optimizations,Improve cache locality - spatial locality,benchmark,False,5,D0|D1|D2|D3|D5
+3501354611.0,https://github.com/datahub-project/datahub/pull/16938,human_candidate,,"Network, Database, and Data Access Optimization",Batch API Requests (N+1),benchmark,False,5,D0|D1|D3|D4|D9
+3458836376.0,https://github.com/Azure/azure-sdk-for-java/pull/48617,human_candidate,,Memory and Data Locality Optimizations,Caching,benchmark,False,5,D1|D2|D3|D4|D9
+3368955786.0,https://github.com/Azure/azure-sdk-for-net/pull/56872,human_candidate,,Memory and Data Locality Optimizations,Buffering,benchmark,True,5,D2|D3|D5|D6|D9
+3600776028.0,https://github.com/web-infra-dev/rspack/pull/13876,agentic,openai_codex,Memory and Data Locality Optimizations,Optimize Object Use,benchmark,False,4,D1|D3|D5|D6
+3442169674.0,https://github.com/dotnet/runtime/pull/126063,agentic,github_copilot,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,static-reasoning,True,4,D0|D1|D2|D3
+3421968226.0,https://github.com/dotnet/runtime/pull/125799,human_candidate,,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,benchmark,True,4,D1|D3|D5|D9
+3473477516.0,https://github.com/web-infra-dev/rspack/pull/13564,agentic,openai_codex,Data Structure Selection and Adaptation,Darwinian Data Structure Selection,benchmark,False,4,D0|D1|D3|D6

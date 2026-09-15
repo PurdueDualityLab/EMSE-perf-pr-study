@@ -1,0 +1,30 @@
+{
+  "sample_rows": 2260,
+  "analytic_rows": 2081,
+  "snapshot_at": "2026-08-27T22:00:14.356079+00:00",
+  "metric_matches": 1958,
+  "validation_positive_rows": 1699,
+  "metric_layer_rows": 1699,
+  "type_layer_rows": 1581,
+  "unresolved_positive_types": 118,
+  "arms": {
+    "agentic": 1048,
+    "human_candidate": 1033
+  },
+  "collection_status": {
+    "complete": 2259,
+    "not_found": 1
+  },
+  "inputs_sha256": {
+    "data/data/sample/balanced_sample.parquet": "10f46fae9c880325f6574ca308f1857a4798c2ac1548bd0511502cb8687b357f",
+    "analysis/rq1_optimization_patterns/consensus/rq1_consensus.parquet": "87ad899b6b81eeffad6143d0969180d08be64fb3cf6138ed91d337211e52f92b",
+    "analysis/rq2_validation/consensus/rq2_consensus.parquet": "a29be9abd41fdd11dde7f9e7bff9a56685b059362421d05476649afd58f5ee9d",
+    "mining/sample_evidence/final/collection_status.parquet": "dde7797786a5861817d81260541a7a4d07cd3bfc0c6e0bd2e9ed2a066bc7701e",
+    "mining/sample_evidence/final/pull_requests.parquet": "860dfc296fa776db3ef3e412c498c62cedb5171413997dceb85a104cb0ac2929",
+    "mining/sample_evidence/final/pull_request_files.parquet": "dd45a052e991c46df686bcb521028f7461a4ad82427482b900d1fc1633dc4414",
+    "mining/sample_evidence/final/commits.parquet": "e3e6de407a7f1cbac45d2f980ec8509a9e272abe3cc1d228a5df65d2fd0041cc",
+    "mining/sample_evidence/final/issue_comments.parquet": "0734c46b33638529435a93bac19c322a64a91e166b51179e410d0c851e86b59c",
+    "mining/sample_evidence/final/review_comments.parquet": "f2ffcd11b81335f4bb48742e36096d8c79c04267c3c513b2d7d358d1b027f396",
+    "mining/sample_evidence/final/workflow_runs.parquet": "95df97074a8e0ca2cd70b6e930124af4532f6434fe22000522b44436c9b6fca2"
+  }
+}

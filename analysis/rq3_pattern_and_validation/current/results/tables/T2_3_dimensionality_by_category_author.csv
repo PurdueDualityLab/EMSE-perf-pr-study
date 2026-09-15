@@ -1,0 +1,19 @@
+pattern,author_type,count,mean,median,max
+Algorithm-Level Optimizations,agentic,189,0.87,0.0,5
+Algorithm-Level Optimizations,human_candidate,178,0.97,1.0,4
+Build & Compilation & Infrastructure Optimization,agentic,75,0.96,1.0,4
+Build & Compilation & Infrastructure Optimization,human_candidate,53,0.92,1.0,4
+Code Smells and Structural Simplification,agentic,112,0.76,0.0,3
+Code Smells and Structural Simplification,human_candidate,114,0.54,0.0,4
+Control-Flow and Branching Optimizations,agentic,20,0.6,0.0,3
+Control-Flow and Branching Optimizations,human_candidate,15,0.4,0.0,2
+Data Structure Selection and Adaptation,agentic,28,1.32,1.0,4
+Data Structure Selection and Adaptation,human_candidate,19,0.68,1.0,2
+I/O and Synchronization,agentic,58,1.14,1.0,6
+I/O and Synchronization,human_candidate,103,0.91,1.0,4
+Loop Transformations,agentic,5,0.6,0.0,2
+Loop Transformations,human_candidate,4,1.5,1.5,3
+Memory and Data Locality Optimizations,agentic,297,1.02,1.0,5
+Memory and Data Locality Optimizations,human_candidate,293,0.89,1.0,6
+"Network, Database, and Data Access Optimization",agentic,74,0.57,0.0,3
+"Network, Database, and Data Access Optimization",human_candidate,62,0.61,0.0,5

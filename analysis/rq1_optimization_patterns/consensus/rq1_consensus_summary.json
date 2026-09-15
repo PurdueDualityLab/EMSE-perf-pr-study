@@ -1,0 +1,49 @@
+{
+  "consensus_status_counts": {
+    "majority_2_of_3": 845,
+    "no_2_of_3_consensus": 177,
+    "unanimous": 1238
+  },
+  "excluded_rows": 177,
+  "included_arm_counts": {
+    "agentic": 1049,
+    "human_candidate": 1034
+  },
+  "included_rows": 2083,
+  "prompt_compatibility": {
+    "exact_prompt_equality_claimed": false,
+    "prompt_sha256_counts": {
+      "gemini": 2260,
+      "gpt": 2260,
+      "qwen": 2260
+    },
+    "reason": "Qwen has a documented prompt version/hash whitespace mismatch; input-row hashes are equal.",
+    "versions": {
+      "gemini": [
+        "rq1-optimization-pattern-legacy-v2"
+      ],
+      "gpt": [
+        "rq1-optimization-pattern-legacy-v2"
+      ],
+      "qwen": [
+        "rq1-optimization-pattern-legacy"
+      ]
+    }
+  },
+  "rows": 2260,
+  "sample_arm_counts": {
+    "agentic": 1130,
+    "human_candidate": 1130
+  },
+  "source_sha256": {
+    "catalog": "8a4b2e59a83a3994ee228515ba47ce2712c43112df3070640ea0b3ef7fcf803c",
+    "gemini": "fcb5e01a0da93f7718e6f2fa1dd4417c8e467b8c5b1c9da7df70205d4ec4e96a",
+    "gpt": "6a34304ec4de221cd28108265b6d5787c5d684d2f444240253ff8cc898ce632b",
+    "qwen": "69df410be22b738fbaef95385e04f8df755564e6a12578a85870ca9e833f719f",
+    "sample": "10f46fae9c880325f6574ca308f1857a4798c2ac1548bd0511502cb8687b357f"
+  },
+  "voting_unit": [
+    "high_level_pattern",
+    "sub_pattern"
+  ]
+}

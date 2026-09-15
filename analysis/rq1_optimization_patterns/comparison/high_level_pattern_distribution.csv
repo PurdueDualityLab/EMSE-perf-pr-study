@@ -1,0 +1,19 @@
+sample_arm,high_level_pattern,count,total,proportion
+agentic,Algorithm-Level Optimizations,222,1049,0.21163012392755004
+agentic,Build & Compilation & Infrastructure Optimization,99,1049,0.09437559580552908
+agentic,Code Smells and Structural Simplification,135,1049,0.12869399428026693
+agentic,Control-Flow and Branching Optimizations,21,1049,0.02001906577693041
+agentic,Data Structure Selection and Adaptation,35,1049,0.03336510962821735
+agentic,I/O and Synchronization,92,1049,0.0877025738798856
+agentic,Loop Transformations,5,1049,0.004766444232602479
+agentic,Memory and Data Locality Optimizations,348,1049,0.3317445185891325
+agentic,"Network, Database, and Data Access Optimization",92,1049,0.0877025738798856
+human_candidate,Algorithm-Level Optimizations,215,1034,0.2079303675048356
+human_candidate,Build & Compilation & Infrastructure Optimization,76,1034,0.0735009671179884
+human_candidate,Code Smells and Structural Simplification,155,1034,0.14990328820116053
+human_candidate,Control-Flow and Branching Optimizations,18,1034,0.017408123791102514
+human_candidate,Data Structure Selection and Adaptation,20,1034,0.019342359767891684
+human_candidate,I/O and Synchronization,124,1034,0.11992263056092843
+human_candidate,Loop Transformations,8,1034,0.007736943907156673
+human_candidate,Memory and Data Locality Optimizations,344,1034,0.33268858800773693
+human_candidate,"Network, Database, and Data Access Optimization",74,1034,0.07156673114119923

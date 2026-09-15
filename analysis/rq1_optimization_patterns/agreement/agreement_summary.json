@@ -1,0 +1,90 @@
+{
+  "by_sample_arm": {
+    "agentic": {
+      "full_agreement_rate": 0.6982300884955752,
+      "full_matches": 789,
+      "hierarchical_label": {
+        "agreement_rate": 0.6982300884955752,
+        "cohen_kappa": 0.6732378648227625,
+        "matches": 789,
+        "rows": 1130
+      },
+      "high_level_pattern": {
+        "agreement_rate": 0.7787610619469026,
+        "cohen_kappa": 0.7262007912554832,
+        "matches": 880,
+        "rows": 1130
+      },
+      "rows": 1130,
+      "sub_pattern": {
+        "agreement_rate": 0.6982300884955752,
+        "cohen_kappa": 0.6732378648227625,
+        "matches": 789,
+        "rows": 1130
+      }
+    },
+    "human_candidate": {
+      "full_agreement_rate": 0.7017699115044248,
+      "full_matches": 793,
+      "hierarchical_label": {
+        "agreement_rate": 0.7017699115044248,
+        "cohen_kappa": 0.6790000033717603,
+        "matches": 793,
+        "rows": 1130
+      },
+      "high_level_pattern": {
+        "agreement_rate": 0.7752212389380531,
+        "cohen_kappa": 0.7214022874481548,
+        "matches": 876,
+        "rows": 1130
+      },
+      "rows": 1130,
+      "sub_pattern": {
+        "agreement_rate": 0.7017699115044248,
+        "cohen_kappa": 0.6790000033717603,
+        "matches": 793,
+        "rows": 1130
+      }
+    }
+  },
+  "coverage": {
+    "gemini_status_counts": {
+      "classified": 2260
+    },
+    "gpt_status_counts": {
+      "classified": 2260
+    }
+  },
+  "gemini_classified_rows": 2260,
+  "gpt_classified_rows": 2260,
+  "overall": {
+    "full_agreement_rate": 0.7,
+    "full_matches": 1582,
+    "hierarchical_label": {
+      "agreement_rate": 0.7,
+      "cohen_kappa": 0.6764485099185673,
+      "matches": 1582,
+      "rows": 2260
+    },
+    "high_level_pattern": {
+      "agreement_rate": 0.7769911504424779,
+      "cohen_kappa": 0.7240529886870544,
+      "matches": 1756,
+      "rows": 2260
+    },
+    "rows": 2260,
+    "sub_pattern": {
+      "agreement_rate": 0.7,
+      "cohen_kappa": 0.6764485099185673,
+      "matches": 1582,
+      "rows": 2260
+    }
+  },
+  "overlap_rows": 2260,
+  "prompt_version": "rq1-optimization-pattern-legacy-v2",
+  "provider_config_sha256": {
+    "gemini": "23b16332d17c8ab691f03a8411a81a27724a251c7329b79ed7daf53d3159f0f2",
+    "gpt": "78b1e681b28e91a1a79fb472ad6e4aa53aa07ca572218028854c2f1b693cca49"
+  },
+  "study_contract_sha256": "2a24640ef8e8d087de60633fcac0a632ce9ed97a48a2141d25417fab7b8fe3a1"
+}
