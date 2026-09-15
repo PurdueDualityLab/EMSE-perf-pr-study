@@ -1,0 +1,26 @@
+{
+  "upstream_repository": "https://github.com/PurdueDualityLab/github_perf_patch_study",
+  "upstream_revision": "76374c11c0027492b3f4a7983fa22b583bbe1f92",
+  "files": {
+    "patch_size_and_complexity_analysis/ai.py": {
+      "upstream_sha256": "cf9d02cc269a0b2435054bd6d697bb0728c43c746672ac83c516898308ca07de",
+      "export_sha256": "cf9d02cc269a0b2435054bd6d697bb0728c43c746672ac83c516898308ca07de",
+      "transformation": "unchanged"
+    },
+    "patch_size_and_complexity_analysis/human.py": {
+      "upstream_sha256": "8467c558fe66b6ff72b21fe09f53efd4aae3e442528e28a3f8fecc67501ead7f",
+      "export_sha256": "8467c558fe66b6ff72b21fe09f53efd4aae3e442528e28a3f8fecc67501ead7f",
+      "transformation": "unchanged"
+    },
+    "patch_size_and_complexity_analysis/analyze_result.ipynb": {
+      "upstream_sha256": "0db138d1b22114c081203d434d147060347f06bb1c7b76515752c42c5c16b77e",
+      "export_sha256": "0689b7ed578e5ecc2cc1dd6775be1191d3705192e768c812894ee2d7ab4cb841",
+      "transformation": "notebook outputs, attachments, execution counts, and metadata removed"
+    },
+    "review_time_and_merge_rate/rq1_analysis.ipynb": {
+      "upstream_sha256": "18fe8d3e1f39cf56d60134954d4cb1967189fb1486b07e52fea5cbf61f479977",
+      "export_sha256": "68609e4e3eae18de59cc4cd1eb34da5da702dd870f05952faf71226f71077051",
+      "transformation": "notebook outputs, attachments, execution counts, and metadata removed"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "snapshot_at": [
+    "2026-08-27T22:00:14.356079+00:00"
+  ],
+  "source_sha256": {
+    "data/data/sample/balanced_sample.parquet": "10f46fae9c880325f6574ca308f1857a4798c2ac1548bd0511502cb8687b357f",
+    "mining/sample_evidence/final/pull_requests.parquet": "860dfc296fa776db3ef3e412c498c62cedb5171413997dceb85a104cb0ac2929"
+  },
+  "sample_rows": 2260,
+  "observed_rows": 2259,
+  "outcome_method": "Observed archived PR state; unknown outcomes excluded from merge-rate denominator",
+  "time_method": "Elapsed hours, creation to merge; nonnegative valid times among merged PRs only",
+  "test_family": "Two exploratory outcome tests; raw p-values; no repository-cluster or censoring adjustment",
+  "software_versions": {
+    "pandas": "3.0.3",
+    "numpy": "2.5.1",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "lizard": "1.24.0"
+  },
+  "source_code_sha256": {
+    "analysis/quantitative_analysis/analyze_quantitative.py": "7cafcda0c87983b2e1b9964bff08085818515ecc614921e00886d66b6c793d98",
+    "analysis/maintainability/run_maintainability.py": "3536f34ddc7c0a7c30b5860a9a7dddf7c234b4fd19e4adc3b1948e28ac16a744"
+  },
+  "files": {
+    "merge_rate_and_time.pdf": "9d3f023d136dd21f66020c0529cd97e67727533f88cd5c16e9e223e0348496e7",
+    "outcomes_summary.csv": "65cbe3dd0bae3f900e5c4539c5deee4fdfbf597135b7bbfa39a871d426f5721c",
+    "outcomes_tests.csv": "5bbf1db6e2345bda49b73fd280b45507d6ce6d0430d767031c1155f9073bdb11",
+    "pr_quantitative.csv": "6980168aab2c1be2c94a214188ea875fab1769d365d55ac7829bdd2d19741e09",
+    "quantitative_outcomes.tex": "178820f725cce027ca3c2b00fe2008d0fcb5a95adc5103e63e2ccce62c088550"
+  }
+}

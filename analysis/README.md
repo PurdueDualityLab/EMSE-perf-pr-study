@@ -8,6 +8,11 @@ responses and operational artifacts are excluded from these label exports.
 
 ## Layout
 
+- `quantitative_analysis/`: Section 4.1 scripts, historical source notebooks,
+  and current compact outcomes, patch-size and structural results.
+- `maintainability/`: resumable Lizard source measurements used by the
+  quantitative analysis; full source caches are ignored.
+
 - `classification_labels/`: compact RQ1/RQ2 model labels and consensus, RQ3
   extracted metric labels, and inclusion decisions, with provenance and checksums.
 

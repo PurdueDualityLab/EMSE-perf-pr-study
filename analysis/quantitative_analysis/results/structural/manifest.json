@@ -1,0 +1,6 @@
+{
+  "data/data/sample/balanced_sample.parquet": "10f46fae9c880325f6574ca308f1857a4798c2ac1548bd0511502cb8687b357f",
+  "mining/sample_evidence/final/pull_requests.parquet": "860dfc296fa776db3ef3e412c498c62cedb5171413997dceb85a104cb0ac2929",
+  "mining/sample_evidence/final/pull_request_files.parquet": "dd45a052e991c46df686bcb521028f7461a4ad82427482b900d1fc1633dc4414",
+  "method": "stored-base-head-paired-modified-files-v1-lizard-1.24.0"
+}

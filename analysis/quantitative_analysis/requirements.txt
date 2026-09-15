@@ -1,0 +1,2 @@
+-r ../../requirements.txt
+-r ../maintainability/requirements.txt

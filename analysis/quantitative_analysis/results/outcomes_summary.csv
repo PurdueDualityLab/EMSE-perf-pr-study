@@ -1,0 +1,3 @@
+sample_arm,sample_n,observed_n,unobserved_n,merged_n,open_n,closed_unmerged_n,time_n,time_median_hours,time_mean_hours,invalid_merged_times,merge_rate_pct,additions_n,additions_median,deletions_n,deletions_median,lines_changed_n,lines_changed_median,changed_files_n,changed_files_median,commits_count_n,commits_count_median
+agentic,1130,1130,0,615,37,478,615,4.993888888888889,156.37747289972896,0,54.424778761061944,1130,89.5,1130,22.0,1130,130.5,1130,3.0,1130,3.0
+human_candidate,1130,1129,1,827,44,258,827,19.162777777777777,132.83829000403063,0,73.25066430469442,1129,54.0,1129,18.0,1129,81.0,1129,3.0,1129,2.0

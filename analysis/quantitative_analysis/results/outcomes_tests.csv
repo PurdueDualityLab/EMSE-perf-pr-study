@@ -1,0 +1,3 @@
+contrast,method,n_agentic,n_human_candidate,statistic,p_value,effect_name,effect
+merge_rate,Pearson chi-square with Yates correction,1130,1129,85.88506995720871,1.9070317636531648e-20,Cramers V (Yates),0.19498478386644966
+time_to_merge_hours,"Mann-Whitney U, two-sided",615,827,201663.5,1.6866112734953125e-11,Cliffs delta,-0.20699363946481064
