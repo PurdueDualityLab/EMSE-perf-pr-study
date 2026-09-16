@@ -28,6 +28,7 @@ import metric_patterns as mp  # noqa: E402
 DATA = HERE / "data" / "rq3_pr_level.csv"
 FIG = HERE / "figures"
 DIMS = list(mp.DIMENSIONS)
+AUTHORS = ["AI Agent", "Human"]
 
 # palette: categorical slots 1–2 (agent blue, human orange); one-hue blue ramp for magnitude
 AGENT, HUMAN = "#2a78d6", "#eb6834"
@@ -69,8 +70,8 @@ def _clean(ax, x_grid=True):
 
 def fig_validation_by_category(df):
     order = df["pattern"].value_counts().index.tolist()          # by total n, largest on top
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0), sharey=True)
-    for ax, author in zip(axes, ["AI Agent", "Human"]):
+    fig, axes = plt.subplots(2, 1, figsize=(6.6, 6.0), layout="constrained")
+    for ax, author in zip(axes, AUTHORS):
         g = df[df.author_type == author]
         ct = pd.crosstab(g["pattern"], g["validation_type"]).reindex(index=order, columns=VTYPES).fillna(0)
         n = ct.sum(axis=1)
@@ -79,36 +80,36 @@ def fig_validation_by_category(df):
         left = np.zeros(len(order))
         for vt in VTYPES:
             ax.barh(y, share[vt].values, left=left, color=VTYPE_COLORS[vt], height=0.68,
-                    edgecolor="white", linewidth=1.0, label=vt)
+                    edgecolor="white", linewidth=0.5, label=vt,
+                    hatch="///" if vt == "unresolved" else None)
             left += share[vt].values
         for yi, (cat, ni) in zip(y, n.items()):
-            ax.text(101, yi, f"n={int(ni)}", va="center", ha="left", fontsize=6.5, color=INK2)
+            ax.text(101, yi, f"n={int(ni)}", va="center", ha="left", fontsize=8, color=INK2)
         ax.set_xlim(0, 118)
         ax.set_xticks([0, 25, 50, 75, 100])
         ax.set_xlabel("share of PRs (%)")
-        ax.set_title(author, loc="left", color=INK)
+        ax.set_title(f"{author.replace('_', '-').capitalize()} (n={len(g)})", loc="left", color=INK)
         ax.set_yticks(y)
         ax.set_yticklabels([SHORT.get(c, c) for c in order])
         ax.tick_params(axis="y", length=0)
         _clean(ax)
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=5, frameon=False, bbox_to_anchor=(0.5, -0.04), title="RQ2 validation type", title_fontsize=7)
-    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    axes[1].legend(handles, labels, loc="upper center", ncol=3, frameon=False,
+                   bbox_to_anchor=(0.5, -0.24), title="RQ2 validation type", fontsize=8)
     _save(fig, "rq3_validation_by_category")
     plt.close(fig)
 
 
 def fig_metric_profile_heatmap(df):
-    val = df[df.validation_present].copy()
+    val = df[df.in_metric_layer].copy()
     val["NONE"] = val["n_dims"] == 0          # validated, but no metric dimension reported
     cols = DIMS + ["NONE"]
     col_labels = DIMS + ["none"]
     order = val["pattern"].value_counts().index.tolist()
     cmap = LinearSegmentedColormap.from_list("blue_ramp", RAMP)
-    fig, axes = plt.subplots(1, 2, figsize=(7.8, 3.4),
-                             gridspec_kw={"width_ratios": [1, 1], "wspace": 0.22})
+    fig, axes = plt.subplots(2, 1, figsize=(6.6, 7.2), layout="constrained")
     vmax = 100
-    for ax, author in zip(axes, ["AI Agent", "Human"]):
+    for ax, author in zip(axes, AUTHORS):
         g = val[val.author_type == author]
         n = g.groupby("pattern").size().reindex(order).fillna(0).astype(int)
         cnt = g.groupby("pattern")[cols].sum().reindex(order).fillna(0)
@@ -118,18 +119,18 @@ def fig_metric_profile_heatmap(df):
             for j, d in enumerate(cols):
                 v = share.iloc[i, j]
                 if cnt.iloc[i, j]:
-                    ax.text(j, i, f"{v:.0f}%", ha="center", va="center", fontsize=6,
+                    ax.text(j, i, f"{v:.0f}%", ha="center", va="center", fontsize=8,
                             color="white" if v > vmax * 0.55 else INK)
         # separate the "none" column from the dimensions
         ax.axvline(len(DIMS) - 0.5, color=INK2, linewidth=0.8)
         ax.set_xticks(range(len(cols)))
         ax.set_xticklabels(col_labels)
         ax.set_yticks(range(len(order)))
-        ax.set_yticklabels([f"{SHORT.get(c, c)} (n={n[c]})" if ax is axes[0] else f"n={n[c]}" for c in order])
+        ax.set_yticklabels([f"{SHORT.get(c, c)} (n={n[c]})" for c in order])
         ax.tick_params(length=0)
         if ax is axes[1]:
             ax.tick_params(axis="y", pad=2)
-        ax.set_title(f"{author} (validated n={len(g)})", loc="left")
+        ax.set_title(f"{author.replace('_', '-').capitalize()} (validated n={len(g)})", loc="left")
         for s in ax.spines.values():
             s.set_visible(False)
         # thin white grid between cells
@@ -137,30 +138,27 @@ def fig_metric_profile_heatmap(df):
         ax.set_yticks(np.arange(-.5, len(order), 1), minor=True)
         ax.grid(which="minor", color="white", linewidth=1.2)
         ax.tick_params(which="minor", length=0)
-    cbar = fig.colorbar(im, ax=axes, fraction=0.025, pad=0.02)
+    cbar = fig.colorbar(im, ax=axes, orientation="horizontal", fraction=0.04, pad=0.04)
     cbar.set_label("% of validated PRs in category")
     cbar.outline.set_visible(False)
-    fig.text(0.5, -0.02, "  ".join(f"{d}: {mp.DIMENSIONS[d]}" for d in DIMS[:5]) + "\n" +
-             "  ".join(f"{d}: {mp.DIMENSIONS[d]}" for d in DIMS[5:]) + "  none: no metric dimension reported",
-             ha="center", va="top", fontsize=6.5, color=INK2)
     _save(fig, "rq3_metric_profile_heatmap")
     plt.close(fig)
 
 
 def fig_metric_frequency(df):
     """% of validated PRs reporting each dimension, agent vs human (sorted by pooled frequency)."""
-    val = df[df.validation_present]
+    val = df[df.in_metric_layer]
     pooled = val[DIMS].mean().sort_values(ascending=False)
     order = pooled.index.tolist()
     fig, ax = plt.subplots(figsize=(5.2, 3.2))
     y = np.arange(len(order))[::-1]
     height = 0.38
     xmax = 0
-    for i, (author, color) in enumerate([("AI Agent", AGENT), ("Human", HUMAN)]):
+    for i, (author, color) in enumerate(zip(AUTHORS, [AGENT, HUMAN])):
         g = val[val.author_type == author]
         share = g[order].mean().values * 100
         yy = y + (0.5 - i) * height
-        ax.barh(yy, share, height=height * 0.94, color=color, label=f"{author} (n={len(g)})")
+        ax.barh(yy, share, height=height * 0.94, color=color, label=f"{author.replace('_', '-').capitalize()} (n={len(g)})")
         for yi, v in zip(yy, share):
             ax.text(v + 0.8, yi, f"{v:.0f}%", va="center", ha="left", fontsize=6.5, color=INK2)
         xmax = max(xmax, share.max())
@@ -177,19 +175,19 @@ def fig_metric_frequency(df):
 
 
 def fig_dimensionality(df):
-    val = df[df.validation_present].copy()
+    val = df[df.in_metric_layer].copy()
     val["k"] = val["n_dims"].clip(upper=4)
     ks = [0, 1, 2, 3, 4]
     labels = ["0", "1", "2", "3", "4+"]
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.6))
+    fig, axes = plt.subplots(2, 1, figsize=(6.6, 5.8), layout="constrained")
 
     ax = axes[0]
     width = 0.38
-    for i, (author, color) in enumerate([("AI Agent", AGENT), ("Human", HUMAN)]):
+    for i, (author, color) in enumerate(zip(AUTHORS, [AGENT, HUMAN])):
         g = val[val.author_type == author]
         share = g["k"].value_counts(normalize=True).reindex(ks).fillna(0) * 100
         x = np.arange(len(ks)) + (i - 0.5) * width
-        ax.bar(x, share.values, width=width * 0.94, color=color, label=f"{author} (n={len(g)})")
+        ax.bar(x, share.values, width=width * 0.94, color=color, label=f"{author.replace('_', '-').capitalize()} (n={len(g)})")
         for xi, v in zip(x, share.values):
             if v > 0:
                 ax.text(xi, v + 1, f"{v:.0f}", ha="center", va="bottom", fontsize=6.5, color=INK2)
@@ -197,7 +195,7 @@ def fig_dimensionality(df):
     ax.set_xticklabels(labels)
     ax.set_xlabel("distinct metric dimensions reported per validated PR")
     ax.set_ylabel("share of PRs (%)")
-    ax.set_title("by author type", loc="left")
+    ax.set_title("By study arm: all positive validation consensuses", loc="left")
     ax.legend(frameon=False)
     _clean(ax, x_grid=False)
     ax.yaxis.grid(True, color=GRID, linewidth=0.6)
@@ -205,23 +203,22 @@ def fig_dimensionality(df):
 
     ax = axes[1]
     groups = [("benchmark", VTYPE_COLORS["benchmark"]), ("profiling", VTYPE_COLORS["profiling"]),
-              ("static-analysis", VTYPE_COLORS["static-analysis"]), ("anecdotal", VTYPE_COLORS["anecdotal"])]
+              (VTYPES[2], VTYPE_COLORS[VTYPES[2]]), ("anecdotal", VTYPE_COLORS["anecdotal"])]
     width = 0.2
     for i, (vt, color) in enumerate(groups):
-        g = val[val.validation_type == vt]
+        g = val[val.in_type_layer & val.validation_type.eq(vt)]
         share = g["k"].value_counts(normalize=True).reindex(ks).fillna(0) * 100
         x = np.arange(len(ks)) + (i - 1.5) * width
         ax.bar(x, share.values, width=width * 0.94, color=color, label=f"{vt} (n={len(g)})")
     ax.set_xticks(range(len(ks)))
     ax.set_xticklabels(labels)
     ax.set_xlabel("distinct metric dimensions reported per validated PR")
-    ax.set_title("by RQ2 validation type", loc="left")
+    ax.set_title("by resolved RQ2 validation type", loc="left")
     ax.set_ylim(0, 105)
-    ax.legend(frameon=False, ncol=2, loc="upper right")
+    ax.legend(frameon=False, ncol=2, loc="upper right", fontsize=8)
     _clean(ax, x_grid=False)
     ax.yaxis.grid(True, color=GRID, linewidth=0.6)
     ax.set_axisbelow(True)
-    fig.tight_layout()
     _save(fig, "rq3_dimensionality")
     plt.close(fig)
 
@@ -240,6 +237,8 @@ def main():
     df = pd.read_csv(DATA)
     df["validation_present"] = df["validation_present"].astype(bool)
     df["validation_type"] = df["validation_type"].fillna("none")
+    if "in_type_layer" not in df:
+        df["in_type_layer"] = df.in_metric_layer & ~df.validation_type.isin(["none", "unresolved"])
     for d in DIMS:
         df[d] = df[d].astype(bool)
     fig_validation_by_category(df)
@@ -250,4 +249,16 @@ def main():
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Render RQ3 figures from PR-level metric labels.")
+    parser.add_argument("--data", type=Path, default=DATA)
+    parser.add_argument("--output-dir", type=Path, default=FIG)
+    parser.add_argument("--current", action="store_true", help="Use current study arms and validation-type labels.")
+    args = parser.parse_args()
+    DATA, FIG = args.data, args.output_dir
+    if args.current:
+        AUTHORS = ["agentic", "human_candidate"]
+        VTYPES = ["benchmark", "profiling", "static-reasoning", "anecdotal", "none", "unresolved"]
+        VTYPE_COLORS["static-reasoning"] = VTYPE_COLORS["static-analysis"]
+        VTYPE_COLORS["unresolved"] = "#eeeeee"
     main()

@@ -6,6 +6,84 @@ performance metric dimensions reported as that evidence — and relates the thre
 
 ## Analytic sample
 
+### Current balanced sample
+
+Run the consensus adapter from the repository root, in an environment installed
+from `requirements.txt`:
+
+```bash
+python analysis/rq3_pattern_and_validation/run_current.py
+```
+
+The runner accepts `--sample`, `--rq1`, `--rq2`, `--evidence-dir`, and
+`--output-dir`. Defaults read the official balanced sample under `data/data/sample/`,
+the local RQ1/RQ2 `consensus/*.parquet` files, and the original untruncated evidence
+snapshot under `mining/sample_evidence/final/`. The latter is an ignored local
+artifact, not part of the published dataset. The snapshot used for the existing
+RQ1/RQ2 labels was recovered from Gautschi; it is dated 2026-08-27 and records
+2,259 complete collections and one unavailable PR out of 2,260 sample identities.
+Reuse this snapshot rather than fetching newer versions of the discussions.
+
+The adapter validates immutable `(repo_id, number)` identities, sample arms,
+selection hashes, snapshot consistency, and evidence completeness. It preserves
+the existing D0–D9 extraction rules and the historical exploratory test family.
+Equal-distance quantitative-claim ties now use sorted claim kinds instead of
+set iteration, making extraction independent of Python's randomized hash seed.
+Sources use current PR file patches (not repeated per-commit patches), commit
+messages, issue/review comments, description, and workflow names. It does not
+inject provider-specific RQ2 pipeline names into the corpus. These source
+differences should be considered when comparing against the historical results.
+
+Current denominators:
+
+| Layer | All | agentic | human_candidate |
+| --- | ---: | ---: | ---: |
+| RQ1 included × available RQ2 presence consensus | 2,081 | 1,048 | 1,033 |
+| Positive validation presence / general metric layer | 1,699 | 858 | 841 |
+| Resolved positive type layer | 1,581 | 807 | 774 |
+
+The 118 positive PRs without resolved validation types are included in the
+general metric profile, dimensionality by sample arm/category, merge-status
+comparisons, and no-diff sensitivity. They appear as `unresolved` in descriptive
+type distributions. Only comparisons involving validation type exclude them,
+including benchmark-versus-other tests: an unresolved type is not known to be
+non-benchmark. `in_metric_layer` marks all positive presence consensuses, while
+`in_type_layer` marks the resolved positive type subset. Dimension flags are
+still extracted for every analytic PR.
+Thus, neither 2,083 (RQ1 alone) nor 1,707 (RQ2 alone) is the joint RQ3 denominator.
+
+Outputs are written to ignored `current/`: `data/`, `results/`, four PDF figures
+under `figures/`, and `summary.json` with input SHA-256 hashes and cohort counts.
+`data/sample_inclusion.csv` records inclusion for all 2,260 sample identities.
+The existing committed historical outputs remain the reference for the old run.
+
+To refresh paper figures without rerunning extraction:
+
+```bash
+python analysis/rq3_pattern_and_validation/make_figures.py --current \
+  --data analysis/rq3_pattern_and_validation/current/data/rq3_pr_level.csv \
+  --output-dir report/figures
+python analysis/make_methodology_figure.py
+python analysis/make_paper_comparison_figures.py
+```
+
+The paper layout stacks category/type and heatmap panels for readability and
+hatches unresolved validation types. Figure captions define the separate
+positive-presence and resolved-type denominators.
+The comparison-figure script reads published compact RQ1/RQ2 labels and the
+local complete-case structural deltas, rendering vector PDFs without changing
+the underlying statistics.
+
+Interpret results as exploratory PR-level associations. In particular,
+benchmark labels and quantitative metric detection share evidence, so their
+association does not independently validate the extractor. Extraction rules
+have not been evaluated against a new manually annotated precision/recall set.
+The conditional Monte Carlo test uses Pearson's statistic with fixed margins;
+its label now describes that implementation accurately. BH adjustment uses
+SciPy's equivalent implementation, avoiding an undeclared statsmodels dependency.
+
+### Historical sample
+
 | layer | PRs | agent | human | source |
 | --- | --- | --- | --- | --- |
 | category × validation | 357 | 280 | 77 | 407 valid perf PRs − 50 `No Meaningful Change or Not Performance PR` (RQ1) |
@@ -16,9 +94,9 @@ PRs without validation evidence form the "no metric reported" stratum.
 ## Pipeline (run from the repo root)
 
 ```bash
-python RQ3_metric_targeting/extract_metrics.py    # Step 1 → data/rq3_pr_level.csv, data/rq3_metric_matches.csv
-python RQ3_metric_targeting/rq3_statistics.py     # Step 2 → results/rq3_results.md, results/tables/*.csv, results/rq3_tests.csv
-python RQ3_metric_targeting/make_figures.py       # figures/*.pdf   (set RQ3_PNG_DIR=… for PNG previews)
+python analysis/rq3_pattern_and_validation/extract_metrics.py    # Requires historical loader inputs
+python analysis/rq3_pattern_and_validation/rq3_statistics.py
+python analysis/rq3_pattern_and_validation/make_figures.py
 ```
 
 ### Step 1 — `extract_metrics.py` + `metric_patterns.py`

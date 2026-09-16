@@ -30,7 +30,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import chi2_contingency, fisher_exact, kruskal, mannwhitneyu, random_table
-from statsmodels.stats.multitest import multipletests
+from scipy.stats import false_discovery_control
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -107,7 +107,7 @@ def independence_test(ct: pd.DataFrame, label: str, stratum: str, family: str):
         sims = random_table(ct.sum(axis=1).values, ct.sum(axis=0).values, seed=rng).rvs(MC_B)
         stat_sim = ((sims - expected) ** 2 / expected).sum(axis=(1, 2))
         p = (1 + (stat_sim >= chi2 - 1e-9).sum()) / (MC_B + 1)
-        test = f"Fisher–Freeman–Halton (Monte Carlo, B={MC_B:,})"
+        test = f"Conditional Pearson chi-square (Monte Carlo, B={MC_B:,})"
     effect_name, effect = "Cramér's V", v
     if (r, c) == (2, 2):
         a, b = ct.values[0]
@@ -158,7 +158,10 @@ def kw_test(groups: dict, label, stratum, family):
                    effect_name="epsilon²", effect=np.nan, note="")
         TESTS.append(out)
         return out
-    h, p = kruskal(*groups.values())
+    if len(np.unique(np.concatenate(list(groups.values())))) == 1:
+        h, p = 0.0, 1.0
+    else:
+        h, p = kruskal(*groups.values())
     k = len(groups)
     eps2 = (h - k + 1) / (n - k) if n > k else float("nan")
     note = "; ".join(f"{SHORT.get(g, g)} md={np.median(v):.1f}" for g, v in groups.items())
@@ -253,6 +256,8 @@ def load():
     df["is_merged"] = df["is_merged"].astype(bool)
     df["validation_present"] = df["validation_present"].astype(bool)
     df["validation_type"] = df["validation_type"].fillna("none")
+    if "in_type_layer" not in df:
+        df["in_type_layer"] = df.in_metric_layer & ~df.validation_type.isin(["none", "unresolved"])
     counts = df["pattern"].value_counts()
     rare = counts[counts < MIN_CATEGORY_N].index
     df["category"] = df["pattern"].replace({p: "Other" for p in rare})
@@ -266,22 +271,24 @@ def section_sample(df):
     val = df[df.validation_present]
     t = pd.DataFrame({
         "PRs (category layer)": df.groupby("author_type").size(),
-        "with validation evidence (metric layer)": val.groupby("author_type").size(),
+        "with validation evidence": val.groupby("author_type").size(),
+        "metric layer (all positive)": df[df.in_metric_layer].groupby("author_type").size(),
+        "resolved type layer": df[df.in_type_layer].groupby("author_type").size(),
     })
     t.loc["All"] = t.sum()
     w(md(t, "{:.0f}"))
     w(f"Extractor settings: window = {mp.WINDOW_TOKENS} tokens; exclusion window = {mp.EXCLUSION_TOKENS} tokens; "
-      f"nearest-cue attribution = {mp.NEAREST_CUE_WINS}. Categories with n < {MIN_CATEGORY_N} on the 357 PRs are pooled as "
+      f"nearest-cue attribution = {mp.NEAREST_CUE_WINS}. Categories with n < {MIN_CATEGORY_N} on the {len(df)} PRs are pooled as "
       f"'Other' for inferential tests only.")
     vt = pd.crosstab(df["validation_type"], df["author_type"]).reindex(VTYPES).fillna(0).astype(int)
     vt["All"] = vt.sum(axis=1)
     vt = col_pct(vt)
-    w("Validation type (RQ2) by author type, % of the author's PRs (357 PRs):", md(vt, "{:.1f}"))
+    w(f"Validation type (RQ2) by author type, % of the author's PRs ({len(df)} PRs):", md(vt, "{:.1f}"))
     save(t, "T0_sample"); save(vt, "T0_validation_type_by_author")
 
 
 def section_A(df):
-    w("## 1. Optimization category × validation evidence (n = 357)")
+    w(f"## 1. Optimization category × validation evidence (n = {len(df)})")
     # ---- A1 presence
     rows = []
     for cat, g in df.groupby("pattern"):
@@ -296,17 +303,17 @@ def section_A(df):
     w("### 1.1 Validation presence by category (% of the category's PRs for that author)", md(A1, index=True))
     save(A1, "T1_1_category_x_validation_presence")
 
-    for stratum, g in [("pooled", df), ("AI Agent", df[df.author_type == "AI Agent"]), ("Human", df[df.author_type == "Human"])]:
+    for stratum, g in [("pooled", df)] + [(a, df[df.author_type == a]) for a in AUTHORS]:
         ct = pd.crosstab(g["category"], g["validation_present"])
         independence_test(ct, "Category × validation present", stratum, "A. category×validation")
     # per-category author difference in validation rate
-    w("Agent vs human validation rate within each category (Fisher's exact, 2×2):")
+    w("Validation rate by sample arm within each category (adaptive contingency test):")
     rows = []
     for cat, g in df.groupby("category"):
         ct = pd.crosstab(g["author_type"], g["validation_present"]).reindex(index=AUTHORS, columns=[True, False]).fillna(0).astype(int)
         t = independence_test(ct, f"Author × validation present — {SHORT[cat]}", "within category", "A. category×validation")
-        rows.append({"Category": SHORT[cat], "Agent validated": pct(int(ct.loc["AI Agent", True]), int(ct.loc["AI Agent"].sum())),
-                     "Human validated": pct(int(ct.loc["Human", True]), int(ct.loc["Human"].sum())),
+        rows.append({"Category": SHORT[cat], f"{AUTHORS[0]} validated": pct(int(ct.loc[AUTHORS[0], True]), int(ct.loc[AUTHORS[0]].sum())),
+                     f"{AUTHORS[1]} validated": pct(int(ct.loc[AUTHORS[1], True]), int(ct.loc[AUTHORS[1]].sum())),
                      "test": t["test"], "p (raw)": fmt_p(t["p_raw"]), "note": t["note"]})
     A1b = pd.DataFrame(rows).set_index("Category")
     w(md(A1b)); save(A1b, "T1_1b_author_x_validation_within_category")
@@ -319,8 +326,8 @@ def section_A(df):
         ct = row_pct(ct).sort_values("n", ascending=False)
         w(f"**{a}**", md(ct, "{:.1f}"))
         save(ct, f"T1_2_category_x_validation_type_{a.replace(' ', '_')}")
-    val = df[df.validation_present]
-    for stratum, g in [("pooled", val), ("AI Agent", val[val.author_type == "AI Agent"]), ("Human", val[val.author_type == "Human"])]:
+    val = df[df.in_type_layer]
+    for stratum, g in [("pooled", val)] + [(a, val[val.author_type == a]) for a in AUTHORS]:
         ct = pd.crosstab(g["category"], g["validation_type"])
         independence_test(ct, "Category × validation type (validated PRs)", stratum, "A. category×validation")
     ct = pd.crosstab(val["category"], val["validation_type"] == "benchmark")
@@ -347,7 +354,7 @@ def profile_table(g, label):
 
 
 def section_B(df):
-    val = df[df.validation_present].copy()
+    val = df[df.in_metric_layer].copy()
     w("## 2. Metric profile: category × reported dimensions (validated PRs, n = %d)" % len(val))
     w("Dimensions: " + "; ".join(f"**{d}** {mp.DIMENSIONS[d]}" for d in DIMS)
       + ". D0 records a quantified gain whose dimension is not named and is credited only when no D1–D9 cue is in the claim's window.")
@@ -380,7 +387,7 @@ def section_B(df):
       + f"; all: {pct(len(d0_only), len(val))}. Excluding D0, the share of validated PRs with ≥1 named dimension is "
       + ", ".join(f"{a}: {pct(int((val[val.author_type == a].n_dims_specific > 0).sum()), int((val.author_type == a).sum()))}" for a in AUTHORS)
       + f"; all: {pct(int((val.n_dims_specific > 0).sum()), len(val))}.")
-    mwu_test(val[val.author_type == "AI Agent"].n_dims, val[val.author_type == "Human"].n_dims,
+    mwu_test(val[val.author_type == AUTHORS[0]].n_dims, val[val.author_type == AUTHORS[1]].n_dims,
              "#dims: agent vs human", "validated", "B. metric profile", ("agent", "human"))
     kw_test({c: g.n_dims for c, g in val.groupby("category")}, "#dims across categories", "pooled (validated)", "B. metric profile")
     for a in AUTHORS:
@@ -390,54 +397,57 @@ def section_B(df):
     w("Per category and author:", md(by_cat)); save(by_cat, "T2_3_dimensionality_by_category_author")
 
     # metric profile × validation type
-    w("### 2.4 Metric profile × validation type (validated PRs)")
+    typed = val[val.in_type_layer]
+    w(f"### 2.4 Metric profile × validation type (resolved positive types, n = {len(typed)})")
     rows = []
-    for vt, g in val.groupby("validation_type"):
+    for vt, g in typed.groupby("validation_type"):
         r = {"Validation type": vt, "n": len(g), "≥1 dim": pct(int(g.any_dim.sum()), len(g)), "mean #dims": f"{g.n_dims.mean():.2f}"}
         for d in DIMS:
             r[d] = pct(int(g[d].sum()), len(g), 0)
         rows.append(r)
-    t = pd.DataFrame(rows).set_index("Validation type").reindex([v for v in VTYPES if v != "none"])
+    t = pd.DataFrame(rows).set_index("Validation type").reindex([v for v in VTYPES if v not in {"none", "unresolved"}])
     w("% of PRs with that validation type reporting each dimension:", md(t)); save(t, "T2_4_metric_profile_by_validation_type")
-    bench = val[val.validation_type == "benchmark"]
-    other = val[val.validation_type != "benchmark"]
-    mwu_test(bench.n_dims, other.n_dims, "#dims: benchmark vs other evidence", "validated", "B. metric profile", ("benchmark", "other"))
-    independence_test(pd.crosstab(val["validation_type"] == "benchmark", val["any_dim"]),
-                      "Benchmark evidence × any dimension reported", "validated", "B. metric profile")
+    bench = typed[typed.validation_type == "benchmark"]
+    other = typed[typed.validation_type != "benchmark"]
+    mwu_test(bench.n_dims, other.n_dims, "#dims: benchmark vs other evidence", "resolved types", "B. metric profile", ("benchmark", "other"))
+    independence_test(pd.crosstab(typed["validation_type"] == "benchmark", typed["any_dim"]),
+                       "Benchmark evidence × any dimension reported", "resolved types", "B. metric profile")
     for d in DIMS:
-        if val[d].sum() >= 5:
-            independence_test(pd.crosstab(val["validation_type"] == "benchmark", val[d]),
-                              f"Benchmark evidence × {d} reported", "validated", "B. metric profile")
+        if typed[d].sum() >= 5:
+            independence_test(pd.crosstab(typed["validation_type"] == "benchmark", typed[d]),
+                               f"Benchmark evidence × {d} reported", "resolved types", "B. metric profile")
     return val
 
 
 def section_agent(df):
     """2.5 — metric reporting by author type and by individual agent, under three denominators."""
     w("### 2.5 Metric reporting by author type and by agent")
-    w("Rates are % of the row's PRs. *all PRs* = the category layer; *validated* = PRs with RQ2 validation evidence; "
+    w("Rates are % of the row's PRs. *all PRs* = the category layer; the metric layer contains all positive validation consensuses, including unresolved types; "
       "*benchmark* = PRs whose evidence is a benchmark; *no diff* = dimension flags recomputed with the code diff excluded. "
       "The *all PRs* quantification columns count only PRs that are validated **and** report a dimension, i.e. they are "
       "the product of the validation rate and the conditional quantification rate; PRs with a quantitative claim but no "
       "RQ2 validation label (`extremes_metric_without_validation_label.csv`) are not counted. "
       "Per-agent rows are descriptive and are not part of the RQ3 test family.")
-    agents = df[df.author_type == "AI Agent"]
-    groups = [("Human", df[df.author_type == "Human"]), ("AI Agent (all)", agents)]
+    agents = df[df.author_type == AUTHORS[0]]
+    groups = [(AUTHORS[1], df[df.author_type == AUTHORS[1]]), (f"{AUTHORS[0]} (all)", agents)]
     by_agent = sorted(agents.groupby("agent"), key=lambda kv: -len(kv[1]))
     groups += [(f"  {name}", g) for name, g in by_agent]
     rows = []
     for name, g in groups:
-        val = g[g.validation_present]
-        bench = g[g.validation_type == "benchmark"]
+        val = g[g.in_metric_layer]
+        bench = g[g.in_type_layer & g.validation_type.eq("benchmark")]
         rows.append({
             "author": name,
             "n (all PRs)": len(g),
-            "validated": pct(len(val), len(g)),
+            "validation present": pct(int(g.validation_present.sum()), len(g)),
+            "metric layer": pct(len(val), len(g)),
+            "n resolved type layer": int(g.in_type_layer.sum()),
             "benchmark evidence": pct(len(bench), len(g)),
-            "validated & ≥1 dim, all PRs": pct(val.any_dim.sum(), len(g)),
-            "validated & ≥1 dim, all PRs (no diff)": pct((val.n_dims_nodiff > 0).sum(), len(g)),
-            "n validated": len(val),
-            "≥1 dim, validated": pct(val.any_dim.sum(), len(val)),
-            "mean #dims, validated": round(float(val.n_dims.mean()), 2) if len(val) else np.nan,
+            "metric layer & ≥1 dim, all PRs": pct(val.any_dim.sum(), len(g)),
+            "metric layer & ≥1 dim, all PRs (no diff)": pct((val.n_dims_nodiff > 0).sum(), len(g)),
+            "n metric layer": len(val),
+            "≥1 dim, metric layer": pct(val.any_dim.sum(), len(val)),
+            "mean #dims, metric layer": round(float(val.n_dims.mean()), 2) if len(val) else np.nan,
             "n benchmark": len(bench),
             "≥1 dim, benchmark": pct(bench.any_dim.sum(), len(bench)),
         })
@@ -450,7 +460,7 @@ def section_agent(df):
 def section_merge_extremes(df, val):
     # 3 merge status
     w("## 3. Merge status")
-    for stratum, g in [("pooled", val), ("AI Agent", val[val.author_type == "AI Agent"]), ("Human", val[val.author_type == "Human"])]:
+    for stratum, g in [("pooled", val)] + [(a, val[val.author_type == a]) for a in AUTHORS]:
         mwu_test(g[g.is_merged].n_dims, g[~g.is_merged].n_dims, "#dims: merged vs not merged", f"{stratum} (validated)", "C. merge", ("merged", "not merged"))
         independence_test(pd.crosstab(g["is_merged"], g["any_dim"]), "Merged × any dimension reported", f"{stratum} (validated)", "C. merge")
     rows = []
@@ -505,7 +515,8 @@ def section_tests():
     valid = t["p_raw"].notna()
     t["p_bh"] = np.nan
     if valid.any():
-        rej, p_adj, _, _ = multipletests(t.loc[valid, "p_raw"].values, alpha=0.05, method="fdr_bh")
+        p_adj = false_discovery_control(t.loc[valid, "p_raw"].values, method="bh")
+        rej = p_adj < 0.05
         t.loc[valid, "p_bh"] = p_adj
         t.loc[valid, "significant_bh"] = rej
     t.to_csv(RES / "rq3_tests.csv", index=False)
@@ -523,10 +534,15 @@ def section_tests():
 
 
 def main():
-    RES.mkdir(exist_ok=True); TAB.mkdir(exist_ok=True)
+    TESTS.clear(); LINES.clear()
+    RES.mkdir(parents=True, exist_ok=True); TAB.mkdir(exist_ok=True)
     df, rare = load()
+    w("Metric profiles use all positive validation consensuses, including unresolved types. "
+      "Only comparisons involving validation type require a resolved positive type; "
+      "unresolved types are never treated as non-benchmark evidence. "
+      "Tests are PR-level exploratory associations.")
     w("# RQ3 — Optimization, validation, and reported metrics",
-      f"Source: `{DATA.relative_to(HERE.parent)}` (n = {len(df)} PRs; {int(df.validation_present.sum())} with validation evidence). "
+      f"Source: `{DATA}` (n = {len(df)} PRs; {int(df.in_metric_layer.sum())} in the positive metric layer; {int(df.in_type_layer.sum())} in the resolved type layer). "
       f"Rare categories pooled as 'Other' for tests: {', '.join(rare) or 'none'}.")
     section_sample(df)
     section_A(df)

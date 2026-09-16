@@ -133,7 +133,8 @@ def extract_dimensions(raw_text):
 
     def nearest_quant(center, kinds):
         best = None
-        for k in kinds:
+        # Resolve equal-distance claims consistently across Python hash seeds.
+        for k in sorted(kinds):
             if k not in quant_by_kind:
                 continue
             items, idx = quant_by_kind[k]
