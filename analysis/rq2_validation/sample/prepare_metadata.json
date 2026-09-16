@@ -1,0 +1,15 @@
+{
+  "arm_counts": {
+    "agentic": 1129,
+    "human_candidate": 1129
+  },
+  "evidence_status_sha256": "dde7797786a5861817d81260541a7a4d07cd3bfc0c6e0bd2e9ed2a066bc7701e",
+  "exclusions": 2,
+  "exclusions_sha256": "75b8506e71a6d230b6bcd41a80e26ed3d3c2211a801378d1edbecfec62433703",
+  "method": "rq2_complete_observability_balanced_subset_v1",
+  "output_sha256": "01460f42a1f1b63ac40d4ed3302140cf3d125a4d8aafba22244d5bf64c688b59",
+  "rows": 2258,
+  "selection_rule": "Exclude incomplete rows and the opposite-arm row in the same weekly stratum with the greatest selection_hash.",
+  "source_sample": "data/data/sample/balanced_sample.parquet",
+  "source_sample_sha256": "10f46fae9c880325f6574ca308f1857a4798c2ac1548bd0511502cb8687b357f"
+}
