@@ -42,6 +42,7 @@ COLORS = {
     "population": "#6b7280",
     "sample": "#9BBCE8",
 }
+AGENT_COLORS = ("#0072B2", "#56B4E9", "#009E73", "#E69F00", "#D55E00")
 OFFICIAL_COUNTS = {
     "population": {
         "openai_codex": 527,
@@ -183,6 +184,38 @@ def render_figure(
     plt.close(fig)
 
 
+def render_pie_chart(counts: dict[str, pd.Series], output: Path) -> None:
+    values = counts["sample"]
+    total = int(values.sum())
+    fig, ax = plt.subplots(figsize=(6.2, 3.6), layout="constrained")
+    wedges, _, _ = ax.pie(
+        values.to_numpy(),
+        colors=AGENT_COLORS,
+        startangle=90,
+        counterclock=False,
+        autopct="%.1f%%",
+        pctdistance=0.72,
+        textprops={"fontsize": 8},
+        wedgeprops={"edgecolor": "white", "linewidth": 1},
+    )
+    labels = [
+        f"{AGENT_LABELS[agent]}: {value:,}"
+        for agent, value in values.items()
+    ]
+    ax.legend(
+        wedges,
+        labels,
+        title=f"Final agentic sample (n={total:,})",
+        frameon=False,
+        loc="center left",
+        bbox_to_anchor=(1.0, 0.5),
+    )
+    ax.set_aspect("equal")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output, bbox_inches="tight")
+    plt.close(fig)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -195,6 +228,12 @@ def parse_args() -> argparse.Namespace:
         choices=("population", "sample", "both"),
         default="both",
         help="Cohort to display; 'both' compares pre-filter population and final sample.",
+    )
+    parser.add_argument(
+        "--chart",
+        choices=("bars", "pie"),
+        default="bars",
+        help="Render the selected cohorts as bars or the final sample as a pie chart.",
     )
     parser.add_argument(
         "--skip-official-controls",
@@ -217,7 +256,12 @@ def main() -> None:
         print(f"{COHORT_LABELS[cohort]}:")
         for agent, value in counts[cohort].items():
             print(f"  {AGENT_LABELS[agent]}: {value:,}")
-    render_figure(counts, args.output, selected_cohorts)
+    if args.chart == "pie":
+        if args.cohort != "sample":
+            raise ValueError("The pie chart represents only the final sample cohort.")
+        render_pie_chart(counts, args.output)
+    else:
+        render_figure(counts, args.output, selected_cohorts)
     print(f"Wrote {args.output}")
 
 
