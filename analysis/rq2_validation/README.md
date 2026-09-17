@@ -118,15 +118,18 @@ limit. Both final outputs contain 2,258 classified rows with no schema errors.
   --output-dir analysis/rq2_validation/comparison
 ```
 
-Stage 1 takes the majority validation-presence vote. Stage 2 requires two
-positive models to agree on the complete
-`(primary_validation_type, validation_types)` value. The analysis preserves
-unresolved positives and excludes them from type comparisons. The primary
-comparison preserves the previous paper's chi-square and Cramer's V analyses,
-including Yates's correction for validation presence. The generated figure
-preserves the previous primary-type ordering, normalization, labels, and layout.
+Stage 1 takes the majority validation-presence vote. The primary Stage 2
+analysis requires two positive models to agree on `primary_validation_type`.
+It resolves 1,819 positive PRs and preserves 20 as unresolved. A separate
+multi-label sensitivity requires agreement on the complete
+`(primary_validation_type, validation_types)` value, resolving 1,707 positive
+PRs and preserving 132 as unresolved. This secondary rule avoids synthesizing
+a type set that no model emitted. The primary comparison preserves the previous
+paper's chi-square and Cramer's V analyses, including Yates's correction for
+validation presence. The generated figure preserves the previous primary-type
+ordering, normalization, labels, and layout.
 
 The machine-readable output additionally includes repository-cluster bootstrap
-intervals, Fisher tests with Holm correction, and non-exclusive type summaries.
-These are retained as optional robustness instruments and are not part of the
-paper's primary RQ2 analysis.
+intervals, Fisher tests with Holm correction, and non-exclusive type summaries
+over the stricter multi-label subset. These are retained as optional robustness
+instruments and are not part of the paper's primary RQ2 analysis.

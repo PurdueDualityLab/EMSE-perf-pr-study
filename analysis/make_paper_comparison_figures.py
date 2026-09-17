@@ -48,7 +48,7 @@ def main():
 
     rq2 = pd.read_csv(ROOT / 'analysis/classification_labels/rq2_labels.csv')
     rq2 = rq2[rq2.included_in_stage2_analysis]
-    assert len(rq2) == 1707
+    assert len(rq2) == 1819
     order = ['static-reasoning', 'benchmark', 'anecdotal', 'profiling']
     fig, ax = plt.subplots(figsize=(5.2, 3.2), layout='constrained')
     for i, (arm, color, label) in enumerate(zip(ARMS, COLORS, LABELS)):

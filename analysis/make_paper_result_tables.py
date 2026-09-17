@@ -35,7 +35,7 @@ def main():
     rq1, rq2, rq3, structural, tests = [pd.read_csv(path) for path in sources]
     rq1 = rq1[rq1.included_in_analysis]
     rq2 = rq2[rq2.included_in_stage2_analysis]
-    assert len(rq1) == 2083 and len(rq2) == 1707 and len(rq3) == 2081
+    assert len(rq1) == 2083 and len(rq2) == 1819 and len(rq3) == 2081
     assert rq3.in_metric_layer.sum() == 1699 and rq3.in_type_layer.sum() == 1581
     categories = {
         'Algorithm-Level Optimizations': 'Algorithm-level',
@@ -66,7 +66,7 @@ def main():
                         ('static-reasoning', 'Static reasoning'), ('anecdotal', 'Anecdotal')]:
         rows.append([label] + [value for arm in ARMS for value in
                     (int(counts.loc[kind, arm]), f'{100*counts.loc[kind, arm]/counts[arm].sum():.1f}')])
-    rows.append(['Total', '870', '100.0', '837', '100.0'])
+    rows.append(['Total', '918', '100.0', '901', '100.0'])
     write_table('rq2_primary.tex', 'RQ2 primary validation types among resolved positive cases. Percentages are within study arm.',
         'tab:rq2-primary', 'lrrrr',
         ['Primary type', r'\multicolumn{2}{c}{Agentic}', r'\multicolumn{2}{c}{Human-candidate}'],

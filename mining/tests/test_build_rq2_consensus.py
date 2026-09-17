@@ -62,26 +62,39 @@ def test_binary_majority_and_all_coalitions(votes, present, coalition):
     assert row["gpt_model_provenance"] == "retained"
 
 
-def test_stage2_canonicalizes_order_and_votes_atomic_tuple():
+def test_stage2_votes_primary_and_multilabel_canonicalizes_atomic_tuple():
     first = (True, "benchmark", ["benchmark", "profiling"])
     second = (True, "benchmark", ["profiling", "benchmark"])
     result, _ = _build([first], [second], [PROFILING])
     row = result.iloc[0]
     assert row["consensus_status"] == "exact_majority"
     assert row["stage2_coalition"] == "gpt+gemini"
+    assert row["multilabel_coalition"] == "gpt+gemini"
     assert row["consensus_validation_types"] == ["benchmark", "profiling"]
 
 
-def test_positive_without_tuple_majority_is_unresolved_not_synthetic_label():
-    # Components have majorities, but no two models supplied the synthesized combination.
+def test_primary_majority_is_resolved_without_synthetic_multilabel_label():
     mixed = (True, "benchmark", ["benchmark", "profiling"])
     result, summary = _build([BENCHMARK], [mixed], [PROFILING])
     row = result.iloc[0]
-    assert row["consensus_status"] == "unresolved"
-    assert row["consensus_primary_validation_type"] is None
-    assert row["consensus_validation_types"] == []
-    assert not row["included_in_stage2_analysis"]
-    assert summary["unresolved"] == 1
+    assert row["consensus_status"] == "exact_majority"
+    assert row["consensus_primary_validation_type"] == "benchmark"
+    assert row["included_in_stage2_analysis"]
+    assert row["multilabel_status"] == "unresolved"
+    assert row["consensus_validation_types"] is None
+    assert not row["included_in_multilabel_analysis"]
+    assert summary["unresolved"] == 0
+    assert summary["multilabel_unresolved"] == 1
+
+
+def test_multilabel_consensus_preserves_emitted_atomic_pair():
+    mixed = (True, "benchmark", ["benchmark", "profiling"])
+    result, _ = _build([BENCHMARK], [mixed], [mixed])
+    row = result.iloc[0]
+    assert row["consensus_primary_validation_type"] == "benchmark"
+    assert row["consensus_validation_types"] == ["benchmark", "profiling"]
+    assert row["included_in_multilabel_analysis"]
+    assert row["multilabel_coalition"] == "gemini+qwen"
 
 
 def test_negative_majority_emits_canonical_absent_label():
@@ -90,6 +103,7 @@ def test_negative_majority_emits_canonical_absent_label():
     assert row["consensus_primary_validation_type"] == "none"
     assert row["consensus_validation_types"] == []
     assert row["inclusion_reason"] == "stage1_consensus_absent"
+    assert row["multilabel_status"] == "not_applicable_absent"
 
 
 @pytest.mark.parametrize(

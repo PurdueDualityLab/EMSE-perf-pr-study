@@ -25,10 +25,13 @@ unresolved rows. `included_in_analysis` selects the 2,083 resolved rows. A blank
 consensus label means unresolved; it must not be interpreted as a negative label.
 
 **RQ2:** `consensus_validation_present` records the first-stage presence vote.
-There are 1,839 positive and 419 negative consensuses. Of the positives, 1,707
-have a resolved primary-type/type-set tuple and 132 have unresolved types.
-`included_in_stage2_analysis` selects the 1,707 resolved positives. A positive
-presence with an unresolved type is still positive validation evidence.
+There are 1,839 positive and 419 negative consensuses. Of the positives, 1,819
+have a resolved primary type and 20 have an unresolved primary type.
+`included_in_stage2_analysis` selects the 1,819 resolved positives. The stricter
+secondary multi-label rule resolves 1,707 complete primary-type/type-set tuples
+and leaves 132 unresolved; `included_in_multilabel_analysis` identifies that
+subset. A positive presence with an unresolved primary type is still positive
+validation evidence.
 `*_validation_types` cells are JSON arrays; empty or missing type information
 must be interpreted together with the stage status and inclusion fields.
 

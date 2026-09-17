@@ -1,7 +1,17 @@
 {
-  "complete_consensus": 2126,
-  "exact_majority": 865,
-  "full_unanimous": 1261,
+  "complete_consensus": 2238,
+  "exact_majority": 573,
+  "full_unanimous": 1665,
+  "multilabel_consensus": 1707,
+  "multilabel_consensus_by_arm": {
+    "agentic": 870,
+    "human_candidate": 837
+  },
+  "multilabel_unresolved": 132,
+  "multilabel_unresolved_by_arm": {
+    "agentic": 59,
+    "human_candidate": 73
+  },
   "rows": 2258,
   "source_sha256": {
     "gemini": "0a8e964ac6d9623e916e3478a9f1c688ec4c8667af5c74fbc79fe97bc7e675aa",
@@ -15,15 +25,15 @@
     "agentic": 929,
     "human_candidate": 910
   },
-  "stage2_consensus": 1707,
+  "stage2_consensus": 1819,
   "stage2_consensus_by_arm": {
-    "agentic": 870,
-    "human_candidate": 837
+    "agentic": 918,
+    "human_candidate": 901
   },
-  "stage2_unresolved": 132,
+  "stage2_unresolved": 20,
   "stage2_unresolved_by_arm": {
-    "agentic": 59,
-    "human_candidate": 73
+    "agentic": 11,
+    "human_candidate": 9
   },
-  "unresolved": 132
+  "unresolved": 20
 }

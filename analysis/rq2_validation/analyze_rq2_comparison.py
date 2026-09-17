@@ -139,7 +139,12 @@ def _apply_holm(results: list[dict[str, Any]]) -> None:
 
 
 def analyze(frame: pd.DataFrame, *, bootstrap_iterations: int = 2000, bootstrap_seed: int = 20260911) -> dict[str, Any]:
-    required = {"repo_id", "number", "sample_arm", "consensus_validation_present", "consensus_status", "consensus_primary_validation_type", "consensus_validation_types", "included_in_stage2_analysis"}
+    required = {
+        "repo_id", "number", "sample_arm", "consensus_validation_present",
+        "consensus_status", "consensus_primary_validation_type",
+        "included_in_stage2_analysis", "multilabel_status",
+        "consensus_validation_types", "included_in_multilabel_analysis",
+    }
     missing = required - set(frame.columns)
     if missing:
         raise ValueError(f"Consensus is missing columns: {sorted(missing)}")
@@ -152,6 +157,11 @@ def analyze(frame: pd.DataFrame, *, bootstrap_iterations: int = 2000, bootstrap_
     expected_inclusion = frame["consensus_validation_present"] & ~frame["consensus_status"].eq("unresolved")
     if not frame["included_in_stage2_analysis"].eq(expected_inclusion).all():
         raise ValueError("Stage 2 inclusion is inconsistent with consensus status.")
+    if not frame["multilabel_status"].isin(("full_unanimous", "exact_majority", "unresolved", "not_applicable_absent")).all():
+        raise ValueError("Consensus contains an unknown multi-label status.")
+    expected_multilabel = frame["consensus_validation_present"] & frame["multilabel_status"].isin(("full_unanimous", "exact_majority"))
+    if not frame["included_in_multilabel_analysis"].eq(expected_multilabel).all():
+        raise ValueError("Multi-label inclusion is inconsistent with multi-label status.")
     absent = frame[~frame["consensus_validation_present"]]
     if not absent["consensus_primary_validation_type"].eq("none").all() or not absent[
         "consensus_validation_types"
@@ -165,19 +175,22 @@ def analyze(frame: pd.DataFrame, *, bootstrap_iterations: int = 2000, bootstrap_
         raise ValueError("Stage 2 has no resolved positive consensuses.")
     if not stage2["consensus_primary_validation_type"].isin(VALIDATION_TYPES).all():
         raise ValueError("Stage 2 contains unknown primary types.")
-    for _, row in stage2.iterrows():
+    multilabel = frame[frame["included_in_multilabel_analysis"]].copy()
+    for _, row in multilabel.iterrows():
         types = row["consensus_validation_types"]
         if not isinstance(types, (list, tuple, np.ndarray)):
-            raise ValueError("Stage 2 validation type sets must be lists.")
+            raise ValueError("Resolved multi-label type sets must be lists.")
         if len(types) != len(set(types)) or set(types) - set(VALIDATION_TYPES):
-            raise ValueError("Stage 2 contains invalid validation type sets.")
+            raise ValueError("Multi-label analysis contains invalid validation type sets.")
         if row["consensus_primary_validation_type"] not in types:
-            raise ValueError("Stage 2 primary type must belong to its validation type set.")
+            raise ValueError("Multi-label primary type must belong to its validation type set.")
     if len(frame) == 2258:
         controls = {
             "stage1 positive": (int(frame["consensus_validation_present"].sum()), 1839),
-            "stage2 consensus": (len(stage2), 1707),
-            "stage2 unresolved": (int(positive["consensus_status"].eq("unresolved").sum()), 132),
+            "stage2 consensus": (len(stage2), 1819),
+            "stage2 unresolved": (int(positive["consensus_status"].eq("unresolved").sum()), 20),
+            "multilabel consensus": (len(multilabel), 1707),
+            "multilabel unresolved": (int(positive["multilabel_status"].eq("unresolved").sum()), 132),
         }
         failures = {name: values for name, values in controls.items() if values[0] != values[1]}
         if failures:
@@ -197,13 +210,14 @@ def analyze(frame: pd.DataFrame, *, bootstrap_iterations: int = 2000, bootstrap_
         "bootstrap_seed": bootstrap_seed,
     }
     per_primary = [binary_comparison(stage2, stage2["consensus_primary_validation_type"].eq(label), label) for label in VALIDATION_TYPES]
-    per_type = [binary_comparison(stage2, stage2["consensus_validation_types"].map(lambda values, target=label: target in values), label) for label in VALIDATION_TYPES]
+    per_type = [binary_comparison(multilabel, multilabel["consensus_validation_types"].map(lambda values, target=label: target in values), label) for label in VALIDATION_TYPES]
     _apply_holm(per_primary)
     _apply_holm(per_type)
     return {
         "rows": len(frame),
         "stage1_rows": len(frame),
         "stage2_positive_consensus_rows": len(stage2),
+        "multilabel_positive_consensus_rows": len(multilabel),
         "stage1_presence": presence,
         "stage2_unresolved": unresolved,
         "stage2_primary": primary,

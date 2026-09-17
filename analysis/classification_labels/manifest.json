@@ -83,15 +83,20 @@
         "stage2_vote_count",
         "stage2_coalition",
         "consensus_primary_validation_type",
-        "consensus_validation_types",
         "consensus_status",
         "included_in_stage2_analysis",
-        "inclusion_reason"
+        "inclusion_reason",
+        "multilabel_status",
+        "multilabel_vote_count",
+        "multilabel_coalition",
+        "consensus_validation_types",
+        "included_in_multilabel_analysis",
+        "multilabel_inclusion_reason"
       ],
       "rows": 2258,
-      "sha256": "60de92f0f12355a44f6d21d8e1ec4db03c19ebac9702cfbb2800cfe2d7fd40e3",
+      "sha256": "e75dc06ef2ce45abd89be566316b72aed36bb0c297dfe209eb3623c1a76d257d",
       "source": "analysis/rq2_validation/consensus/rq2_consensus.parquet",
-      "source_sha256": "a29be9abd41fdd11dde7f9e7bff9a56685b059362421d05476649afd58f5ee9d"
+      "source_sha256": "5e31d0c7c1aefce250993895f053280918f564415ac1f26687786d2977b5cf1d"
     },
     "rq3_labels.csv": {
       "arms": {
@@ -153,10 +158,12 @@
   "summary": {
     "rq1_resolved": 2083,
     "rq1_unresolved": 177,
+    "rq2_multilabel_consensus": 1707,
+    "rq2_multilabel_unresolved": 132,
     "rq2_negative": 419,
     "rq2_positive": 1839,
-    "rq2_resolved_positive_types": 1707,
-    "rq2_unresolved_positive_types": 132,
+    "rq2_resolved_positive_primary_types": 1819,
+    "rq2_unresolved_positive_primary_types": 20,
     "rq3_analytic": 2081,
     "rq3_metric_layer": 1699,
     "rq3_resolved_type_layer": 1581,

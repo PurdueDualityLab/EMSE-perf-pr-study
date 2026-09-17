@@ -1,4 +1,4 @@
-"""Build a strict two-stage 2-of-3 consensus for the RQ2 labels."""
+"""Build primary and secondary multi-label agreement for the RQ2 labels."""
 
 from __future__ import annotations
 
@@ -35,14 +35,18 @@ OFFICIAL_CONTROLS = {
     "stage1_positive": 1839,
     "stage1_positive_by_arm": {"agentic": 929, "human_candidate": 910},
     "stage1_negative": 419,
-    "stage2_consensus": 1707,
-    "stage2_consensus_by_arm": {"agentic": 870, "human_candidate": 837},
-    "stage2_unresolved": 132,
-    "stage2_unresolved_by_arm": {"agentic": 59, "human_candidate": 73},
-    "complete_consensus": 2126,
-    "full_unanimous": 1261,
-    "exact_majority": 865,
-    "unresolved": 132,
+    "stage2_consensus": 1819,
+    "stage2_consensus_by_arm": {"agentic": 918, "human_candidate": 901},
+    "stage2_unresolved": 20,
+    "stage2_unresolved_by_arm": {"agentic": 11, "human_candidate": 9},
+    "complete_consensus": 2238,
+    "full_unanimous": 1665,
+    "exact_majority": 573,
+    "unresolved": 20,
+    "multilabel_consensus": 1707,
+    "multilabel_consensus_by_arm": {"agentic": 870, "human_candidate": 837},
+    "multilabel_unresolved": 132,
+    "multilabel_unresolved_by_arm": {"agentic": 59, "human_candidate": 73},
 }
 
 
@@ -141,6 +145,8 @@ def _summary(frame: pd.DataFrame, source_hashes: dict[str, str] | None) -> dict[
     positive = frame[frame["consensus_validation_present"]]
     included = frame[frame["included_in_stage2_analysis"]]
     unresolved = positive[positive["consensus_status"].eq("unresolved")]
+    multilabel = frame[frame["included_in_multilabel_analysis"]]
+    multilabel_unresolved = positive[positive["multilabel_status"].eq("unresolved")]
     result = {
         "rows": len(frame),
         "stage1_positive": len(positive),
@@ -154,6 +160,10 @@ def _summary(frame: pd.DataFrame, source_hashes: dict[str, str] | None) -> dict[
         "full_unanimous": int(frame["consensus_status"].eq("full_unanimous").sum()),
         "exact_majority": int(frame["consensus_status"].eq("exact_majority").sum()),
         "unresolved": int(frame["consensus_status"].eq("unresolved").sum()),
+        "multilabel_consensus": len(multilabel),
+        "multilabel_consensus_by_arm": multilabel["sample_arm"].value_counts().sort_index().to_dict(),
+        "multilabel_unresolved": len(multilabel_unresolved),
+        "multilabel_unresolved_by_arm": multilabel_unresolved["sample_arm"].value_counts().sort_index().to_dict(),
         "source_sha256": source_hashes or {},
     }
     return result
@@ -200,8 +210,26 @@ def build_consensus(
                 "consensus_status": record["stage1_status"],
                 "included_in_stage2_analysis": False,
                 "inclusion_reason": "stage1_consensus_absent",
+                "multilabel_status": "not_applicable_absent",
+                "multilabel_vote_count": 0,
+                "multilabel_coalition": "",
+                "included_in_multilabel_analysis": False,
+                "multilabel_inclusion_reason": "stage1_consensus_absent",
             })
         else:
+            primary_votes = {
+                model: str(rows[model]["primary_validation_type"])
+                for model in positive_models
+            }
+            primary_counts = Counter(primary_votes.values())
+            primary_winner, primary_count = primary_counts.most_common(1)[0]
+            primary_coalition = [
+                model for model in positive_models
+                if primary_votes[model] == primary_winner
+            ]
+            primary_resolved = primary_count >= 2
+            primary_unanimous = len(positive_models) == 3 and primary_count == 3
+
             tuples = {
                 model: (str(rows[model]["primary_validation_type"]), tuple(rows[model]["validation_types"]))
                 for model in positive_models
@@ -212,14 +240,19 @@ def build_consensus(
             resolved = count >= 2
             unanimous = len(positive_models) == 3 and count == 3
             record.update({
-                "stage2_status": "full_unanimous" if unanimous else ("exact_majority" if resolved else "unresolved"),
-                "stage2_vote_count": count,
-                "stage2_coalition": _coalition(coalition) if resolved else "",
-                "consensus_primary_validation_type": winner[0] if resolved else None,
-                "consensus_validation_types": list(winner[1]) if resolved else [],
-                "consensus_status": "full_unanimous" if unanimous else ("exact_majority" if resolved else "unresolved"),
-                "included_in_stage2_analysis": resolved,
-                "inclusion_reason": "positive_exact_tuple_consensus" if resolved else "positive_without_exact_tuple_majority",
+                "stage2_status": "full_unanimous" if primary_unanimous else ("exact_majority" if primary_resolved else "unresolved"),
+                "stage2_vote_count": primary_count,
+                "stage2_coalition": _coalition(primary_coalition) if primary_resolved else "",
+                "consensus_primary_validation_type": primary_winner if primary_resolved else None,
+                "consensus_validation_types": list(winner[1]) if resolved else None,
+                "consensus_status": "full_unanimous" if primary_unanimous else ("exact_majority" if primary_resolved else "unresolved"),
+                "included_in_stage2_analysis": primary_resolved,
+                "inclusion_reason": "positive_primary_type_consensus" if primary_resolved else "positive_without_primary_type_majority",
+                "multilabel_status": "full_unanimous" if unanimous else ("exact_majority" if resolved else "unresolved"),
+                "multilabel_vote_count": count,
+                "multilabel_coalition": _coalition(coalition) if resolved else "",
+                "included_in_multilabel_analysis": resolved,
+                "multilabel_inclusion_reason": "positive_exact_tuple_consensus" if resolved else "positive_without_exact_tuple_majority",
             })
         records.append(record)
 

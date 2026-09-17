@@ -65,6 +65,8 @@ def _consensus_frame():
                 "consensus_primary_validation_type": None if unresolved else (primary if index < 14 else "none"),
                 "consensus_validation_types": [] if unresolved or index >= 14 else [primary],
                 "included_in_stage2_analysis": index < 14 and not unresolved,
+                "multilabel_status": "unresolved" if unresolved else ("exact_majority" if index < 14 else "not_applicable_absent"),
+                "included_in_multilabel_analysis": index < 14 and not unresolved,
             })
     return pd.DataFrame(rows)
 
@@ -81,6 +83,7 @@ def test_analysis_has_omnibus_binary_holm_and_unresolved_results():
     result = analyze(_consensus_frame(), bootstrap_iterations=20, bootstrap_seed=3)
     assert result["stage1_rows"] == 32
     assert result["stage2_positive_consensus_rows"] == 26
+    assert result["multilabel_positive_consensus_rows"] == 26
     assert len(result["stage2_primary"]["expected_cells"]) == 2
     assert len(result["stage2_per_primary"]) == 4
     assert len(result["stage2_per_validation_type"]) == 4
