@@ -40,7 +40,7 @@ COHORT_LABELS = {
 }
 COLORS = {
     "population": "#6b7280",
-    "sample": "#2a78d6",
+    "sample": "#9BBCE8",
 }
 OFFICIAL_COUNTS = {
     "population": {

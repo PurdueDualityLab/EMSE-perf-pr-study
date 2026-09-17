@@ -30,8 +30,8 @@ FIG = HERE / "figures"
 DIMS = list(mp.DIMENSIONS)
 AUTHORS = ["AI Agent", "Human"]
 
-# palette: categorical slots 1–2 (agent blue, human orange); one-hue blue ramp for magnitude
-AGENT, HUMAN = "#2a78d6", "#eb6834"
+# Consistent study-arm palette; one-hue blue ramp is reserved for magnitudes.
+AGENT, HUMAN = "#9BBCE8", "#B9DAB9"
 RAMP = ["#fcfcfb", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
 VTYPE_COLORS = {          # ordinal by rigour, light -> dark; "none" is neutral
     "none": "#d9d8d3", "anecdotal": "#86b6ef", "static-analysis": "#5598e7",

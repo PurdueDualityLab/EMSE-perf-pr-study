@@ -106,7 +106,7 @@ def plot(frame, summary, target):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     fig, axes = plt.subplots(2, 1, figsize=(5.8, 5.2), layout='constrained')
-    colors = ['#2a78d6', '#eb6834']
+    colors = ['#9BBCE8', '#B9DAB9']
     labels = ['Agentic', 'Human-candidate']
     bars = axes[0].bar(labels, summary.merge_rate_pct, color=colors, width=.5)
     axes[0].bar_label(bars, labels=[f'{r.merge_rate_pct:.1f}% ({r.merged_n}/{r.observed_n})'

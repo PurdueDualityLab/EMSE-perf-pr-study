@@ -136,7 +136,10 @@ def report(frame, output, sample):
         u, p = mannwhitneyu(*arrays, alternative='two-sided')
         tests.append(dict(metric=metric, u=float(u), p=float(p),
             cliffs_delta=2*float(u)/(len(arrays[0])*len(arrays[1]))-1))
-        ax.boxplot(arrays, whis=(10, 90), showfliers=False, tick_labels=['Agentic', 'Human-candidate'])
+        boxes = ax.boxplot(arrays, whis=(10, 90), showfliers=False, patch_artist=True,
+                           tick_labels=['Agentic', 'Human-candidate'])
+        for patch, color in zip(boxes['boxes'], ['#9BBCE8', '#B9DAB9']):
+            patch.set_facecolor(color)
         ax.axhline(0, color='gray', linestyle='--')
         ax.set_title(names[metric]); ax.tick_params(axis='x', labelrotation=15)
     axes[0].set_ylabel('Change from stored base to head (%)')

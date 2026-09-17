@@ -10,7 +10,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'report/figures'
 ARMS = ['agentic', 'human_candidate']
-COLORS = ['#2a78d6', '#eb6834']
+COLORS = ['#9BBCE8', '#B9DAB9']
 LABELS = ['Agentic', 'Human-candidate']
 SHORT = {
     'Memory and Data Locality Optimizations': 'Memory / data locality',
