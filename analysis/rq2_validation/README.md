@@ -133,3 +133,18 @@ The machine-readable output additionally includes repository-cluster bootstrap
 intervals, Fisher tests with Holm correction, and non-exclusive type summaries
 over the stricter multi-label subset. These are retained as optional robustness
 instruments and are not part of the paper's primary RQ2 analysis.
+
+## Validation Reporting over Time
+
+The comparison above collapses the 65 ISO-week strata into a single table.
+[`temporal/`](temporal/) keeps the time dimension, which the weekly balanced
+design supports directly, and reports the author-type contrast within and across
+calendar time. Reported validation rises steeply in both author types over the window
+(odds ratio per year 3.06 human-candidate, 6.47 agentic), the presence
+difference reverses sign between the first and second halves (-4.6 pp to
++4.5 pp), and the benchmark-versus-static-reasoning gap narrows as the agentic
+benchmark share rises toward a flat human-candidate share. It is a post-hoc,
+exploratory analysis and is not part of the paper's primary RQ2 family; see
+[`temporal/README.md`](temporal/README.md) for the method, the full results, and
+the reasons a temporal trend here does not by itself establish that agents
+improved.
