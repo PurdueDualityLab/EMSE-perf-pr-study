@@ -8,12 +8,19 @@ import sys
 
 import numpy as np
 import pandas as pd
-from scipy.stats import chi2_contingency, fisher_exact, mannwhitneyu
+from scipy.stats import (binom, chi2_contingency, false_discovery_control, fisher_exact,
+                         mannwhitneyu, norm)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 KEYS = ['repo_id', 'number']
 ARMS = ['agentic', 'human_candidate']
+SIZE_METRICS = ['additions', 'deletions', 'lines_changed', 'changed_files', 'commits_count']
+ALPHA = 0.05
+TEST_COLUMNS = ['contrast', 'method', 'n_agentic', 'n_human_candidate', 'statistic', 'p_value',
+                'p_bh', 'effect_name', 'effect', 'effect_ci_low', 'effect_ci_high',
+                'estimate_name', 'estimate', 'estimate_ci_low', 'estimate_ci_high',
+                'odds_ratio', 'odds_ratio_ci_low', 'odds_ratio_ci_high']
 
 
 def prepare(sample, evidence):
@@ -62,6 +69,75 @@ def prepare(sample, evidence):
     return out.sort_values(KEYS).reset_index(drop=True)
 
 
+def wilson_interval(successes, total):
+    """Wilson score interval for a proportion, as a percentage."""
+    if not total:
+        return np.nan, np.nan
+    z = norm.ppf(1-ALPHA/2)
+    rate = successes/total
+    center = (rate + z**2/(2*total))/(1 + z**2/total)
+    half = z*np.sqrt(rate*(1-rate)/total + z**2/(4*total**2))/(1 + z**2/total)
+    return float(100*(center-half)), float(100*(center+half))
+
+
+def median_interval(values):
+    """Distribution-free median interval from binomial order statistics."""
+    ordered = np.sort(np.asarray(values, dtype=float))
+    n = len(ordered)
+    rank = int(binom.ppf(ALPHA/2, n, 0.5)) if n else 0
+    if rank < 1:
+        return np.nan, np.nan
+    return float(ordered[rank-1]), float(ordered[n-rank])
+
+
+def dominance(x, y):
+    """Per-observation dominance scores and the tied-pair count behind Cliff's delta."""
+    ordered_x, ordered_y = np.sort(x), np.sort(y)
+    below = np.searchsorted(ordered_y, x, 'left')
+    above = len(y) - np.searchsorted(ordered_y, x, 'right')
+    y_below = np.searchsorted(ordered_x, y, 'left')
+    y_above = len(x) - np.searchsorted(ordered_x, y, 'right')
+    ties = len(x)*len(y) - int(below.sum()) - int(above.sum())
+    return (below-above)/len(y), (y_above-y_below)/len(x), ties
+
+
+def cliffs_delta(x, y):
+    """Cliff's delta with the consistent asymmetric interval of Cliff (1993)."""
+    per_x, per_y, ties = dominance(x, y)
+    n1, n2 = len(x), len(y)
+    delta = float(per_x.mean())
+    if min(n1, n2) < 2:
+        return delta, np.nan, np.nan
+    spread = (n2**2*(n1-1)*per_x.var(ddof=1) + n1**2*(n2-1)*per_y.var(ddof=1)
+              - (n1*n2 - ties - n1*n2*delta**2))
+    sigma = float(np.sqrt(max(spread, 0)/(n1*n2*(n1-1)*(n2-1))))
+    z = norm.ppf(1-ALPHA/2)
+    half = z*sigma*np.sqrt((1-delta**2)**2 + z**2*sigma**2)
+    denominator = 1 - delta**2 + z**2*sigma**2
+    return delta, float((delta-delta**3-half)/denominator), float((delta-delta**3+half)/denominator)
+
+
+def hodges_lehmann(x, y):
+    """Median pairwise difference with the Moses normal-approximation interval."""
+    differences = np.sort(np.subtract.outer(x, y).ravel())
+    n1, n2 = len(x), len(y)
+    rank = int(round(n1*n2/2 - norm.ppf(1-ALPHA/2)*np.sqrt(n1*n2*(n1+n2+1)/12)))
+    rank = min(max(rank, 1), n1*n2)
+    return float(np.median(differences)), float(differences[rank-1]), float(differences[n1*n2-rank])
+
+
+def rank_contrast(name, x, y):
+    """Two-sided Mann-Whitney comparison with both a standardized and a natural-unit magnitude."""
+    u, p = mannwhitneyu(x, y, alternative='two-sided')
+    delta, delta_low, delta_high = cliffs_delta(x, y)
+    shift, shift_low, shift_high = hodges_lehmann(x, y)
+    return dict(contrast=name, method='Mann-Whitney U, two-sided', n_agentic=len(x),
+        n_human_candidate=len(y), statistic=float(u), p_value=float(p),
+        effect_name='Cliffs delta', effect=delta, effect_ci_low=delta_low, effect_ci_high=delta_high,
+        estimate_name='Hodges-Lehmann shift, agentic minus human_candidate',
+        estimate=shift, estimate_ci_low=shift_low, estimate_ci_high=shift_high)
+
+
 def summarize(frame):
     summaries = []
     for arm in ARMS:
@@ -74,10 +150,14 @@ def summarize(frame):
             closed_unmerged_n=int(known.outcome.eq('closed_unmerged').sum()),
             time_n=len(times), time_median_hours=times.median(), time_mean_hours=times.mean(),
             invalid_merged_times=int(known.time_status.eq('missing_or_invalid').sum()))
+        row['time_median_ci_low'], row['time_median_ci_high'] = median_interval(times)
         row['merge_rate_pct'] = 100*row['merged_n']/len(known) if len(known) else np.nan
-        for column in ['additions', 'deletions', 'lines_changed', 'changed_files', 'commits_count']:
-            row[f'{column}_n'] = int(known[column].notna().sum())
-            row[f'{column}_median'] = known[column].median()
+        row['merge_rate_ci_low'], row['merge_rate_ci_high'] = wilson_interval(row['merged_n'], len(known))
+        for column in SIZE_METRICS:
+            values = known[column].dropna()
+            row[f'{column}_n'] = len(values)
+            row[f'{column}_median'] = values.median()
+            row[f'{column}_median_ci_low'], row[f'{column}_median_ci_high'] = median_interval(values)
         summaries.append(row)
     summary = pd.DataFrame(summaries)
     tests = []
@@ -89,16 +169,33 @@ def summarize(frame):
             method = 'Fisher exact'
         else:
             method = 'Pearson chi-square with Yates correction'
-        tests.append(dict(contrast='merge_rate', method=method, n_agentic=int(ct[0].sum()),
-            n_human_candidate=int(ct[1].sum()), statistic=chi, p_value=p,
-            effect_name='Cramers V (Yates)', effect=float(np.sqrt(chi/ct.sum()))))
-    times = [frame.loc[frame.sample_arm.eq(arm), 'time_to_merge_hours'].dropna() for arm in ARMS]
-    if all(len(values)>0 for values in times):
-        u,p = mannwhitneyu(*times, alternative='two-sided')
-        tests.append(dict(contrast='time_to_merge_hours', method='Mann-Whitney U, two-sided',
-            n_agentic=len(times[0]), n_human_candidate=len(times[1]), statistic=u, p_value=p,
-            effect_name='Cliffs delta', effect=2*u/(len(times[0])*len(times[1]))-1))
-    return summary, pd.DataFrame(tests)
+        z = norm.ppf(1-ALPHA/2)
+        rates = ct[:, 0]/ct.sum(axis=1)
+        # Natural-unit magnitude: Wald interval on the merge-rate difference in percentage points.
+        difference = 100*(rates[0]-rates[1])
+        half = 100*z*np.sqrt((rates*(1-rates)/ct.sum(axis=1)).sum())
+        row = dict(contrast='merge_rate', method=method, n_agentic=int(ct[0].sum()),
+            n_human_candidate=int(ct[1].sum()), statistic=float(chi), p_value=float(p),
+            effect_name='Cramers V (Yates)', effect=float(np.sqrt(chi/ct.sum())),
+            estimate_name='Merge-rate difference in percentage points, agentic minus human_candidate',
+            estimate=float(difference), estimate_ci_low=float(difference-half),
+            estimate_ci_high=float(difference+half))
+        if ct.min() > 0:
+            log_odds = float(np.log(ct[0, 0]*ct[1, 1]/(ct[0, 1]*ct[1, 0])))
+            error = float(np.sqrt((1/ct).sum()))
+            row.update(odds_ratio=float(np.exp(log_odds)),
+                odds_ratio_ci_low=float(np.exp(log_odds-z*error)),
+                odds_ratio_ci_high=float(np.exp(log_odds+z*error)))
+        tests.append(row)
+    for metric in ['time_to_merge_hours'] + SIZE_METRICS:
+        values = [frame.loc[frame.sample_arm.eq(arm), metric].dropna().to_numpy() for arm in ARMS]
+        if all(len(arm_values) > 0 for arm_values in values):
+            tests.append(rank_contrast(metric, *values))
+    tests = pd.DataFrame(tests).reindex(columns=TEST_COLUMNS)
+    if len(tests):
+        # One exploratory characterization family: merge rate, elapsed time, and patch size.
+        tests['p_bh'] = false_discovery_control(tests.p_value.to_numpy())
+    return summary, tests
 
 
 def plot(frame, summary, target):
@@ -126,6 +223,20 @@ def plot(frame, summary, target):
     fig.savefig(target, bbox_inches='tight'); plt.close(fig)
 
 
+def upstream_sources():
+    """Hashes of the parquet inputs behind the published per-PR measurements.
+
+    Reproducing from the compact CSV reads that CSV, not the snapshot it was
+    exported from, so the original measurement inputs are carried forward from
+    the committed manifest rather than dropped from the provenance record.
+    """
+    recorded = HERE/'results/manifest.json'
+    if not recorded.exists():
+        return {}
+    previous = json.loads(recorded.read_text())
+    return previous.get('measurement_source_sha256') or previous.get('source_sha256', {})
+
+
 def write_outputs(frame, out, provenance):
     out.mkdir(parents=True, exist_ok=True)
     summary, tests = summarize(frame)
@@ -133,24 +244,37 @@ def write_outputs(frame, out, provenance):
     summary.to_csv(out/'outcomes_summary.csv', index=False)
     tests.to_csv(out/'outcomes_tests.csv', index=False)
     plot(frame, summary, out/'merge_rate_and_time.pdf')
+    indexed = tests.set_index('contrast')
+    def inference(contrast):
+        if contrast is None or contrast not in indexed.index:
+            return ['---', '---']
+        row = indexed.loc[contrast]
+        symbol = 'V' if str(row.effect_name).startswith('Cramers') else r'\delta'
+        return ['$<0.001$' if row.p_bh < .001 else f'{row.p_bh:.3f}',
+                f'${symbol}={row.effect:.3f}$']
     table = [r'\begin{table}[htbp]', r'\centering', r'\small',
-        r'\caption{Quantitative outcomes and patch size at the archived snapshot. Merge rates use observed PRs; elapsed time uses merged PRs only. Patch-size entries are medians.}',
-        r'\label{tab:quantitative-outcomes}', r'\begin{tabular}{lrr}', r'\toprule',
-        r'Measure & Agentic & Human-candidate \\', r'\midrule']
-    for column,label,fmt in [('sample_n','Selected PRs',',.0f'),('observed_n','Observed PRs',',.0f'),
-        ('merged_n','Merged PRs',',.0f'),('merge_rate_pct',r'Merge rate (\%)','.1f'),
-        ('time_median_hours','Median time to merge (h)','.2f'),
-        ('lines_changed_median','Added + deleted lines','.1f'),
-        ('changed_files_median','Changed files','.0f'),('commits_count_median','Commits','.0f')]:
-        table.append(' & '.join([label]+[format(float(value),fmt) for value in summary[column]])+r' \\')
+        r"\caption{Quantitative outcomes and patch size at the archived snapshot. Merge rates use observed PRs; elapsed time uses merged PRs only. Patch-size entries are medians. $q$ is BH-adjusted across the seven characterization tests; the effect size is Cram\'er's $V$ for the merge-rate contingency table and Cliff's $\delta$ (agentic minus human-candidate) for the Mann--Whitney comparisons. Per-arm intervals, Hodges--Lehmann shifts, and the merge-rate odds ratio are reported in the replication package.}",
+        r'\label{tab:quantitative-outcomes}', r'\begin{tabular}{lrrrr}', r'\toprule',
+        r'Measure & Agentic & Human-candidate & $q$ & Effect \\', r'\midrule']
+    for column,label,fmt,contrast in [('sample_n','Selected PRs',',.0f',None),
+        ('observed_n','Observed PRs',',.0f',None),('merged_n','Merged PRs',',.0f',None),
+        ('merge_rate_pct',r'Merge rate (\%)','.1f','merge_rate'),
+        ('time_median_hours','Median time to merge (h)','.2f','time_to_merge_hours'),
+        ('lines_changed_median','Added + deleted lines','.1f','lines_changed'),
+        ('changed_files_median','Changed files','.0f','changed_files'),
+        ('commits_count_median','Commits','.0f','commits_count')]:
+        table.append(' & '.join([label]+[format(float(value),fmt) for value in summary[column]]
+                                +inference(contrast))+r' \\')
     table += [r'\bottomrule',r'\end{tabular}',r'\end{table}','']
     (out/'quantitative_outcomes.tex').write_text('\n'.join(table))
     snapshots = frame.snapshot_at.dropna().unique().tolist()
     manifest = dict(snapshot_at=snapshots, source_sha256=provenance,
+        measurement_source_sha256=upstream_sources(),
         sample_rows=len(frame), observed_rows=int(frame.outcome_observed.sum()),
         outcome_method='Observed archived PR state; unknown outcomes excluded from merge-rate denominator',
         time_method='Elapsed hours, creation to merge; nonnegative valid times among merged PRs only',
-        test_family='Two exploratory outcome tests; raw p-values; no repository-cluster or censoring adjustment')
+        test_family='Seven exploratory characterization tests in one Benjamini-Hochberg family; raw and adjusted p-values; no repository-cluster or censoring adjustment',
+        interval_method='All intervals are two-sided 95%: Wilson for each merge rate, binomial order statistics for each median, Cliff (1993) consistent asymmetric for Cliffs delta, Moses normal approximation for the Hodges-Lehmann shift, and Wald for the merge-rate difference and the log odds ratio')
     manifest['software_versions'] = {name: version(name) for name in ['pandas','numpy','scipy','matplotlib','lizard']}
     manifest['source_code_sha256'] = {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in [Path(__file__).resolve(), HERE.parent/'maintainability/run_maintainability.py']}

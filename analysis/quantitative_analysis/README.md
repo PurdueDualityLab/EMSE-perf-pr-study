@@ -25,8 +25,12 @@ source files remain outside this GitHub export.
   `merge_rate_and_time.pdf`: updated outcome/size comparison.
 - `results/structural/`: per-PR metric deltas, the common complete-case subset,
   inclusion decisions, coverage, summaries, tests, and the structural figure.
-- `results/manifest.json`: snapshot, source hashes, measurement definitions, and
-  outcome-output checksums. `checksums.sha256` covers the published derived bundle.
+- `results/manifest.json`: snapshot, source hashes, measurement definitions,
+  test-family and interval methods, and outcome-output checksums.
+  `source_sha256` records the inputs the run actually read, while
+  `measurement_source_sha256` carries forward the snapshot parquets behind the
+  published per-PR measurements when the run reproduces from the compact CSV.
+  `checksums.sha256` covers the published derived bundle.
 
 ## Reproduce from the compact published measurements
 
@@ -69,16 +73,40 @@ to merge and are excluded from the merge-rate denominator.
 | Selected PRs | 1,130 | 1,130 |
 | Observed PRs | 1,130 | 1,129 |
 | Merged | 615 | 827 |
-| Merge rate among observed PRs | 54.4% | 73.3% |
-| Median creation-to-merge time, merged PRs | 4.99 h | 19.16 h |
-| Median added + deleted lines | 130.5 | 81.0 |
-| Median changed files | 3 | 3 |
-| Median actual PR commits | 3 | 2 |
+| Merge rate among observed PRs | 54.4% [51.5, 57.3] | 73.3% [70.6, 75.8] |
+| Median creation-to-merge time, merged PRs | 4.99 h [2.95, 8.04] | 19.16 h [16.29, 21.87] |
+| Median added + deleted lines | 130.5 [115, 148] | 81.0 [72, 96] |
+| Median added lines | 89.5 [78, 102] | 54.0 [46, 63] |
+| Median deleted lines | 22.0 [19, 25] | 18.0 [16, 21] |
+| Median changed files | 3 [3, 3] | 3 [3, 3] |
+| Median actual PR commits | 3 [2, 3] | 2 [2, 2] |
 
-Merge-rate comparison: chi-square with Yates correction, chi-square = 85.89,
-p < 0.001, Cramer's V = 0.195. Elapsed time comparison: two-sided Mann--Whitney
-U = 201663.5, p < 0.001, Cliff's delta = -0.207 (agentic minus human-candidate).
-The two outcome tests retain the original analysis's raw exploratory p-values.
+Bracketed ranges are two-sided 95% intervals for that arm alone: Wilson intervals
+for the merge rates and binomial order-statistic intervals for the medians.
+
+### Characterization tests
+
+All seven between-arm comparisons form one Benjamini--Hochberg family; `q` is the
+adjusted p-value. Effect sizes contrast agentic with human-candidate PRs, so a
+negative value means the agentic arm is lower. The shift column is the
+Hodges--Lehmann median of all pairwise differences with its Moses interval, which
+is a location shift and is not the difference between the two medians above.
+
+| Contrast | Test | p | q | Effect [95% CI] | Shift [95% CI] |
+| --- | --- | ---: | ---: | --- | --- |
+| Merge rate | chi-square (Yates) = 85.89 | <0.001 | <0.001 | V = 0.195 | -18.83 pp [-22.71, -14.94] |
+| Time to merge (h) | Mann--Whitney U = 201663.5 | <0.001 | <0.001 | delta = -0.207 [-0.266, -0.147] | -3.59 h [-6.69, -1.73] |
+| Added lines | Mann--Whitney U = 715192.5 | <0.001 | <0.001 | delta = 0.121 [0.074, 0.168] | 14 [8, 22] |
+| Deleted lines | Mann--Whitney U = 669430.5 | 0.042 | 0.049 | delta = 0.049 [0.002, 0.097] | 1 [0, 3] |
+| Added + deleted lines | Mann--Whitney U = 710186.0 | <0.001 | <0.001 | delta = 0.113 [0.066, 0.160] | 19 [10, 30] |
+| Changed files | Mann--Whitney U = 656531.5 | 0.222 | 0.222 | delta = 0.029 [-0.018, 0.076] | 0 [0, 0] |
+| Commits | Mann--Whitney U = 699634.0 | <0.001 | <0.001 | delta = 0.097 [0.050, 0.143] | 0 [0, 0] |
+
+The merge-rate table also yields an odds ratio of 0.436 [0.366, 0.520] for merging
+in the agentic arm. Cliff's delta intervals use the consistent asymmetric form of
+Cliff (1993). Added, deleted, and added + deleted lines are nested measures rather
+than independent comparisons, and the family is exploratory characterization, not
+confirmatory hypothesis testing.
 
 Structural analysis considers 10,606 eligible modified/renamed file pairs in
 2,066 PRs. Twelve unavailable pairs affect four PRs. Requiring complete retrieval
@@ -95,8 +123,16 @@ The structural test family uses BH adjustment across its three comparisons.
   status. Open PRs are not labeled rejected. Elapsed time is wall-clock time
   between creation and merge, not active reviewer effort; only merged PRs enter
   this comparison. This is not survival analysis or a censoring correction.
+  Because that comparison conditions on merging, and merge rates differ between
+  the arms, its p-value, Cliff's delta, and shift describe the merged PRs only
+  and are not an unconditional statement about how long a submitted PR takes.
 - Rates are computed from exact counts before rounding, unlike the historical
   notebook's early rounding of group means.
+- The characterization comparisons now carry effect sizes, 95% intervals, and BH
+  adjustment across their own family, matching the treatment of the structural
+  and RQ3 families. The earlier release tested only merge rate and elapsed time
+  and reported raw p-values without intervals. Patch-size differences were
+  previously described from medians alone, with no test.
 - Patch size uses PR-level additions/deletions, not summed per-commit diffs that
   may count the same edits repeatedly. `commits_count` is the actual PR commit
   count, not the number of commit-file records.

@@ -3,6 +3,9 @@
     "2026-08-27T22:00:14.356079+00:00"
   ],
   "source_sha256": {
+    "analysis/quantitative_analysis/results/pr_quantitative.csv": "6980168aab2c1be2c94a214188ea875fab1769d365d55ac7829bdd2d19741e09"
+  },
+  "measurement_source_sha256": {
     "data/data/sample/balanced_sample.parquet": "10f46fae9c880325f6574ca308f1857a4798c2ac1548bd0511502cb8687b357f",
     "mining/sample_evidence/final/pull_requests.parquet": "860dfc296fa776db3ef3e412c498c62cedb5171413997dceb85a104cb0ac2929"
   },
@@ -10,7 +13,8 @@
   "observed_rows": 2259,
   "outcome_method": "Observed archived PR state; unknown outcomes excluded from merge-rate denominator",
   "time_method": "Elapsed hours, creation to merge; nonnegative valid times among merged PRs only",
-  "test_family": "Two exploratory outcome tests; raw p-values; no repository-cluster or censoring adjustment",
+  "test_family": "Seven exploratory characterization tests in one Benjamini-Hochberg family; raw and adjusted p-values; no repository-cluster or censoring adjustment",
+  "interval_method": "All intervals are two-sided 95%: Wilson for each merge rate, binomial order statistics for each median, Cliff (1993) consistent asymmetric for Cliffs delta, Moses normal approximation for the Hodges-Lehmann shift, and Wald for the merge-rate difference and the log odds ratio",
   "software_versions": {
     "pandas": "3.0.3",
     "numpy": "2.5.1",
@@ -19,14 +23,14 @@
     "lizard": "1.24.0"
   },
   "source_code_sha256": {
-    "analysis/quantitative_analysis/analyze_quantitative.py": "7cafcda0c87983b2e1b9964bff08085818515ecc614921e00886d66b6c793d98",
-    "analysis/maintainability/run_maintainability.py": "3536f34ddc7c0a7c30b5860a9a7dddf7c234b4fd19e4adc3b1948e28ac16a744"
+    "analysis/quantitative_analysis/analyze_quantitative.py": "18bdfbfda1ade57fdcb322f5ab1f7637ed78c2a60abef127fdbb538a8abfb458",
+    "analysis/maintainability/run_maintainability.py": "aebebcdbfc369837a9f1de5273a8b67e4032b94fcd138f0d6114944ca7f8b90e"
   },
   "files": {
-    "merge_rate_and_time.pdf": "9d3f023d136dd21f66020c0529cd97e67727533f88cd5c16e9e223e0348496e7",
-    "outcomes_summary.csv": "65cbe3dd0bae3f900e5c4539c5deee4fdfbf597135b7bbfa39a871d426f5721c",
-    "outcomes_tests.csv": "5bbf1db6e2345bda49b73fd280b45507d6ce6d0430d767031c1155f9073bdb11",
+    "merge_rate_and_time.pdf": "1841670a8feb1e54acc32dcc8cab0556a675c60182cf09c879fedcef301e0453",
+    "outcomes_summary.csv": "0a413c3d2e22f6bf278295ef14ed719902d6d9d5898f44dcc184e7c9d04191a7",
+    "outcomes_tests.csv": "336229c9ee019b3103d93faf7d2351ba43c3d897f52d462be321499d63d56efe",
     "pr_quantitative.csv": "6980168aab2c1be2c94a214188ea875fab1769d365d55ac7829bdd2d19741e09",
-    "quantitative_outcomes.tex": "178820f725cce027ca3c2b00fe2008d0fcb5a95adc5103e63e2ccce62c088550"
+    "quantitative_outcomes.tex": "e6b054f2cdeee1db6d3c1377286c1e735f35f73b2121f41c35d6a395e5a7bda3"
   }
 }

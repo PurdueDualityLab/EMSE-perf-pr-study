@@ -1,20 +1,20 @@
 \begin{table}[htbp]
 \centering
 \small
-\caption{Quantitative outcomes and patch size at the archived snapshot. Merge rates use observed PRs; elapsed time uses merged PRs only. Patch-size entries are medians.}
+\caption{Quantitative outcomes and patch size at the archived snapshot. Merge rates use observed PRs; elapsed time uses merged PRs only. Patch-size entries are medians. $q$ is BH-adjusted across the seven characterization tests; the effect size is Cram\'er's $V$ for the merge-rate contingency table and Cliff's $\delta$ (agentic minus human-candidate) for the Mann--Whitney comparisons. Per-arm intervals, Hodges--Lehmann shifts, and the merge-rate odds ratio are reported in the replication package.}
 \label{tab:quantitative-outcomes}
-\begin{tabular}{lrr}
+\begin{tabular}{lrrrr}
 \toprule
-Measure & Agentic & Human-candidate \\
+Measure & Agentic & Human-candidate & $q$ & Effect \\
 \midrule
-Selected PRs & 1,130 & 1,130 \\
-Observed PRs & 1,130 & 1,129 \\
-Merged PRs & 615 & 827 \\
-Merge rate (\%) & 54.4 & 73.3 \\
-Median time to merge (h) & 4.99 & 19.16 \\
-Added + deleted lines & 130.5 & 81.0 \\
-Changed files & 3 & 3 \\
-Commits & 3 & 2 \\
+Selected PRs & 1,130 & 1,130 & --- & --- \\
+Observed PRs & 1,130 & 1,129 & --- & --- \\
+Merged PRs & 615 & 827 & --- & --- \\
+Merge rate (\%) & 54.4 & 73.3 & $<0.001$ & $V=0.195$ \\
+Median time to merge (h) & 4.99 & 19.16 & $<0.001$ & $\delta=-0.207$ \\
+Added + deleted lines & 130.5 & 81.0 & $<0.001$ & $\delta=0.113$ \\
+Changed files & 3 & 3 & 0.222 & $\delta=0.029$ \\
+Commits & 3 & 2 & $<0.001$ & $\delta=0.097$ \\
 \bottomrule
 \end{tabular}
 \end{table}
