@@ -1,0 +1,9 @@
+category,n,mean_dims,median_dims,any_dim_pct,cliffs_delta,p_raw,p_bh
+Algorithm-Level Optimizations,367,0.92,1.0,52.6,-0.138,0.0019796527328859886,
+Build & Compilation & Infrastructure Optimization,128,0.95,1.0,59.4,-0.185,0.0014372836882734223,
+Control-Flow and Branching Optimizations,35,0.51,0.0,37.1,0.048,0.604845199603834,
+Data Structure Selection and Adaptation,47,1.06,1.0,59.6,-0.209,0.011789769634504422,
+I/O and Synchronization,161,0.99,1.0,59.6,-0.195,0.0003414899100904432,
+Loop Transformations,9,1.0,1.0,55.6,-0.19,0.27430202847816376,
+Memory and Data Locality Optimizations,590,0.96,1.0,54.1,-0.154,0.00022135444511736394,
+"Network, Database, and Data Access Optimization",136,0.59,0.0,42.6,0.0,0.9995300276536458,

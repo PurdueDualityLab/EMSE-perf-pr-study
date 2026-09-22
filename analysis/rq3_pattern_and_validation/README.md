@@ -68,6 +68,7 @@ python analysis/rq3_pattern_and_validation/run_current.py          # Step 1, ful
 python analysis/rq3_pattern_and_validation/refresh_type_layer.py   # type layer only
 python analysis/rq3_pattern_and_validation/catalog_expected_dims.py
 python analysis/rq3_pattern_and_validation/metric_alignment.py     # Step 2
+python analysis/rq3_pattern_and_validation/code_smells_by_author.py # post-hoc
 ```
 
 ### Step 1 — `extract_metrics.py` + `metric_patterns.py`
@@ -132,8 +133,8 @@ Cramér's V (OR for 2×2); Mann–Whitney U with Cliff's δ; Kruskal–Wallis wi
 Benjamini–Hochberg is applied across the whole 60-test RQ3 Step 1 family
 (`results/rq3_tests.csv`); Step 2 is a separate, smaller family
 (`results/rq3_step2_tests.csv`). The conditional Monte Carlo test uses
-Pearson's statistic with fixed margins. BH adjustment uses SciPy's implementation,
-avoiding an undeclared statsmodels dependency.
+Pearson's statistic with fixed margins. BH adjustment uses SciPy's implementation; `statsmodels` is used only by the
+post-hoc Code-smells script for its regression-based interaction tests.
 
 ### Type-layer refresh — `refresh_type_layer.py`
 
@@ -177,6 +178,32 @@ Run from the refreshed compact labels in `analysis/classification_labels/`:
 An earlier three-class trade-off classification and composite adequacy outcome
 were removed as unvalidatable.
 
+### Post-hoc — `code_smells_by_author.py`
+
+Contrasts the *Code Smells and Structural Simplification* category (structural
+cleanups) with the eight remaining categories (actual performance changes) on
+validation presence (category layer, n = 2,081), any dimension reported and
+number of dimensions (metric layer, n = 1,699), and the combined outcome
+*validated and ≥1 dimension* on the category layer — each within the agentic
+and human arms, agent vs human within each group, and a category × author
+interaction test (logistic-regression LRT for binary outcomes; permutation on
+the difference of Cliff's δ with a negative-binomial LRT cross-check for
+#dims). A final section tests each D0–D9 unconditionally and conditional on
+≥1 dimension, to separate *fewer* metrics from *different* metrics.
+
+Finding: the Code-smells gap exists only in the human arm. Humans validate and
+quantify actual performance changes at a high rate and structural cleanups at
+a markedly lower one (validated-and-quantified 25% vs 46%), while agents apply
+the same verification behaviour regardless of category (38% vs 42%); the
+interaction is significant (ratio of ORs 2.08 [1.22, 3.56], p = 0.007,
+q = 0.028); for validation presence and any dimension it is significant before
+correction and borderline after (p = 0.043 and 0.034; q = 0.11 and 0.10). Code
+smells PRs that do quantify report the same metric mix as other PRs. Reads the
+compact labels only. BH is applied across the 20 pre-specified tests (within-arm,
+within-group, interaction), a family separate from Step 1 and Step 2; the
+per-dimension, pairwise, and negative-binomial follow-ups are descriptive and
+carry raw p only (`results/rq3_code_smells_tests.csv`, column `prespecified`).
+
 ## Outputs
 
 | path | content |
@@ -189,6 +216,9 @@ were removed as unvalidatable.
 | `results/tables/T0–T5*.csv` | the Step 1 tables individually |
 | `results/rq3_step2_results.md` | Step 2 narrative: alignment and memory-for-time |
 | `results/rq3_step2_tests.csv` | Step 2 test family with BH-adjusted p |
+| `results/rq3_code_smells_results.md` | Post-hoc: structural cleanups vs performance changes, by author |
+| `results/rq3_code_smells_tests.csv` | Post-hoc test family with BH-adjusted p |
+| `results/tables/T7_*.csv` | the post-hoc tables individually |
 | `results/tables/T6_*.csv` | the Step 2 tables individually |
 | `results/extremes_*.csv` | PR lists at the distribution extremes |
 | `summary.json` | cohort counts and input SHA-256 hashes of the extraction run |

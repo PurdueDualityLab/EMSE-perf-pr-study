@@ -1,0 +1,9 @@
+arm,outcome,code_smells,other,effect,test,p_raw,p_bh
+Agent,validation present,83.0%,81.7%,"OR 1.09 [0.68, 1.76]",chi-square,0.7240319429056701,0.7621388872691264
+Agent,any dimension (validated),45.5%,51.7%,"OR 0.78 [0.52, 1.16]",chi-square,0.22049033519146372,0.27561291898932966
+Agent,#dims (validated),"mean 0.76, md 0","mean 0.94, md 1",Cliff's δ -0.073; Δmean -0.18,Mann-Whitney U,0.17848943717149346,0.23798591622865795
+Agent,validated and ≥1 dim (category layer),37.8%,42.3%,"OR 0.83 [0.57, 1.20]",chi-square,0.3222409533939183,0.379107003992845
+Human,validation present,73.5%,82.8%,"OR 0.58 [0.39, 0.86]",chi-square,0.006326793450129111,0.028272524685910128
+Human,any dimension (validated),34.2%,55.3%,"OR 0.42 [0.28, 0.64]",chi-square,2.7738996578842766e-05,0.00027738996578842765
+Human,#dims (validated),"mean 0.54, md 0","mean 0.88, md 1",Cliff's δ -0.211; Δmean -0.34,Mann-Whitney U,9.406650836533785e-05,0.0006271100557689191
+Human,validated and ≥1 dim (category layer),25.2%,45.8%,"OR 0.40 [0.27, 0.59]",chi-square,1.7017840274257058e-06,3.403568054851412e-05
