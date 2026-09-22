@@ -145,9 +145,10 @@
       "published_source_path": "data/rq3/current/data/rq3_pr_level.csv",
       "published_source_revision": "4464afd020ece2a619649a185460fde9d02625fd",
       "rows": 2081,
-      "sha256": "2452bcb2c4f3e4cac730fb188de20eda66a0c125c37981ee48ac4fb11b4eb84c",
-      "source": "analysis/rq3_pattern_and_validation/current/data/rq3_pr_level.csv",
-      "source_sha256": "743bb3d5e56435811cc2556fb85a7a20570e60365d4873c89611935feb09ae8d"
+      "sha256": "c31616088cac4ea8d2369b942b78f08e39356250a0b452aba5c9402e05e070b9",
+      "source": "analysis/rq3_pattern_and_validation/data/rq3_pr_level.csv",
+      "source_sha256": "743bb3d5e56435811cc2556fb85a7a20570e60365d4873c89611935feb09ae8d",
+      "notes": "validation_type and in_type_layer refreshed against the RQ2 consensus named in rq2_labels.csv (source_sha256 5e31d0c7c1aefce250993895f053280918f564415ac1f26687786d2977b5cf1d); D0-D9 extraction and validation presence are unchanged from source_sha256 below."
     }
   },
   "models": {
@@ -166,7 +167,7 @@
     "rq2_unresolved_positive_primary_types": 20,
     "rq3_analytic": 2081,
     "rq3_metric_layer": 1699,
-    "rq3_resolved_type_layer": 1581,
-    "rq3_unresolved_positive_types": 118
+    "rq3_resolved_type_layer": 1684,
+    "rq3_unresolved_positive_types": 15
   }
 }

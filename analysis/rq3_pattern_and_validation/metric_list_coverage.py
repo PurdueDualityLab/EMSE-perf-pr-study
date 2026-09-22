@@ -26,7 +26,7 @@ share of *non-validated* PRs that fire is reported as a noise proxy (a list that
 
 Output: results/metric_list_coverage.md (+ snippets of every new-dimension hit
 for auditing). Run from the repo root:
-  python RQ3_metric_targeting/experiments/metric_list_coverage.py
+  python analysis/rq3_pattern_and_validation/metric_list_coverage.py
 """
 
 import copy
@@ -37,8 +37,7 @@ from pathlib import Path
 
 import pandas as pd
 
-HERE = Path(__file__).resolve().parent
-RQ3 = HERE.parent
+RQ3 = Path(__file__).resolve().parent
 sys.path.insert(0, str(RQ3.parent))
 sys.path.insert(0, str(RQ3))
 import metric_patterns as mp  # noqa: E402

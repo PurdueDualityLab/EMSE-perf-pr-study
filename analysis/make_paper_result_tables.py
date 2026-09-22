@@ -36,7 +36,7 @@ def main():
     rq1 = rq1[rq1.included_in_analysis]
     rq2 = rq2[rq2.included_in_stage2_analysis]
     assert len(rq1) == 2083 and len(rq2) == 1819 and len(rq3) == 2081
-    assert rq3.in_metric_layer.sum() == 1699 and rq3.in_type_layer.sum() == 1581
+    assert rq3.in_metric_layer.sum() == 1699 and rq3.in_type_layer.sum() == 1684
     categories = {
         'Algorithm-Level Optimizations': 'Algorithm-level',
         'Build & Compilation & Infrastructure Optimization': 'Build/infrastructure',

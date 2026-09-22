@@ -4,7 +4,7 @@ RQ3 figures (PDF, paper-ready).
   figures/rq3_validation_by_category.pdf   validation type share per optimization category, agent vs human
   figures/rq3_metric_frequency.pdf         % of validated PRs reporting each dimension D0–D9, agent vs human
   figures/rq3_metric_profile_heatmap.pdf   category × D0–D9 incidence (plus no-metric column) among validated PRs, agent vs human
-  figures/rq3_dimensionality.pdf           number of reported dimensions per validated PR, by author and by evidence type
+  figures/rq3_dimensionality.pdf           number of reported dimensions per validated PR, by author type
 
 Run from the repo root after extract_metrics.py:
   python RQ3_metric_targeting/make_figures.py
@@ -104,7 +104,7 @@ def fig_metric_profile_heatmap(df):
     val = df[df.in_metric_layer].copy()
     val["NONE"] = val["n_dims"] == 0          # validated, but no metric dimension reported
     cols = DIMS + ["NONE"]
-    col_labels = DIMS + ["none"]
+    col_labels = [d.replace("D", "M") for d in DIMS] + ["none"]
     order = val["pattern"].value_counts().index.tolist()
     cmap = LinearSegmentedColormap.from_list("blue_ramp", RAMP)
     fig, axes = plt.subplots(2, 1, figsize=(6.6, 7.2), layout="constrained")
@@ -163,10 +163,10 @@ def fig_metric_frequency(df):
             ax.text(v + 0.8, yi, f"{v:.0f}%", va="center", ha="left", fontsize=6.5, color=INK2)
         xmax = max(xmax, share.max())
     ax.set_yticks(y)
-    ax.set_yticklabels([f"{d}  {mp.DIMENSIONS[d]}" for d in order])
+    ax.set_yticklabels([f"{d.replace('D', 'M')}  {mp.DIMENSIONS[d]}" for d in order])
     ax.tick_params(axis="y", length=0)
     ax.set_xlim(0, xmax * 1.18)
-    ax.set_xlabel("% of validated PRs reporting the dimension")
+    ax.set_xlabel("% of validated PRs reporting the metric")
     ax.legend(frameon=False, loc="lower right")
     _clean(ax)
     fig.tight_layout()
@@ -179,9 +179,8 @@ def fig_dimensionality(df):
     val["k"] = val["n_dims"].clip(upper=4)
     ks = [0, 1, 2, 3, 4]
     labels = ["0", "1", "2", "3", "4+"]
-    fig, axes = plt.subplots(2, 1, figsize=(6.6, 5.8), layout="constrained")
+    fig, ax = plt.subplots(figsize=(5.2, 3.0), layout="constrained")
 
-    ax = axes[0]
     width = 0.38
     for i, (author, color) in enumerate(zip(AUTHORS, [AGENT, HUMAN])):
         g = val[val.author_type == author]
@@ -193,29 +192,9 @@ def fig_dimensionality(df):
                 ax.text(xi, v + 1, f"{v:.0f}", ha="center", va="bottom", fontsize=6.5, color=INK2)
     ax.set_xticks(range(len(ks)))
     ax.set_xticklabels(labels)
-    ax.set_xlabel("distinct metric dimensions reported per validated PR")
+    ax.set_xlabel("distinct metrics reported per validated PR")
     ax.set_ylabel("share of PRs (%)")
-    ax.set_title("By study arm: all positive validation consensuses", loc="left")
     ax.legend(frameon=False)
-    _clean(ax, x_grid=False)
-    ax.yaxis.grid(True, color=GRID, linewidth=0.6)
-    ax.set_axisbelow(True)
-
-    ax = axes[1]
-    groups = [("benchmark", VTYPE_COLORS["benchmark"]), ("profiling", VTYPE_COLORS["profiling"]),
-              (VTYPES[2], VTYPE_COLORS[VTYPES[2]]), ("anecdotal", VTYPE_COLORS["anecdotal"])]
-    width = 0.2
-    for i, (vt, color) in enumerate(groups):
-        g = val[val.in_type_layer & val.validation_type.eq(vt)]
-        share = g["k"].value_counts(normalize=True).reindex(ks).fillna(0) * 100
-        x = np.arange(len(ks)) + (i - 1.5) * width
-        ax.bar(x, share.values, width=width * 0.94, color=color, label=f"{vt} (n={len(g)})")
-    ax.set_xticks(range(len(ks)))
-    ax.set_xticklabels(labels)
-    ax.set_xlabel("distinct metric dimensions reported per validated PR")
-    ax.set_title("by resolved RQ2 validation type", loc="left")
-    ax.set_ylim(0, 105)
-    ax.legend(frameon=False, ncol=2, loc="upper right", fontsize=8)
     _clean(ax, x_grid=False)
     ax.yaxis.grid(True, color=GRID, linewidth=0.6)
     ax.set_axisbelow(True)
@@ -235,7 +214,14 @@ def _save(fig, name):
 def main():
     FIG.mkdir(exist_ok=True)
     df = pd.read_csv(DATA)
+    # the published compact labels (classification_labels/rq3_labels.csv) carry the
+    # arm as sample_arm and no author_type column
+    if "author_type" not in df and "sample_arm" in df:
+        df["author_type"] = df["sample_arm"]
     df["validation_present"] = df["validation_present"].astype(bool)
+    df["in_metric_layer"] = df["in_metric_layer"].astype(bool)
+    if "in_type_layer" in df:
+        df["in_type_layer"] = df["in_type_layer"].astype(bool)
     df["validation_type"] = df["validation_type"].fillna("none")
     if "in_type_layer" not in df:
         df["in_type_layer"] = df.in_metric_layer & ~df.validation_type.isin(["none", "unresolved"])

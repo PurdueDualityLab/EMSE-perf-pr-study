@@ -1,0 +1,6 @@
+test_label,stratum,n,test,statistic,p_raw,p_bh,effect_name,effect,note
+Reported dim in pattern's expected set vs permutation null,All validated,1699,permutation (B=20000),0.10814555620953506,0.0017499125043747813,0.002916520840624635,observed - null,0.10814555620953506,observed=34.5%; null=23.7%
+Reported dim in pattern's expected set vs permutation null,agentic,858,permutation (B=20000),0.0882885780885781,0.014799260036998151,0.016849157542122895,observed - null,0.0882885780885781,observed=32.3%; null=23.5%
+Reported dim in pattern's expected set vs permutation null,human_candidate,841,permutation (B=20000),0.12122193816884663,0.0015999200039998,0.002916520840624635,observed - null,0.12122193816884663,observed=36.7%; null=24.6%
+Reported dim in pattern's expected set vs permutation null,measured evidence,906,permutation (B=20000),0.1373013796909492,0.016849157542122895,0.016849157542122895,observed - null,0.1373013796909492,observed=54.2%; null=40.5%
+Reported dim in pattern's expected set vs permutation null,static reasoning,767,permutation (B=20000),0.04410593220338983,0.0009499525023748813,0.002916520840624635,observed - null,0.04410593220338983,observed=11.6%; null=7.2%

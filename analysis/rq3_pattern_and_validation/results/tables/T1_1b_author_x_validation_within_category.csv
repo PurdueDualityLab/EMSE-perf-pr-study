@@ -1,10 +1,10 @@
-Category,Agent validated,Human validated,test,p (raw),note
-Algorithm,36.5%,66.7%,chi-square,0.034,"min expected=6.35; OR=0.29 [0.09, 0.94]"
-Build/Infra,57.1%,66.7%,Fisher's exact,1.000,"min expected=2.47; OR=0.67 [0.10, 4.26]"
-Code smells,27.3%,20.0%,Fisher's exact,1.000,"min expected=2.56; OR=1.50 [0.27, 8.45]"
-Control-flow,13.3%,75.0%,Fisher's exact,0.037,"min expected=1.05; OR=0.05 [0.00, 0.77]"
-Data structure,60.0%,50.0%,Fisher's exact,1.000,"min expected=0.83; OR=1.50 [0.07, 31.58]"
-I/O & sync,45.5%,58.3%,chi-square,0.473,"min expected=6.00; OR=0.60 [0.14, 2.47]"
-Memory/locality,52.2%,86.4%,chi-square,0.003,"min expected=9.07; OR=0.17 [0.05, 0.62]"
-Network/DB,93.3%,50.0%,Fisher's exact,0.053,"min expected=1.14; OR=14.00 [1.06, 185.50]"
-Other,0.0%,–,n/a (degenerate table),,
+Category,agentic validated,human_candidate validated,test,p (raw),note
+Algorithm,85.1%,82.8%,chi-square,0.504,"min expected=34.44; OR=1.19 [0.71, 1.99]"
+Build/Infra,75.8%,69.7%,chi-square,0.373,"min expected=20.41; OR=1.36 [0.69, 2.65]"
+Code smells,83.0%,73.5%,chi-square,0.054,"min expected=29.79; OR=1.75 [0.99, 3.11]"
+Control-flow,95.2%,83.3%,Fisher's exact,0.318,"min expected=1.85; OR=4.00 [0.38, 42.37]"
+Data structure,80.0%,95.0%,Fisher's exact,0.234,"min expected=2.91; OR=0.21 [0.02, 1.85]"
+I/O & sync,63.0%,83.7%,chi-square,<0.001,"min expected=23.11; OR=0.33 [0.17, 0.63]"
+Loop,100.0%,50.0%,Fisher's exact,0.105,"min expected=1.54; OR=11.00 [0.46, 263.54]"
+Memory/locality,85.6%,85.2%,chi-square,0.877,"min expected=50.28; OR=1.03 [0.68, 1.58]"
+Network/DB,80.4%,83.8%,chi-square,0.577,"min expected=13.37; OR=0.80 [0.36, 1.78]"

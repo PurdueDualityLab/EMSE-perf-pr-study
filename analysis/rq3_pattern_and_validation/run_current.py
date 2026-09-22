@@ -126,7 +126,7 @@ def main():
     parser.add_argument("--rq1", type=Path, default=HERE.parent / "rq1_optimization_patterns/consensus/rq1_consensus.parquet")
     parser.add_argument("--rq2", type=Path, default=HERE.parent / "rq2_validation/consensus/rq2_consensus.parquet")
     parser.add_argument("--evidence-dir", type=Path, default=ROOT / "mining/sample_evidence/final")
-    parser.add_argument("--output-dir", type=Path, default=HERE / "current")
+    parser.add_argument("--output-dir", type=Path, default=HERE)
     args = parser.parse_args()
     files = [args.sample, args.rq1, args.rq2] + [args.evidence_dir / f"{name}.parquet" for name in
         ("collection_status", "pull_requests", "pull_request_files", "commits", "issue_comments", "review_comments", "workflow_runs")]
@@ -149,8 +149,6 @@ def main():
     print(f"Extracting metrics for {len(selected)} analytic PRs ...", flush=True)
     frames = extract_sample(selected, tables)
     out = args.output_dir.resolve()
-    if out == HERE or out in (HERE / "data", HERE / "results", HERE / "figures"):
-        raise ValueError("Choose a separate output directory for current results")
     (out / "data").mkdir(parents=True, exist_ok=True)
     audit = sample[KEYS + ["sample_arm"]].merge(rq1[KEYS + ["included_in_analysis", "inclusion_reason"]],
         on=KEYS, validate="one_to_one").merge(rq2[KEYS + ["consensus_validation_present", "included_in_stage2_analysis"]],

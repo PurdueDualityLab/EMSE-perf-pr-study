@@ -1,34 +1,34 @@
 Author,n,Dimension,with diff,without diff
-AI Agent,128,D1,31.2%,25.0%
-AI Agent,128,D2,3.1%,2.3%
-AI Agent,128,D3,7.8%,3.9%
-AI Agent,128,D4,3.9%,3.9%
-AI Agent,128,D5,3.1%,1.6%
-AI Agent,128,D6,2.3%,1.6%
-AI Agent,128,D7,2.3%,2.3%
-AI Agent,128,D8,1.6%,0.8%
-AI Agent,128,D9,2.3%,1.6%
-AI Agent,128,D0,3.1%,3.1%
-AI Agent,128,≥1 dim,39.8%,31.2%
-Human,49,D1,42.9%,42.9%
-Human,49,D2,2.0%,2.0%
-Human,49,D3,10.2%,10.2%
-Human,49,D4,0.0%,0.0%
-Human,49,D5,4.1%,2.0%
-Human,49,D6,2.0%,0.0%
-Human,49,D7,2.0%,2.0%
-Human,49,D8,0.0%,0.0%
-Human,49,D9,2.0%,2.0%
-Human,49,D0,8.2%,8.2%
-Human,49,≥1 dim,53.1%,51.0%
-All,177,D1,34.5%,29.9%
-All,177,D2,2.8%,2.3%
-All,177,D3,8.5%,5.6%
-All,177,D4,2.8%,2.8%
-All,177,D5,3.4%,1.7%
-All,177,D6,2.3%,1.1%
-All,177,D7,2.3%,2.3%
-All,177,D8,1.1%,0.6%
-All,177,D9,2.3%,1.7%
-All,177,D0,4.5%,4.5%
-All,177,≥1 dim,43.5%,36.7%
+agentic,858,D1,35.0%,33.4%
+agentic,858,D2,4.0%,3.5%
+agentic,858,D3,16.9%,14.7%
+agentic,858,D4,3.6%,3.3%
+agentic,858,D5,5.4%,4.4%
+agentic,858,D6,13.4%,12.5%
+agentic,858,D7,2.2%,2.1%
+agentic,858,D8,0.7%,0.6%
+agentic,858,D9,5.1%,4.7%
+agentic,858,D0,5.4%,4.7%
+agentic,858,≥1 dim,50.9%,48.5%
+human_candidate,841,D1,39.0%,37.6%
+human_candidate,841,D2,3.3%,3.2%
+human_candidate,841,D3,19.0%,17.5%
+human_candidate,841,D4,2.4%,1.9%
+human_candidate,841,D5,3.4%,3.0%
+human_candidate,841,D6,4.5%,4.0%
+human_candidate,841,D7,1.1%,1.0%
+human_candidate,841,D8,0.2%,0.1%
+human_candidate,841,D9,5.4%,4.5%
+human_candidate,841,D0,4.8%,4.6%
+human_candidate,841,≥1 dim,52.4%,50.4%
+All,1699,D1,37.0%,35.5%
+All,1699,D2,3.6%,3.4%
+All,1699,D3,18.0%,16.1%
+All,1699,D4,3.0%,2.6%
+All,1699,D5,4.4%,3.7%
+All,1699,D6,9.0%,8.3%
+All,1699,D7,1.6%,1.5%
+All,1699,D8,0.5%,0.4%
+All,1699,D9,5.2%,4.6%
+All,1699,D0,5.1%,4.6%
+All,1699,≥1 dim,51.7%,49.4%

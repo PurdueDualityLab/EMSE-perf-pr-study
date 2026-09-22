@@ -4,9 +4,11 @@ RQ1 characterizes *what* perf PRs change (optimization pattern), RQ2 *whether* t
 change is accompanied by validation evidence. RQ3 adds the third element — the
 performance metric dimensions reported as that evidence — and relates the three.
 
-## Analytic sample
+> Naming: this directory uses `D0`–`D9` for the metric dimensions, in column
+> names and tables alike. The paper renames them `M0`–`M9` and says "metric"
+> rather than "dimension"; the codes correspond one-to-one.
 
-### Current balanced sample
+## Analytic sample
 
 Run the consensus adapter from the repository root, in an environment installed
 from `requirements.txt`:
@@ -25,24 +27,23 @@ RQ1/RQ2 labels was recovered from Gautschi; it is dated 2026-08-27 and records
 Reuse this snapshot rather than fetching newer versions of the discussions.
 
 The adapter validates immutable `(repo_id, number)` identities, sample arms,
-selection hashes, snapshot consistency, and evidence completeness. It preserves
-the existing D0–D9 extraction rules and the historical exploratory test family.
-Equal-distance quantitative-claim ties now use sorted claim kinds instead of
-set iteration, making extraction independent of Python's randomized hash seed.
-Sources use current PR file patches (not repeated per-commit patches), commit
-messages, issue/review comments, description, and workflow names. It does not
-inject provider-specific RQ2 pipeline names into the corpus. These source
-differences should be considered when comparing against the historical results.
+selection hashes, snapshot consistency, and evidence completeness. Equal-distance
+quantitative-claim ties use sorted claim kinds instead of set iteration, making
+extraction independent of Python's randomized hash seed. Sources use current PR
+file patches (not repeated per-commit patches), commit messages, issue/review
+comments, description, and workflow names. It does not inject provider-specific
+RQ2 pipeline names into the corpus.
 
-Current denominators:
+Denominators:
 
 | Layer | All | agentic | human_candidate |
 | --- | ---: | ---: | ---: |
 | RQ1 included × available RQ2 presence consensus | 2,081 | 1,048 | 1,033 |
 | Positive validation presence / general metric layer | 1,699 | 858 | 841 |
-| Resolved positive type layer | 1,581 | 807 | 774 |
+| Resolved positive type layer | 1,684 | 851 | 833 |
+| Measured evidence (benchmark or profiling primary type) | 906 | 413 | 493 |
 
-The 118 positive PRs without resolved validation types are included in the
+The 15 positive PRs without resolved validation types are included in the
 general metric profile, dimensionality by sample arm/category, merge-status
 comparisons, and no-diff sensitivity. They appear as `unresolved` in descriptive
 type distributions. Only comparisons involving validation type exclude them,
@@ -52,51 +53,21 @@ non-benchmark. `in_metric_layer` marks all positive presence consensuses, while
 still extracted for every analytic PR.
 Thus, neither 2,083 (RQ1 alone) nor 1,707 (RQ2 alone) is the joint RQ3 denominator.
 
-Outputs are written to ignored `current/`: `data/`, `results/`, four PDF figures
-under `figures/`, and `summary.json` with input SHA-256 hashes and cohort counts.
-`data/sample_inclusion.csv` records inclusion for all 2,260 sample identities.
-The existing committed historical outputs remain the reference for the old run.
-
-To refresh paper figures without rerunning extraction:
-
-```bash
-python analysis/rq3_pattern_and_validation/make_figures.py --current \
-  --data analysis/rq3_pattern_and_validation/current/data/rq3_pr_level.csv \
-  --output-dir report/figures
-python analysis/make_methodology_figure.py
-python analysis/make_paper_comparison_figures.py
-```
-
-The paper layout stacks category/type and heatmap panels for readability and
-hatches unresolved validation types. Figure captions define the separate
-positive-presence and resolved-type denominators.
-The comparison-figure script reads published compact RQ1/RQ2 labels and the
-local complete-case structural deltas, rendering vector PDFs without changing
-the underlying statistics.
-
-Interpret results as exploratory PR-level associations. In particular,
-benchmark labels and quantitative metric detection share evidence, so their
-association does not independently validate the extractor. Extraction rules
-have not been evaluated against a new manually annotated precision/recall set.
-The conditional Monte Carlo test uses Pearson's statistic with fixed margins;
-its label now describes that implementation accurately. BH adjustment uses
-SciPy's equivalent implementation, avoiding an undeclared statsmodels dependency.
-
-### Historical sample
-
-| layer | PRs | agent | human | source |
-| --- | --- | --- | --- | --- |
-| category × validation | 357 | 280 | 77 | 407 valid perf PRs − 50 `No Meaningful Change or Not Performance PR` (RQ1) |
-| metric layer | 177 | 128 | 49 | the 357 with `validation_present == True` (RQ2) |
-
-PRs without validation evidence form the "no metric reported" stratum.
+Outputs are written alongside the code: `data/` (ignored by Git), `results/`,
+five PDF figures under `figures/`, and `summary.json` with input SHA-256 hashes
+and cohort counts. `data/sample_inclusion.csv` records inclusion for all 2,260
+sample identities. Compact public labels live in `analysis/classification_labels/`.
 
 ## Pipeline (run from the repo root)
 
+`run_current.py` drives Step 1 end to end — extraction, statistics, and figures.
+The remaining entry points are run individually:
+
 ```bash
-python analysis/rq3_pattern_and_validation/extract_metrics.py    # Requires historical loader inputs
-python analysis/rq3_pattern_and_validation/rq3_statistics.py
-python analysis/rq3_pattern_and_validation/make_figures.py
+python analysis/rq3_pattern_and_validation/run_current.py          # Step 1, full
+python analysis/rq3_pattern_and_validation/refresh_type_layer.py   # type layer only
+python analysis/rq3_pattern_and_validation/catalog_expected_dims.py
+python analysis/rq3_pattern_and_validation/metric_alignment.py     # Step 2
 ```
 
 ### Step 1 — `extract_metrics.py` + `metric_patterns.py`
@@ -129,50 +100,132 @@ boilerplate stripping; unit synonym folding, including Japanese/Chinese units
 such as 秒 and 倍; CJK cues and comparatives such as 実行時間, メモリ, 削減, 耗时
 are mapped onto the same dimensions). Extraction is multi-label.
 
-`experiments/metric_list_coverage.py` re-runs the extractor under alternative
+`metric_list_coverage.py` re-runs the extractor under alternative
 dimension lists (storage, GPU, errors/timeouts, UI rendering, work volume, LLM
 tokens, cache effectiveness, bundle-size tables) and reports each list's
 coverage → `results/metric_list_coverage.md`. On this corpus the extra
 resource dimensions fire in 0–3 PRs each; D0 and the CJK handling were the only
 additions with a measurable effect and were adopted.
 
-`data/rq3_metric_matches.csv` holds one audit row per (PR, dimension, source)
-with the cue, the claim and a snippet — use it to spot-check precision.
-`*_nodiff` columns in `data/rq3_pr_level.csv` give the same flags with the code
-diff excluded (sensitivity analysis, §5 of the results).
+`data/rq3_metric_matches.csv` holds one audit row per (PR, dimension,
+source) with the cue, the claim and a snippet — use it to spot-check precision.
+`*_nodiff` columns in `data/rq3_pr_level.csv` give the same flags with
+the code diff excluded (sensitivity analysis, §5 of the results).
 
-### Step 2 — `rq3_statistics.py`
+### Step 1 statistics — `rq3_statistics.py`
 
-1. **Category × validation** (n = 357): presence and type, pooled and by author;
+1. **Category × validation** (n = 2,081): presence and type, pooled and by author;
    agent-vs-human validation rate within each category.
-2. **Metric profile** (n = 177): category × D0–D9 incidence by author; the
+2. **Metric profile** (n = 1,699): category × D0–D9 incidence by author; the
    *dimensionality* (distinct dimensions per PR) across authors, categories, and
-   validation types; benchmark-based vs other evidence. Table 2.5 breaks metric
-   reporting down by author type and by individual agent under three
-   denominators (all PRs, validated PRs, benchmark PRs) → `T2_5_metric_reporting_by_agent.csv`.
+   validation types; benchmark-based vs other evidence (n = 1,684, resolved types
+   only). Table 2.5 breaks metric reporting down by author type and by individual
+   agent under three denominators → `T2_5_metric_reporting_by_agent.csv`.
 3. **Merge status** vs dimensionality.
 4. **Extremes** exported as CSVs for qualitative reading, including PRs with a
    quantitative metric claim but no RQ2 validation label (RQ2 recheck candidates).
+5. **Sensitivity** with the code diff excluded from the corpus.
 
 Tests: chi-square when Cochran's rule holds, otherwise Fisher's exact (2×2) or a
 Monte-Carlo Fisher–Freeman–Halton test (fixed margins, B = 20,000, seeded);
 Cramér's V (OR for 2×2); Mann–Whitney U with Cliff's δ; Kruskal–Wallis with ε².
-Benjamini–Hochberg is applied across the whole RQ3 family
-(`results/rq3_tests.csv`). Categories with n < 10 on the 357 PRs are pooled as
-"Other" for inferential tests only.
+Benjamini–Hochberg is applied across the whole 60-test RQ3 Step 1 family
+(`results/rq3_tests.csv`); Step 2 is a separate, smaller family
+(`results/rq3_step2_tests.csv`). The conditional Monte Carlo test uses
+Pearson's statistic with fixed margins. BH adjustment uses SciPy's implementation,
+avoiding an undeclared statsmodels dependency.
+
+### Type-layer refresh — `refresh_type_layer.py`
+
+RQ2 was rerun on the primary evidence type after the Step 1 run was committed.
+Validation *presence* is identical under both consensuses, so the D0–D9
+extraction and every presence-based result stand unchanged; only
+`validation_type` / `in_type_layer` and the statistics conditioning on them
+moved (resolved type layer 1,581 → 1,684; unresolved 118 → 15). The refresh is
+purely additive — no already-resolved type changed, and the script aborts if
+that is not the case.
+
+The script applies `run_current.build_base`'s type rules to the already-published
+extraction output and re-drives `rq3_statistics`, so its numbers come from the
+same statistical code as the original run. **Its output has been folded into
+`results/`**, which is now the single authoritative Step 1 result set.
+Re-running the script writes a fresh staging directory
+(`--output-dir`, default `results_type_refresh/`) for comparison; fold any
+accepted changes back into `results/` rather than keeping both.
+
+Conclusions were unaffected: all 60 tests match one-to-one, 25 significant after
+BH before and after, no test gained or lost, largest adjusted-p shift ≈ 0.03.
+Sections 2.5 (per-agent) and 3 (merge) are not regenerated by the refresh —
+they need the `agent` and `is_merged` columns, which are absent from the
+published compact labels. Section 3 does not condition on validation type, so
+its committed values remain correct; section 2.5's `benchmark` column does, and
+is flagged inline in `results/rq3_results.md` as reflecting the
+pre-refresh layer.
+
+### Step 2 — `catalog_expected_dims.py` + `metric_alignment.py`
+
+Run from the refreshed compact labels in `analysis/classification_labels/`:
+
+1. **Alignment** of reported dimensions with the pattern's expected dimensions,
+   taken mechanically from the catalog (`catalog_expected_dims.py` →
+   `catalog_expected_dims.csv`) and tested against a null that permutes expected
+   sets across sub-patterns, each PR keeping its reported dimensions.
+2. **The memory-for-time check** within Caching and Buffering: how often the gain
+   is reported, how often memory, how often both. Descriptive, with no
+   cross-pattern comparison, since other patterns are not expected to move memory.
+
+An earlier three-class trade-off classification and composite adequacy outcome
+were removed as unvalidatable.
 
 ## Outputs
 
 | path | content |
 | --- | --- |
-| `data/rq3_pr_level.csv` | 357 PRs: RQ1 pattern, RQ2 labels, outcome metadata, D0–D9 flags, `n_dims`, `n_dims_specific`, sources |
-| `data/rq3_metric_matches.csv` | audit snippets per (PR, dimension, source) |
-| `results/rq3_results.md` | every table and test |
-| `results/tables/*.csv` | the tables individually |
-| `results/rq3_tests.csv` | RQ3 test family with BH-adjusted p |
-| `STATISTICS.md` | statistical analysis summary: methods, which tests are significant after BH and which are not, power caveats |
+| `data/rq3_pr_level.csv` | per-PR: RQ1 pattern, RQ2 labels, outcome metadata, D0–D9 flags, `n_dims`, `n_dims_specific`, sources (Git-ignored) |
+| `data/rq3_metric_matches.csv` | audit snippets per (PR, dimension, source) (Git-ignored) |
+| `data/sample_inclusion.csv` | inclusion decision for all 2,260 sample identities (Git-ignored) |
+| `results/rq3_results.md` | every Step 1 table and test |
+| `results/rq3_tests.csv` | Step 1 test family (60 tests) with BH-adjusted p |
+| `results/tables/T0–T5*.csv` | the Step 1 tables individually |
+| `results/rq3_step2_results.md` | Step 2 narrative: alignment and memory-for-time |
+| `results/rq3_step2_tests.csv` | Step 2 test family with BH-adjusted p |
+| `results/tables/T6_*.csv` | the Step 2 tables individually |
 | `results/extremes_*.csv` | PR lists at the distribution extremes |
+| `summary.json` | cohort counts and input SHA-256 hashes of the extraction run |
+| `figures/rq3_dimensionality.pdf` | dimensions per validated PR, by author and by evidence type **(in paper)** |
+| `figures/rq3_metric_frequency.pdf` | % of validated PRs reporting each dimension D0–D9, agent vs human **(in paper)** |
+| `figures/rq3_metric_profile_heatmap.pdf` | category × D0–D9 incidence (plus a no-metric column) among validated PRs **(in paper)** |
 | `figures/rq3_validation_by_category.pdf` | validation type share per category, agent vs human |
-| `figures/rq3_metric_frequency.pdf` | % of validated PRs reporting each dimension D0–D9, agent vs human |
-| `figures/rq3_metric_profile_heatmap.pdf` | category × D0–D9 incidence (plus a no-metric column) among validated PRs |
-| `figures/rq3_dimensionality.pdf` | dimensions per validated PR, by author and by evidence type |
+| `figures/rq3_memory_for_time.pdf` | gain vs memory reporting within caching and buffering |
+
+`data/` is excluded from Git; the PR-level intermediates remain available in the
+private Hugging Face dataset, and the compact public labels in
+`analysis/classification_labels/`. `summary.json` still records
+`type_layer_rows: 1581` and the pre-refresh RQ2 consensus hash `a29be9ab…`: it
+documents the provenance of the extraction run that produced it, not the current
+layer sizes. The authoritative denominators are the table at the top of this file.
+
+To refresh paper figures without rerunning extraction:
+
+```bash
+python analysis/rq3_pattern_and_validation/make_figures.py --current \
+  --data analysis/classification_labels/rq3_labels.csv \
+  --output-dir report/figures
+python analysis/make_methodology_figure.py
+python analysis/make_paper_comparison_figures.py
+```
+
+The paper layout stacks category/type and heatmap panels for readability and
+hatches unresolved validation types. Figure captions define the separate
+positive-presence and resolved-type denominators. The comparison-figure script
+reads published compact RQ1/RQ2 labels and the local complete-case structural
+deltas, rendering vector PDFs without changing the underlying statistics.
+
+## Interpretation
+
+Interpret results as exploratory PR-level associations. In particular,
+benchmark labels and quantitative metric detection share evidence, so their
+association does not independently validate the extractor. Extraction rules
+have not been evaluated against a new manually annotated precision/recall set,
+and the regular expressions capture explicit surface mentions only, so coverage
+rates are lower bounds.

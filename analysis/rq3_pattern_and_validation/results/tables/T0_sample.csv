@@ -1,4 +1,4 @@
-author_type,PRs (category layer),with validation evidence (metric layer)
-AI Agent,280,128
-Human,77,49
-All,357,177
+author_type,PRs (category layer),with validation evidence,metric layer (all positive),resolved type layer
+agentic,1048,858,858,851
+human_candidate,1033,841,841,833
+All,2081,1699,1699,1684

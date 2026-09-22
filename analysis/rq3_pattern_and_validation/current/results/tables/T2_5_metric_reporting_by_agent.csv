@@ -1,8 +1,0 @@
-author,n (all PRs),validation present,metric layer,n resolved type layer,benchmark evidence,"metric layer & ≥1 dim, all PRs","metric layer & ≥1 dim, all PRs (no diff)",n metric layer,"≥1 dim, metric layer","mean #dims, metric layer",n benchmark,"≥1 dim, benchmark"
-human_candidate,1033,81.4%,81.4%,774,42.1%,42.7%,41.0%,841,52.4%,0.83,435,79.3%
-agentic (all),1048,81.9%,81.9%,807,34.9%,41.7%,39.7%,858,50.9%,0.92,366,82.0%
-  github_copilot,421,92.2%,92.2%,362,29.0%,41.3%,40.4%,388,44.8%,0.77,122,86.1%
-  openai_codex,366,71.9%,71.9%,251,43.4%,40.2%,39.6%,263,55.9%,1.09,159,78.6%
-  cursor,146,71.2%,71.2%,96,21.2%,37.7%,28.8%,104,52.9%,1.0,31,90.3%
-  devin,62,85.5%,85.5%,50,30.6%,48.4%,46.8%,53,56.6%,0.81,19,84.2%
-  claude_code,53,94.3%,94.3%,48,66.0%,58.5%,56.6%,50,62.0%,1.1,35,74.3%

@@ -1,0 +1,59 @@
+High-level Pattern,Sub pattern,Optimized Metrics,catalog_expected_dims
+Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,Reduced execution count (number of times operations or function calls are executed) potentially leading to reduced latency,D1|D4
+Algorithm-Level Optimizations,Select Algorithm Based on Instruction Speed,Decrease instruction latency (time it takes for an instruction to complete) potentially leading to a reduction in overall latency.,D1
+Algorithm-Level Optimizations,Structure Algorithm to Support instruction level parallelism (ILP),Greater instruction level parallelism (ILP) leading to greater throughput,D2
+Algorithm-Level Optimizations,Select Space Efficient Algorithm,"Memory footprint (decrease page misses, decrease cache misses) potentially leading to both reduced latency and greater throughput.",D1|D2|D3|D4
+Algorithm-Level Optimizations,Inheritance over Delegation for Energy Efficiency,Reduction in runtime leading to reducting in energy consumption,D1|D8
+Algorithm-Level Optimizations,Event-Driven Throttling,"CPU usage, Latency, Throughput",D1|D2|D4
+Control-Flow and Branching Optimizations,Make Conditional Branches More Predictable,"Greater branch prediction rate, potentially leading to lower latency",D1
+Control-Flow and Branching Optimizations,Remove branches with functional logic,"Remove branches, potentially leading to lower latency",D1
+Control-Flow and Branching Optimizations,Remove branches by doing extra work,"Removed branches, potentially leading to lower latency",D1
+Control-Flow and Branching Optimizations,Remove branching with masking,"CPU cycles, branch misprediction rate",D4
+Control-Flow and Branching Optimizations,Rearranging branches,"CPU cycles, branch misprediction rate",D4
+Control-Flow and Branching Optimizations,Combining branches,"CPU cycles, branch instruction count",D4
+Control-Flow and Branching Optimizations,Rearranging for early return,"CPU cycles, branch instruction count",D4
+Memory and Data Locality Optimizations,Access Data with Appropriate Type (Prevent Store Forwarding Issues),"Less MOB loads replays retired, possibly resulting in reduced latency",D1|D4
+Memory and Data Locality Optimizations,Arrange Data for Optimal Hardware Prefetching,"Decrease cache miss retired events, leading to increased throughput",D2|D4
+Memory and Data Locality Optimizations,Improve CPU Cache management,"Decreased number 1st-level cache miss retired events, leading to greater throughput",D2|D4
+Memory and Data Locality Optimizations,Increase Workload to Mitigate Memory Access Latency,CPI,D4
+Memory and Data Locality Optimizations,Use Smaller Data Types,"Less 1st level cache misses, leading to reduced latency",D1|D4
+Memory and Data Locality Optimizations,Caching,"Latency, throughput, cache hit rate",D1|D2|D5
+Memory and Data Locality Optimizations,Buffering,"Throughput, I/O size",D2|D5
+Memory and Data Locality Optimizations,Improve cache locality - spatial locality,"Less cache line replacements, increased cache efficiency",D4
+Memory and Data Locality Optimizations,Improve cache locality - temporal locality,"cache miss reduction, latency",D1|D4
+Memory and Data Locality Optimizations,Optimize Object Use,"Memory usage, GC",D3
+Memory and Data Locality Optimizations,Reduce memory bloat from RTSJ Immortal Memory,Memory usage,D3
+Memory and Data Locality Optimizations,Cache Eviction Policy,memory,D3
+Loop Transformations,Remove Conditional by Loop Unrolling,ILP,D2
+Loop Transformations,Loop Distribution (Fission),ILP,D2
+Loop Transformations,Loop Fusion,ILP,D2
+Loop Transformations,Loop Peeling,ILP,D2
+Loop Transformations,Loop Interchanging,ILP,D2
+Loop Transformations,Loop Invariant Branches,ILP,D2
+I/O and Synchronization,Selection I/O size,"Throughput, I/O latency, cache efficiency",D1|D2|D4|D5
+I/O and Synchronization,Polling,"CPU usage, event latency",D1|D4
+I/O and Synchronization,Non-Blocking I/O,"Thread count, context switches, CPU usage, latency",D1|D4
+I/O and Synchronization,Concurrency Control / Rate Limiting,"Resource Utilization, Throughput, Latency",D1|D2|D4
+I/O and Synchronization,Concurrency Control / Lock Optimization,"Latency Variance, Cache Miss Rate, Throughput, P99 Latency",D1|D2|D4
+I/O and Synchronization,Streaming Implementation Or Optimization),Memory Utilization,D3
+Data Structure Selection and Adaptation,Choose Data Structure for Energy Efficiency,Energy Consumption (J),D8
+Data Structure Selection and Adaptation,Darwinian Data Structure Selection,"Execution time, CPU Usage, Memory",D1|D3|D4
+Data Structure Selection and Adaptation,"Choose more energy-efficient data structure across Java Collections Framework, Apache Common Collections, and Eclipse Collections.",Energy consumption,D8
+Data Structure Selection and Adaptation,Choose energy-efficient data structure by method calls,Energy consumption & latency,D1|D8
+Code Smells and Structural Simplification,Remove code bloat by removing optional features,Memory usage,D3
+Code Smells and Structural Simplification,Remove Unnecessary Method Calls,Execution time/latency,D1
+Code Smells and Structural Simplification,Replace Reflection with Direct Method Calls,Execution time/latency,D1
+Code Smells and Structural Simplification,Remove long method by extracting new method,Promotes code reuse indirectly leading to lower energy consumption,D8
+Code Smells and Structural Simplification,Remove duplicate code,Promotes code reuse indirectly leading to lower energy consumption,D8
+Code Smells and Structural Simplification,Minimize feature envy by moving methods,"Reduce indirection, possibly leading to reduced latency and energy savings",D1|D8
+Code Smells and Structural Simplification,Minimize occurrences of God Class,"Decouple functionality, possibly leading to energy savings",D8
+Code Smells and Structural Simplification,Type Checking,"Reduces duplication, possible leading to energy savings",D8
+Build & Compilation & Infrastructure Optimization,Enable Build-Time Optimizations,Faster build times,D7
+Build & Compilation & Infrastructure Optimization,Performance-Optimized Dependency Selection,"Faster build time, runtime",D1|D7
+Build & Compilation & Infrastructure Optimization,Compiler Optimization Hints/Directives,"Latency, Throughput, CPU cycles, Instruction-level efficiency",D1|D2|D4
+Build & Compilation & Infrastructure Optimization,Reduce rebuilding size,"Faster build times, Smaller build size",D6|D7
+Build & Compilation & Infrastructure Optimization,Enable Lazy loading for resource,Memory allocation,D3
+"Network, Database, and Data Access Optimization",Batch API Requests (N+1),"latency, throughput",D1|D2
+"Network, Database, and Data Access Optimization",Minimize Payload Size / Pass Reference Instead of Value,"payload size, network bandwidth, latency, memory,  cache efficiency",D1|D3|D4|D5
+"Network, Database, and Data Access Optimization",Lazy Loading / Deferred Initialization,"Initial load time, payload size, Bandwidth usage",D1|D5
+"Network, Database, and Data Access Optimization",Relational Query Consolidation (N+1),"Latency, Throughput, CPU/IO Utilization",D1|D2|D4|D5

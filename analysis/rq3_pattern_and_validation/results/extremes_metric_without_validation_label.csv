@@ -1,10 +1,43 @@
 id,html_url,author_type,agent,pattern,sub_pattern,validation_type,is_merged,n_dims,dims
-3096249565,https://github.com/microsoft/HydraLab/pull/695,AI Agent,Copilot,I/O and Synchronization,Concurrency Control / Rate Limiting,none,False,1,D1
-3185988908,https://github.com/mochilang/mochi/pull/3943,AI Agent,OpenAI_Codex,Algorithm-Level Optimizations,Select Algorithm Based on Instruction Speed,none,True,1,D1
-3246122368,https://github.com/Stirling-Tools/Stirling-PDF/pull/3992,AI Agent,OpenAI_Codex,I/O and Synchronization,Concurrency Control / Rate Limiting,none,False,1,D1
-3214281732,https://github.com/mochilang/mochi/pull/6522,AI Agent,OpenAI_Codex,Code Smells and Structural Simplification,Remove Unnecessary Method Calls,none,True,1,D8
-3253657829,https://github.com/MontrealAI/AGI-Alpha-Agent-v0/pull/3666,AI Agent,OpenAI_Codex,I/O and Synchronization,Polling,none,True,1,D1
-3198941408,https://github.com/lunasaw/gb28181-proxy/pull/38,AI Agent,Cursor,Memory and Data Locality Optimizations,Caching,none,True,3,D1|D2|D3
-3240006620,https://github.com/onflow/flow-go/pull/7598,AI Agent,Devin,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,none,True,1,D1
-2419106029,https://github.com/getsentry/sentry/pull/87963,Human,Human,Data Structure Selection and Adaptation,Darwinian Data Structure Selection,none,False,1,D1
-2607579182,https://github.com/gofiber/fiber/pull/3532,Human,Human,Code Smells and Structural Simplification,Remove long method by extracting new method,none,True,1,D1
+3095569002.0,https://github.com/hmislk/hmis/pull/17201,human_candidate,,Code Smells and Structural Simplification,Remove duplicate code,none,True,3,D1|D5|D8
+2743769671.0,https://github.com/triton-lang/triton/pull/7849,human_candidate,,Build & Compilation & Infrastructure Optimization,Enable Build-Time Optimizations,none,True,1,D1
+3149460930.0,https://github.com/ant-design/ant-design/pull/56516,human_candidate,,Build & Compilation & Infrastructure Optimization,Enable Build-Time Optimizations,none,True,1,D6
+3321792751.0,https://github.com/dotnet/macios/pull/24775,human_candidate,,Memory and Data Locality Optimizations,Caching,none,True,1,D2
+3366865774.0,https://github.com/ray-project/ray/pull/61555,human_candidate,,Control-Flow and Branching Optimizations,Rearranging for early return,none,False,2,D1|D9
+3581531249.0,https://github.com/commaai/openpilot/pull/37904,human_candidate,,Code Smells and Structural Simplification,Replace Reflection with Direct Method Calls,none,True,1,D1
+3027156387.0,https://github.com/swc-project/swc/pull/11310,human_candidate,,Loop Transformations,Loop Fusion,none,True,1,D1
+2549627318.0,https://github.com/fatedier/fft/pull/22,agentic,devin,I/O and Synchronization,Selection I/O size,none,False,2,D1|D2
+3049975341.0,https://github.com/mlflow/mlflow/pull/19078,agentic,github_copilot,Code Smells and Structural Simplification,Remove Unnecessary Method Calls,none,True,1,D0
+2702190479.0,https://github.com/Azure/azure-sdk-tools/pull/11379,human_candidate,,Code Smells and Structural Simplification,Remove code bloat by removing optional features,none,False,3,D1|D3|D5
+2702332092.0,https://github.com/Azure/azure-sdk-tools/pull/11382,human_candidate,,Build & Compilation & Infrastructure Optimization,Performance-Optimized Dependency Selection,none,True,2,D3|D5
+3225274440.0,https://github.com/dotnet/runtime/pull/123776,agentic,github_copilot,Memory and Data Locality Optimizations,Caching,none,True,1,D1
+3322849439.0,https://github.com/kentcdodds/kentcdodds.com/pull/694,agentic,cursor,I/O and Synchronization,Non-Blocking I/O,none,True,1,D1
+2532325025.0,https://github.com/medplum/medplum/pull/6650,human_candidate,,Control-Flow and Branching Optimizations,Rearranging for early return,none,True,1,D1
+3406249163.0,https://github.com/c3rb3ru5d3d53c/binlex/pull/171,agentic,openai_codex,Build & Compilation & Infrastructure Optimization,Performance-Optimized Dependency Selection,none,True,2,D1|D2
+3077879262.0,https://github.com/freenet/freenet-core/pull/2234,human_candidate,,I/O and Synchronization,Selection I/O size,none,True,5,D0|D1|D2|D5|D9
+2539157728.0,https://github.com/open-metadata/OpenMetadata/pull/21376,human_candidate,,Memory and Data Locality Optimizations,Caching,none,True,1,D1
+3752953268.0,https://github.com/OneKeyHQ/app-monorepo/pull/11798,agentic,openai_codex,Memory and Data Locality Optimizations,Caching,none,True,2,D1|D4
+3223775721.0,https://github.com/surrealdb/surrealdb/pull/6824,human_candidate,,Memory and Data Locality Optimizations,Cache Eviction Policy,none,False,1,D3
+2654066434.0,https://github.com/microsoft/onnxscript/pull/2441,human_candidate,,Code Smells and Structural Simplification,Remove Unnecessary Method Calls,none,True,1,D1
+2800788223.0,https://github.com/embeddings-benchmark/mteb/pull/3131,human_candidate,,I/O and Synchronization,Streaming Implementation Or Optimization),none,False,1,D1
+2901986096.0,https://github.com/actualbudget/actual/pull/5899,agentic,cursor,"Network, Database, and Data Access Optimization",Lazy Loading / Deferred Initialization,none,True,1,D6
+2911035507.0,https://github.com/actualbudget/actual/pull/5921,agentic,cursor,"Network, Database, and Data Access Optimization",Lazy Loading / Deferred Initialization,none,True,1,D6
+2385825004.0,https://github.com/renegade-fi/renegade/pull/911,human_candidate,,I/O and Synchronization,Concurrency Control / Rate Limiting,none,True,1,D1
+3117249232.0,https://github.com/HotCakeX/Harden-Windows-Security/pull/975,human_candidate,,Code Smells and Structural Simplification,Remove duplicate code,none,True,1,D1
+2980175146.0,https://github.com/activepieces/activepieces/pull/9982,agentic,cursor,"Network, Database, and Data Access Optimization",Batch API Requests (N+1),none,False,1,D1
+3141517248.0,https://github.com/epicweb-dev/epicshop/pull/422,agentic,cursor,Algorithm-Level Optimizations,Event-Driven Throttling,none,False,1,D1
+3220491511.0,https://github.com/epicweb-dev/epicshop/pull/553,agentic,cursor,"Network, Database, and Data Access Optimization",Lazy Loading / Deferred Initialization,none,True,1,D1
+2679716136.0,https://github.com/Stirling-Tools/Stirling-PDF/pull/3992,agentic,openai_codex,I/O and Synchronization,Streaming Implementation Or Optimization),none,False,1,D1
+2884428959.0,https://github.com/Shelf-nu/shelf.nu/pull/2088,agentic,openai_codex,I/O and Synchronization,Concurrency Control / Rate Limiting,none,True,1,D2
+3406994973.0,https://github.com/bayesianbandits/bayesianbandits/pull/220,human_candidate,,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,none,True,1,D1
+3105318246.0,https://github.com/jirihofman/portfolio/pull/309,agentic,github_copilot,Memory and Data Locality Optimizations,Caching,none,True,1,D1
+3390617656.0,https://github.com/langfuse/langfuse/pull/12572,agentic,openai_codex,I/O and Synchronization,Concurrency Control / Rate Limiting,none,False,1,D4
+3633196062.0,https://github.com/langfuse/langfuse/pull/13479,agentic,openai_codex,I/O and Synchronization,Concurrency Control / Rate Limiting,none,False,1,D9
+2881455496.0,https://github.com/langfuse/langfuse-docs/pull/2143,agentic,cursor,Memory and Data Locality Optimizations,Caching,none,True,1,D1
+2661679618.0,https://github.com/TypedDevs/bashunit/pull/439,human_candidate,,Memory and Data Locality Optimizations,Caching,none,True,1,D1
+3282523620.0,https://github.com/CapSoftware/Cap/pull/1595,agentic,cursor,Algorithm-Level Optimizations,Event-Driven Throttling,none,False,2,D1|D2
+3283333671.0,https://github.com/CapSoftware/Cap/pull/1596,agentic,cursor,I/O and Synchronization,Concurrency Control / Rate Limiting,none,False,2,D1|D2
+3038303778.0,https://github.com/rustfs/rustfs/pull/916,agentic,github_copilot,Memory and Data Locality Optimizations,Caching,none,True,6,D1|D2|D3|D5|D6|D9
+2697281611.0,https://github.com/bolna-ai/bolna/pull/236,agentic,devin,Memory and Data Locality Optimizations,Caching,none,False,1,D1
+3083416490.0,https://github.com/Effect-TS/effect-smol/pull/794,human_candidate,,Algorithm-Level Optimizations,Select Computationally Efficient Algorithms,none,True,1,D6
+2566445973.0,https://github.com/facet-rs/facet/pull/741,agentic,openai_codex,Build & Compilation & Infrastructure Optimization,Performance-Optimized Dependency Selection,none,False,1,D9
