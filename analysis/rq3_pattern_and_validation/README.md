@@ -182,27 +182,24 @@ were removed as unvalidatable.
 
 Contrasts the *Code Smells and Structural Simplification* category (structural
 cleanups) with the eight remaining categories (actual performance changes) on
-validation presence (category layer, n = 2,081), any dimension reported and
-number of dimensions (metric layer, n = 1,699), and the combined outcome
-*validated and ≥1 dimension* on the category layer — each within the agentic
-and human arms, agent vs human within each group, and a category × author
-interaction test (logistic-regression LRT for binary outcomes; permutation on
-the difference of Cliff's δ with a negative-binomial LRT cross-check for
-#dims). A final section tests each D0–D9 unconditionally and conditional on
-≥1 dimension, to separate *fewer* metrics from *different* metrics.
+validation presence (category layer, n = 2,081), any dimension reported
+(metric layer, n = 1,699), and the combined outcome *validated and ≥1
+dimension* on the category layer — each within the agentic and human arms,
+agent vs human within each group, and a category × author interaction test
+(logistic-regression LRT). A final section tests each D0–D9 unconditionally
+and conditional on ≥1 dimension, to separate *fewer* metrics from
+*different* metrics.
 
 Finding: the Code-smells gap exists only in the human arm. Humans validate and
 quantify actual performance changes at a high rate and structural cleanups at
 a markedly lower one (validated-and-quantified 25% vs 46%), while agents apply
-the same verification behaviour regardless of category (38% vs 42%); the
-interaction is significant (ratio of ORs 2.08 [1.22, 3.56], p = 0.007,
-q = 0.028); for validation presence and any dimension it is significant before
-correction and borderline after (p = 0.043 and 0.034; q = 0.11 and 0.10). Code
-smells PRs that do quantify report the same metric mix as other PRs. Reads the
-compact labels only. BH is applied across the 20 pre-specified tests (within-arm,
-within-group, interaction), a family separate from Step 1 and Step 2; the
-per-dimension, pairwise, and negative-binomial follow-ups are descriptive and
-carry raw p only (`results/rq3_code_smells_tests.csv`, column `prespecified`).
+the same verification behaviour regardless of category (38% vs 42%). All three
+interactions are significant after correction (ratio of ORs 2.08, 1.89, 1.85;
+q = 0.021, 0.043, 0.043). Code smells PRs that do quantify report the same
+metric mix as other PRs. Reads the compact labels only. BH is applied in two
+families, separate from Step 1 and Step 2: the 3 interaction tests and the 12
+simple-effect contrasts; the per-dimension follow-ups are descriptive and carry
+raw p only (`results/rq3_code_smells_tests.csv`, column `bh_family`).
 
 ## Outputs
 
@@ -218,7 +215,7 @@ carry raw p only (`results/rq3_code_smells_tests.csv`, column `prespecified`).
 | `results/rq3_step2_tests.csv` | Step 2 test family with BH-adjusted p |
 | `results/rq3_code_smells_results.md` | Post-hoc: structural cleanups vs performance changes, by author |
 | `results/rq3_code_smells_tests.csv` | Post-hoc test family with BH-adjusted p |
-| `results/tables/T7_*.csv` | the post-hoc tables individually |
+| `results/tables/T7_1`–`T7_5*.csv` | the post-hoc tables individually |
 | `results/tables/T6_*.csv` | the Step 2 tables individually |
 | `results/extremes_*.csv` | PR lists at the distribution extremes |
 | `summary.json` | cohort counts and input SHA-256 hashes of the extraction run |

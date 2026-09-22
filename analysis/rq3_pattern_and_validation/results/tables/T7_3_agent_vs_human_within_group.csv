@@ -1,9 +1,7 @@
 group,outcome,agent,human,effect,test,p_raw,p_bh
-Code smells,validation present,83.0%,73.5%,"OR 1.75 [0.99, 3.11]",chi-square,0.05381026923296484,0.11957837607325521
-Code smells,any dimension (validated),45.5%,34.2%,"OR 1.61 [0.94, 2.75]",chi-square,0.08205534157355969,0.1367589026225995
-Code smells,#dims (validated),"mean 0.76, md 0","mean 0.54, md 0",Cliff's δ +0.122; Δmean +0.22,Mann-Whitney U,0.07081325731672168,0.12875137693949396
-Code smells,validated and ≥1 dim (category layer),37.8%,25.2%,"OR 1.81 [1.09, 2.99]",chi-square,0.02053050871011814,0.06843502903372714
-Other,validation present,81.7%,82.8%,"OR 0.93 [0.73, 1.18]",chi-square,0.5450423152543615,0.6056025725048462
-Other,any dimension (validated),51.7%,55.3%,"OR 0.87 [0.71, 1.06]",chi-square,0.1716553388466519,0.23798591622865795
-Other,#dims (validated),"mean 0.94, md 1","mean 0.88, md 1",Cliff's δ -0.008; Δmean +0.06,Mann-Whitney U,0.7631382702078339,0.7631382702078339
-Other,validated and ≥1 dim (category layer),42.3%,45.8%,"OR 0.87 [0.72, 1.05]",chi-square,0.13491910944441857,0.20756786068372088
+Code smells,validation present,83.0%,73.5%,"OR 1.75 [0.99, 3.11]",chi-square,0.05381026923296484,0.1291446461591156
+Code smells,any dimension (validated),45.5%,34.2%,"OR 1.61 [0.94, 2.75]",chi-square,0.08205534157355969,0.16411068314711938
+Code smells,validated and >=1 dim (category layer),37.8%,25.2%,"OR 1.81 [1.09, 2.99]",chi-square,0.02053050871011814,0.06159152613035442
+Other,validation present,81.7%,82.8%,"OR 0.93 [0.73, 1.18]",chi-square,0.5450423152543615,0.5945916166411216
+Other,any dimension (validated),51.7%,55.3%,"OR 0.87 [0.71, 1.06]",chi-square,0.1716553388466519,0.25748300826997783
+Other,validated and >=1 dim (category layer),42.3%,45.8%,"OR 0.87 [0.72, 1.05]",chi-square,0.13491910944441857,0.23128990190471754
