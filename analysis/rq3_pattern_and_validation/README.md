@@ -180,8 +180,8 @@ were removed as unvalidatable.
 
 ### Post-hoc — `code_smells_by_author.py`
 
-Contrasts the *Code Smells and Structural Simplification* category (structural
-cleanups) with the eight remaining categories (actual performance changes) on
+Contrasts the *Code Smells and Structural Simplification* category (code-smell
+refactorings) with the eight remaining categories (actual performance changes) on
 validation presence (category layer, n = 2,081), any dimension reported
 (metric layer, n = 1,699), and the combined outcome *validated and ≥1
 dimension* on the category layer — each within the agentic and human arms,
@@ -191,7 +191,7 @@ and conditional on ≥1 dimension, to separate *fewer* metrics from
 *different* metrics.
 
 Finding: the Code-smells gap exists only in the human arm. Humans validate and
-quantify actual performance changes at a high rate and structural cleanups at
+quantify actual performance changes at a high rate and code-smell refactorings at
 a markedly lower one (validated-and-quantified 25% vs 46%), while agents apply
 the same verification behaviour regardless of category (38% vs 42%). All three
 interactions are significant after correction (ratio of ORs 2.08, 1.89, 1.85;
@@ -213,7 +213,7 @@ raw p only (`results/rq3_code_smells_tests.csv`, column `bh_family`).
 | `results/tables/T0–T5*.csv` | the Step 1 tables individually |
 | `results/rq3_step2_results.md` | Step 2 narrative: alignment and memory-for-time |
 | `results/rq3_step2_tests.csv` | Step 2 test family with BH-adjusted p |
-| `results/rq3_code_smells_results.md` | Post-hoc: structural cleanups vs performance changes, by author |
+| `results/rq3_code_smells_results.md` | Post-hoc: code-smell refactorings vs performance changes, by author |
 | `results/rq3_code_smells_tests.csv` | Post-hoc test family with BH-adjusted p |
 | `results/tables/T7_1`–`T7_5*.csv` | the post-hoc tables individually |
 | `results/tables/T6_*.csv` | the Step 2 tables individually |

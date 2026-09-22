@@ -1,7 +1,7 @@
-"""RQ3 post-hoc — structural cleanups vs actual performance changes, by author.
+"""RQ3 post-hoc — code-smell refactorings vs actual performance changes, by author.
 
-Contrast the "Code Smells and Structural Simplification" category (structural
-cleanups) with the eight remaining RQ1 categories (actual performance changes)
+Contrast the "Code Smells and Structural Simplification" category (code-smell
+refactorings) with the eight remaining RQ1 categories (actual performance changes)
 on three binary outcomes, separately for agentic and human PRs:
 
   (1) validation presence         — category layer, all analytic PRs (n = 2081)
@@ -22,8 +22,8 @@ Statistics
     log odds ratios (= the saturated-model interaction Wald test) is reported
     alongside with the ratio of odds ratios and its CI.
   * Benjamini-Hochberg in two pre-specified families: the 3 interaction tests
-    (the claim of the analysis) and the 12 simple-effect contrasts (6 cleanups
-    vs other within each arm, 6 agent vs human within each category group),
+    (the claim of the analysis) and the 12 simple-effect contrasts (6 code-smell
+    refactorings vs other within each arm, 6 agent vs human within each category group),
     which decompose the interaction. The per-dimension follow-ups are
     descriptive and are reported with raw p only (p_bh is empty for them).
 
@@ -282,9 +282,9 @@ def main():
     n_simple = int((tests.bh_family == "simple-effects").sum())
     L = []
     w = L.append
-    w("# RQ3 post-hoc — structural cleanups vs actual performance changes, by author")
+    w("# RQ3 post-hoc — code-smell refactorings vs actual performance changes, by author")
     w(f"Source: `analysis/classification_labels/rq3_labels.csv`. *Code smells* = "
-      f"\"{CS}\" (structural cleanups; n = {n_cs} on the category layer, {n_cs_v} validated); "
+      f"\"{CS}\" (code-smell refactorings; n = {n_cs} on the category layer, {n_cs_v} validated); "
       f"*Other* = the eight remaining RQ1 categories (actual performance changes; n = {n_ot}, {n_ot_v} validated). "
       f"Validation presence and the combined outcome use the category layer (n = {len(df)}); any dimension uses the "
       f"metric layer (validated PRs, n = {len(ml)}). Tests: chi-square / Fisher's exact with OR (Haldane–Anscombe) "
@@ -309,9 +309,9 @@ def main():
     w(md_table(fp(T5))); w("")
     w("## 6. Interpretation")
     w("Humans calibrate verification to the nature of the change: they validate and quantify actual performance "
-      "changes at a high rate and structural cleanups at a markedly lower one. Agents apply the same verification "
+      "changes at a high rate and code-smell refactorings at a markedly lower one. Agents apply the same verification "
       "behaviour regardless of category. The category × author interaction is therefore human selectivity, not agent "
-      "over-reporting on cleanups: within the *Other* categories agents and humans are indistinguishable on every "
+      "over-reporting on code-smell refactorings: within the *Other* categories agents and humans are indistinguishable on every "
       "outcome, and the gap opens only where humans pull back. Code smells PRs that do quantify report the same metric "
       "mix as everyone else (§5); they are simply less likely to quantify at all. The two component interactions "
       "(validation presence, any dimension) are significant before correction and borderline after it; the combined "
