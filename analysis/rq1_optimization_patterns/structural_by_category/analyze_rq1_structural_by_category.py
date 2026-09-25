@@ -4,8 +4,8 @@ Section 4.1 reports one aggregate structural contrast per metric. That contrast 
 every optimization category, so it cannot say whether the arms differ uniformly or
 whether the difference is concentrated in particular kinds of optimization work. This
 script joins the RQ1 consensus labels to the per-PR structural deltas and repeats the
-arm contrast inside each high-level pattern, with Holm correction over the patterns of
-a metric. It also runs a Kruskal-Wallis test across patterns with the arms pooled, to
+arm contrast inside each high-level pattern, with Benjamini-Hochberg correction over the
+patterns of a metric. It also runs a Kruskal-Wallis test across patterns with the arms pooled, to
 report whether the structural change depends on the kind of optimization at all.
 
 Both the percentage change and the absolute change are tested. Percentage change is the
@@ -32,13 +32,15 @@ DEFAULT_METRICS = ("nloc", "function_count")
 MEASURES = {"delta_pct": "percent change, base to head", "delta": "absolute change, base to head"}
 
 
-def holm_adjust(p_values: list[float]) -> list[float]:
-    order = sorted(range(len(p_values)), key=lambda index: (p_values[index], index))
-    adjusted = [0.0] * len(p_values)
-    running = 0.0
+def benjamini_hochberg_adjust(p_values: list[float]) -> list[float]:
+    """Benjamini-Hochberg step-up adjustment; returns q-values in the input order."""
     total = len(p_values)
-    for rank, index in enumerate(order):
-        running = max(running, min(1.0, (total - rank) * float(p_values[index])))
+    order = sorted(range(total), key=lambda index: (p_values[index], index))
+    adjusted = [0.0] * total
+    running = 1.0
+    for rank in range(total - 1, -1, -1):
+        index = order[rank]
+        running = min(running, min(1.0, total / (rank + 1) * float(p_values[index])))
         adjusted[index] = running
     return adjusted
 
@@ -168,10 +170,10 @@ def analyze(joined: pd.DataFrame, metrics: tuple[str, ...], min_group_size: int)
                 tested.append(entry)
                 rows.append(entry)
 
-            adjusted = holm_adjust([entry["p_value"] for entry in tested])
+            adjusted = benjamini_hochberg_adjust([entry["p_value"] for entry in tested])
             for entry, value in zip(tested, adjusted):
-                entry["holm_adjusted_p_value"] = value
-                entry["holm_reject_0_05"] = bool(value <= ALPHA)
+                entry["bh_adjusted_p_value"] = value
+                entry["bh_reject_0_05"] = bool(value <= ALPHA)
 
             groups = [
                 metric_frame.loc[metric_frame["consensus_high_level_pattern"].eq(pattern), measure].dropna().to_numpy(dtype=float)
@@ -192,7 +194,7 @@ def analyze(joined: pd.DataFrame, metrics: tuple[str, ...], min_group_size: int)
     frame = pd.DataFrame(rows)
     ordering = ["metric", "measure", "high_level_pattern", "tested", "skip_reason", "n_agentic",
                 "n_human_candidate", "median_agentic", "median_human_candidate", "statistic", "p_value",
-                "holm_adjusted_p_value", "holm_reject_0_05", "cliffs_delta", "cliffs_delta_ci_low",
+                "bh_adjusted_p_value", "bh_reject_0_05", "cliffs_delta", "cliffs_delta_ci_low",
                 "cliffs_delta_ci_high", "cliffs_delta_magnitude", "hodges_lehmann_shift"]
     frame = frame.reindex(columns=[column for column in ordering if column in frame.columns])
     frame = frame.sort_values(["metric", "measure", "high_level_pattern"]).reset_index(drop=True)
@@ -232,7 +234,7 @@ def main() -> None:
         "metrics": list(args.metrics),
         "measures": MEASURES,
         "min_group_size": args.min_group_size,
-        "multiple_testing": "Holm family-wise correction over high-level patterns, separately within each metric and measure",
+        "multiple_testing": "Benjamini-Hochberg false-discovery-rate correction over high-level patterns, separately within each metric and measure",
         "effect_size": "Cliff's delta, agentic minus human_candidate, with the Cliff (1993) interval",
         "coverage": coverage,
         "across_pattern_tests": across_patterns,
