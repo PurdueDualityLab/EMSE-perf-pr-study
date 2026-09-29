@@ -1,4 +1,9 @@
-# RQ1, RQ2, and RQ3 labels
+# Compact labels for journal RQ2, RQ3, and RQ4
+
+Filenames retain historical numbering: `rq1_labels.csv` answers journal RQ2,
+`rq2_labels.csv` answers journal RQ3, and `rq3_labels.csv` answers journal RQ4.
+References to RQ1/RQ2/RQ3 below denote these historical filenames. Journal RQ1
+uses the separate measurements in `analysis/quantitative_analysis/results/`.
 
 These compact tables expose model labels, derived consensus, and extracted
 metric dimensions used in the current study. PR identities are keyed by
@@ -42,8 +47,8 @@ denominators after intersecting the RQ1 and RQ2 inclusion criteria.
 votes. The export contains 2,081 analytic PRs (1,048 agentic, 1,033 human-candidate).
 `pattern`, `sub_pattern`, and validation labels come from the RQ1/RQ2 consensuses.
 `in_metric_layer` includes all 1,699 positive validation consensuses (858 agentic,
-841 human-candidate); `in_type_layer` includes the 1,581 resolved positive types
-(807 agentic, 774 human-candidate). The 118 unresolved positive types remain in
+841 human-candidate); `in_type_layer` includes the 1,684 resolved positive types
+(851 agentic, 833 human-candidate). The 15 unresolved positive types remain in
 general metric profiles, but not in type-dependent comparisons. PRs outside
 these 2,081 analytic identities have not been assigned RQ3 labels in this export.
 
@@ -76,10 +81,14 @@ and [`build_rq2_consensus.py`](../rq2_validation/build_rq2_consensus.py). The ma
 records the exact input hashes. RQ2 exports retain each provider's model ID;
 RQ1 provider identities follow the study's completed three-model workflow.
 
-The RQ3 source CSV was checked against the SHA-256 in the published Hugging Face
+The original RQ3 extraction CSV was checked against the SHA-256 in the published Hugging Face
 bundle at revision `4464afd020ece2a619649a185460fde9d02625fd`. Its remote path,
 revision, and source/export hashes are recorded in the manifest. The full RQ3
-results and evidence snippets remain in that private bundle.
+results and evidence snippets remain in that access-controlled bundle. The
+compact CSV's type layer was subsequently refreshed against the primary-type
+consensus. Its current export hash and the original extraction hash are distinct
+provenance fields in the manifest; the original hash must not be replaced by the
+hash of a refreshed file.
 
 The complete dataset and full model artifacts remain in the private
 [Hugging Face dataset](https://huggingface.co/datasets/rcalvome/EMSE-perf-pr-study).

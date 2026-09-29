@@ -2,6 +2,7 @@
 from pathlib import Path
 import hashlib
 import json
+import argparse
 
 import pandas as pd
 
@@ -28,10 +29,10 @@ def write_table(name, caption, label, columns, headers, rows):
 
 
 def main():
-    OUT.mkdir(exist_ok=True)
+    OUT.mkdir(parents=True, exist_ok=True)
     sources = [ROOT / 'analysis/classification_labels' / name for name in
                ['rq1_labels.csv', 'rq2_labels.csv', 'rq3_labels.csv']]
-    sources += [ROOT / 'analysis/maintainability/current' / name for name in ['summary.csv', 'tests.csv']]
+    sources += [ROOT / 'analysis/quantitative_analysis/results/structural' / name for name in ['summary.csv', 'tests.csv']]
     rq1, rq2, rq3, structural, tests = [pd.read_csv(path) for path in sources]
     rq1 = rq1[rq1.included_in_analysis]
     rq2 = rq2[rq2.included_in_stage2_analysis]
@@ -55,9 +56,9 @@ def main():
                     (int(counts.loc[category, arm]), f'{100*counts.loc[category, arm]/counts[arm].sum():.1f}')])
     rows.append(['Total', '1,049', '100.0', '1,034', '100.0'])
     write_table('rq1_distribution.tex',
-        'RQ1 optimization categories among resolved atomic-pair labels. Percentages are within study arm; category names are abbreviated.',
+        'RQ2 optimization categories among resolved atomic-pair labels. Percentages are within study arm; category names are abbreviated.',
         'tab:rq1-distribution', 'lrrrr',
-        ['Category', r'\multicolumn{2}{c}{Agentic}', r'\multicolumn{2}{c}{Human-candidate}'],
+        ['Category', r'\multicolumn{2}{c}{Agentic}', r'\multicolumn{2}{c}{Human-authored}'],
         [['', '$n$', r'\%', '$n$', r'\%']] + rows)
 
     rows = []
@@ -67,9 +68,9 @@ def main():
         rows.append([label] + [value for arm in ARMS for value in
                     (int(counts.loc[kind, arm]), f'{100*counts.loc[kind, arm]/counts[arm].sum():.1f}')])
     rows.append(['Total', '918', '100.0', '901', '100.0'])
-    write_table('rq2_primary.tex', 'RQ2 primary validation types among resolved positive cases. Percentages are within study arm.',
+    write_table('rq2_primary.tex', 'RQ3 primary validation types among resolved positive cases. Percentages are within study arm.',
         'tab:rq2-primary', 'lrrrr',
-        ['Primary type', r'\multicolumn{2}{c}{Agentic}', r'\multicolumn{2}{c}{Human-candidate}'],
+        ['Primary type', r'\multicolumn{2}{c}{Agentic}', r'\multicolumn{2}{c}{Human-authored}'],
         [['', '$n$', r'\%', '$n$', r'\%']] + rows)
 
     rows = []
@@ -79,8 +80,8 @@ def main():
                          ('Positive, unresolved type', rq3[rq3.in_metric_layer & ~rq3.in_type_layer])]:
         sizes = group.sample_arm.value_counts()
         rows.append([label] + [f'{sizes.get(arm, 0):,}' for arm in ARMS] + [f'{len(group):,}'])
-    write_table('rq3_sample.tex', 'RQ3 joint-analysis denominators. Positive PRs with unresolved types remain in the general metric layer.',
-        'tab:rq3-sample', 'lrrr', ['Layer', 'Agentic', 'Human-candidate', 'Total'], rows)
+    write_table('rq3_sample.tex', 'RQ4 joint-analysis denominators. Positive PRs with unresolved types remain in the general metric layer.',
+        'tab:rq3-sample', 'lrrr', ['Layer', 'Agentic', 'Human-authored', 'Total'], rows)
 
     val = rq3[rq3.in_metric_layer]
     rows = []
@@ -88,16 +89,16 @@ def main():
                         ('D4', 'CPU/compute work'), ('D5', 'I/O/network'), ('D6', 'Artifact size'),
                         ('D7', 'Build/CI time'), ('D8', 'Energy/cost'), ('D9', 'Scalability/concurrency'),
                         ('D0', 'Unspecified gain'), ('any', 'At least one dimension')]:
-        row = [label if dim == 'any' else f'{dim}: {label}']
+        row = [label if dim == 'any' else f'{dim.replace("D", "M")}: {label}']
         for arm in ARMS:
             group = val[val.sample_arm.eq(arm)]
             count = int(group.n_dims.gt(0).sum() if dim == 'any' else group[dim].sum())
             row += [count, f'{100*count/len(group):.1f}']
         rows.append(row)
     write_table('rq3_dimensions.tex',
-        'RQ3 dimension incidence among 858 agentic and 841 human-candidate positive validation consensuses. Dimensions are non-exclusive; counts are PRs, not text matches.',
+        'RQ4 metric incidence among 858 agentic and 841 human-authored positive validation consensuses. Metrics are non-exclusive; counts are PRs, not text matches.',
         'tab:rq3-dimensions', 'lrrrr',
-        ['Dimension', r'\multicolumn{2}{c}{Agentic}', r'\multicolumn{2}{c}{Human-candidate}'],
+        ['Metric', r'\multicolumn{2}{c}{Agentic}', r'\multicolumn{2}{c}{Human-authored}'],
         [['', '$n$', r'\%', '$n$', r'\%']] + rows)
 
     rows = []
@@ -107,12 +108,15 @@ def main():
         rows.append([label] + [f'{s.loc[arm, "median"]:.2f}' for arm in ARMS] +
                     ['$<0.001$' if t.p_bh < .001 else f'{t.p_bh:.3f}', f'{t.cliffs_delta:.3f}'])
     write_table('structural_summary.tex',
-        "Structural changes in 1,005 agentic and 1,024 human-candidate complete cases. Changes are median percentages; $q$ is BH-adjusted across three Mann--Whitney tests. Cliff's $\\delta$ contrasts agentic with human-candidate PRs.",
-        'tab:structural-summary', 'lrrrr', ['Metric', 'Agentic', 'Human-cand.', '$q$', r'$\delta$'], rows)
+        "Structural changes in 1,005 agentic and 1,024 human-authored complete cases. Changes are median percentages; $q$ is BH-adjusted across three Mann--Whitney tests. Cliff's $\\delta$ contrasts agentic with human-authored PRs.",
+        'tab:structural-summary', 'lrrrr', ['Metric', 'Agentic', 'Human-authored', '$q$', r'$\delta$'], rows)
     manifest = {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
     (OUT / 'sources.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print('Generated five current result tables from verified source populations.')
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output-dir', type=Path, default=OUT)
+    OUT = parser.parse_args().output_dir
     main()

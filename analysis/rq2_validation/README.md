@@ -1,4 +1,9 @@
-# RQ2 Performance Validation
+# Performance Validation — Journal RQ3
+
+This directory retains historical `rq2_*` names. It answers **RQ3** in the
+journal article; optimization-pattern labeling in `rq1_optimization_patterns/`
+answers journal RQ2. For the journal-wide offline workflow and temporal analysis,
+see [../../REPRODUCING.md](../../REPRODUCING.md).
 
 This directory classifies the performance-validation evidence reported in a
 complete-observability subset of the balanced PR sample used by RQ1. GPT-5.6-sol,
@@ -6,7 +11,7 @@ Gemini 3.1 Pro Preview, and Qwen3.8-27B classify every PR independently.
 
 ## Method
 
-RQ2 records observable evidence in PR descriptions, comments, reviews, code
+The analysis records observable evidence in PR descriptions, comments, reviews, code
 diffs, workflow runs, and check runs. It does not infer that validation happened
 outside the captured artifacts. Passing CI or a workflow name containing
 `benchmark` is not performance evidence by itself.
@@ -19,7 +24,7 @@ arm in the same weekly stratum. The counterpart is selected deterministically as
 the row with the greatest original `selection_hash`, without adding replacement
 units after observing evidence.
 
-The RQ2 sample contains 2,258 PRs: 1,129 agentic and 1,129 human-candidate PRs.
+The journal RQ3 sample contains 2,258 PRs: 1,129 agentic and 1,129 human-authored PRs.
 The unavailable human PR `101194285:11618` and its deterministic agentic
 counterpart `599431918:22509` in `2026-W20` are recorded in
 `sample/evidence_exclusions.parquet`. The sample SHA-256 is
@@ -38,7 +43,7 @@ quotes, and any explicitly reported metrics. Multi-label types avoid discarding
 evidence when a PR combines, for example, benchmark results and static
 reasoning. Primary type preserves a single-label comparison with prior analyses.
 
-## Batch Workflow
+## Classification Workflow
 
 ```bash
 .venv/bin/python analysis/rq2_validation/run_rq2.py prepare-sample \
@@ -72,7 +77,7 @@ zero; GPT-5.6-sol does not accept a temperature parameter. Preparation records
 hashes for the sample, every evidence table, schema, system instruction,
 provider configuration, rendered prompt, and per-PR input.
 
-## Agreement
+## Pairwise Agreement Assessment
 
 ```bash
 .venv/bin/python analysis/rq2_validation/analyze_rq2_agreement.py \
@@ -86,8 +91,9 @@ Agreement is calculated globally and by sample arm for validation presence,
 primary type, the complete type set, and each binary validation type. The script
 requires complete, error-free results over the official sample with identical
 study contracts and per-row inputs. Disagreements retain both models' labels,
-quotes, and explanations for independent human adjudication; neither model is
-used as an automatic fallback.
+quotes, and explanations as review candidates; neither model is used as an
+automatic fallback. These intermediate candidates are not the final labeling
+procedure. The journal uses the three-model consensus described below.
 
 The completed run contains 2,258 labels from each model. Full agreement across
 presence, primary type, and the complete type set is 63.99% (1,445/2,258).
@@ -98,10 +104,9 @@ human-candidate PRs. The 813 complete disagreements are exported to
 `agreement/adjudication_template.csv` with empty decision fields for human
 review.
 
-OpenAI completed 1,233 requests before its credit balance was exhausted; an
-identity-preserving retry classified the remaining 1,025. Gemini completed four
-provider jobs and required one retry for a response truncated at the output-token
-limit. Both final outputs contain 2,258 classified rows with no schema errors.
+The final provider outputs contain 2,258 classified rows each. Completion,
+schema validity, and consistency of input identities are checked before
+consensus construction.
 
 ## Consensus and Comparison
 
@@ -124,27 +129,20 @@ It resolves 1,819 positive PRs and preserves 20 as unresolved. A separate
 multi-label sensitivity requires agreement on the complete
 `(primary_validation_type, validation_types)` value, resolving 1,707 positive
 PRs and preserving 132 as unresolved. This secondary rule avoids synthesizing
-a type set that no model emitted. The primary comparison preserves the previous
-paper's chi-square and Cramer's V analyses, including Yates's correction for
-validation presence. The generated figure preserves the previous primary-type
-ordering, normalization, labels, and layout.
+a type set that no model emitted. Primary comparisons use chi-square tests and
+Cramer's V, including Yates's correction for validation presence. Evidence-type
+proportions are calculated within each author group among resolved positive PRs.
 
 The machine-readable output additionally includes repository-cluster bootstrap
 intervals, Fisher tests with Holm correction, and non-exclusive type summaries
 over the stricter multi-label subset. These are retained as optional robustness
-instruments and are not part of the paper's primary RQ2 analysis.
+analyses distinct from the primary journal RQ3 comparison.
 
 ## Validation Reporting over Time
 
-The comparison above collapses the 65 ISO-week strata into a single table.
-[`temporal/`](temporal/) keeps the time dimension, which the weekly balanced
-design supports directly, and reports the author-type contrast within and across
-calendar time. Reported validation rises steeply in both author types over the window
-(odds ratio per year 3.06 human-candidate, 6.47 agentic), the presence
-difference reverses sign between the first and second halves (-4.6 pp to
-+4.5 pp), and the benchmark-versus-static-reasoning gap narrows as the agentic
-benchmark share rises toward a flat human-candidate share. It is a post-hoc,
-exploratory analysis and is not part of the paper's primary RQ2 family; see
-[`temporal/README.md`](temporal/README.md) for the method, the full results, and
-the reasons a temporal trend here does not by itself establish that agents
-improved.
+The [temporal analysis](temporal/README.md) evaluates validation presence and
+benchmark-based primary evidence across the 65 sampled weekly strata. It reports
+quarterly proportions and logistic-regression estimates with repository-clustered
+standard errors. The temporal comparisons are exploratory and use a distinct
+inferential procedure from the aggregate comparisons. Their interpretation
+concerns reported evidence rather than independently measured agent capability.

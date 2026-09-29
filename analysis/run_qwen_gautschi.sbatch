@@ -38,6 +38,13 @@ REQUEUE_ON_SIGNAL="${REQUEUE_ON_SIGNAL:-1}"
 LIMIT_PER_ARM="${LIMIT_PER_ARM:-}"
 RETRY_ERRORS_NUM_PREDICT="${RETRY_ERRORS_NUM_PREDICT:-}"
 BOUND_RQ2_RETRY_LISTS="${BOUND_RQ2_RETRY_LISTS:-0}"
+RQ3_SAMPLE_ROOT="${RQ3_SAMPLE_ROOT:-}"
+RQ3_MATCHES="${RQ3_MATCHES:-}"
+RQ3_TASKS="${RQ3_TASKS:-regex_audit tradeoff_audit}"
+RQ3_V2_ROOT="${RQ3_V2_ROOT:-}"
+RQ3_BINARY_ROOT="${RQ3_BINARY_ROOT:-}"
+RQ3_BINARY_MAX_ATTEMPTS="${RQ3_BINARY_MAX_ATTEMPTS:-6}"
+RQ3_REGEX_V3_ROOT="${RQ3_REGEX_V3_ROOT:-}"
 
 mkdir -p \
     "${CONTAINER_DIR}" \
@@ -148,30 +155,66 @@ sha256sum "${SIF}" > "${RESULT_ROOT}/container.sha256"
 printf '%s\n' "${IMAGE_SOURCE}" > "${RESULT_ROOT}/container-source.txt"
 nvidia-smi > "${RESULT_ROOT}/gpu-inventory.txt"
 
-RUNNER_ARGS=(
-    --study rq1 rq2
-    --model "${MODEL}"
-    --ollama-url "http://${OLLAMA_HOST}"
-    --output-root "${RESULT_ROOT}"
-    --evidence-dir "${PROJECT_ROOT}/mining/sample_evidence/final"
-    --rq1-sample "${PROJECT_ROOT}/data/data/sample/balanced_sample.parquet"
-    --rq1-catalog "${PROJECT_ROOT}/analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv"
-    --rq2-sample "${PROJECT_ROOT}/analysis/rq2_validation/sample/balanced_sample.parquet"
-    --adjudicate-unique-parents
-    --normalize-duplicate-labels
-    --defer-length-errors
-    --max-consecutive-errors 10000
-)
-if [[ -n "${LIMIT_PER_ARM}" ]]; then
-    RUNNER_ARGS+=(--limit-per-arm "${LIMIT_PER_ARM}")
+if [[ -n "${RQ3_REGEX_V3_ROOT}" ]]; then
+    export PYTHONPATH="${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+    "${VENV}/bin/python" -m analysis.rq3_llm_validation.run_regex_v3 qwen \
+        --output-dir "${RQ3_REGEX_V3_ROOT}" --ollama-url "http://${OLLAMA_HOST}" \
+        --max-attempts "${RQ3_BINARY_MAX_ATTEMPTS}" &
+elif [[ -n "${RQ3_BINARY_ROOT}" ]]; then
+    export PYTHONPATH="${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+    "${VENV}/bin/python" -m analysis.rq3_llm_validation.run_binary qwen \
+        --output-dir "${RQ3_BINARY_ROOT}" --ollama-url "http://${OLLAMA_HOST}" \
+        --max-attempts "${RQ3_BINARY_MAX_ATTEMPTS}" &
+elif [[ -n "${RQ3_V2_ROOT}" ]]; then
+    export PYTHONPATH="${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+    "${VENV}/bin/python" -m analysis.rq3_llm_validation.run_v2 \
+        --provider qwen --output-dir "${RQ3_V2_ROOT}" \
+        --ollama-url "http://${OLLAMA_HOST}" &
+elif [[ -n "${RQ3_SAMPLE_ROOT}" ]]; then
+    if [[ -z "${RQ3_MATCHES}" ]]; then
+        printf 'RQ3_MATCHES is required when RQ3_SAMPLE_ROOT is set.\n' >&2
+        exit 1
+    fi
+    run_rq3() {
+        cd "${PROJECT_ROOT}"
+        for TASK in ${RQ3_TASKS}; do
+            "${VENV}/bin/python" -m analysis.rq3_llm_validation.run_qwen run \
+                --task "${TASK}" \
+                --sample "${RQ3_SAMPLE_ROOT}/${TASK}_sample.parquet" \
+                --matches "${RQ3_MATCHES}" \
+                --evidence-dir "${PROJECT_ROOT}/mining/sample_evidence/final" \
+                --output-dir "${RESULT_ROOT}/${TASK}" \
+                --model "${MODEL}" \
+                --ollama-url "http://${OLLAMA_HOST}"
+        done
+    }
+    run_rq3 &
+else
+    RUNNER_ARGS=(
+        --study rq1 rq2
+        --model "${MODEL}"
+        --ollama-url "http://${OLLAMA_HOST}"
+        --output-root "${RESULT_ROOT}"
+        --evidence-dir "${PROJECT_ROOT}/mining/sample_evidence/final"
+        --rq1-sample "${PROJECT_ROOT}/data/data/sample/balanced_sample.parquet"
+        --rq1-catalog "${PROJECT_ROOT}/analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv"
+        --rq2-sample "${PROJECT_ROOT}/analysis/rq2_validation/sample/balanced_sample.parquet"
+        --adjudicate-unique-parents
+        --normalize-duplicate-labels
+        --defer-length-errors
+        --max-consecutive-errors 10000
+    )
+    if [[ -n "${LIMIT_PER_ARM}" ]]; then
+        RUNNER_ARGS+=(--limit-per-arm "${LIMIT_PER_ARM}")
+    fi
+    if [[ -n "${RETRY_ERRORS_NUM_PREDICT}" ]]; then
+        RUNNER_ARGS+=(--retry-errors-num-predict "${RETRY_ERRORS_NUM_PREDICT}")
+    fi
+    if [[ "${BOUND_RQ2_RETRY_LISTS}" -eq 1 ]]; then
+        RUNNER_ARGS+=(--bound-rq2-retry-lists)
+    fi
+    "${VENV}/bin/python" "${PROJECT_ROOT}/analysis/run_qwen.py" "${RUNNER_ARGS[@]}" &
 fi
-if [[ -n "${RETRY_ERRORS_NUM_PREDICT}" ]]; then
-    RUNNER_ARGS+=(--retry-errors-num-predict "${RETRY_ERRORS_NUM_PREDICT}")
-fi
-if [[ "${BOUND_RQ2_RETRY_LISTS}" -eq 1 ]]; then
-    RUNNER_ARGS+=(--bound-rq2-retry-lists)
-fi
-"${VENV}/bin/python" "${PROJECT_ROOT}/analysis/run_qwen.py" "${RUNNER_ARGS[@]}" &
 RUNNER_PID=$!
 
 set +e

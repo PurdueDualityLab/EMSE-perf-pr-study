@@ -1,14 +1,17 @@
-# Paired-file maintainability analysis
+# Paired-File Structural Analysis — Journal RQ1
 
-This analysis updates the previous study's Lizard-based comparison on the
-official 2,260-PR balanced sample. Install the project requirements and
-`analysis/maintainability/requirements.txt`, then run:
+This module measures structural changes between recorded base and head file
+versions using Lizard. Offline reproduction from the archived measurements is
+described in [the quantitative analysis documentation](../quantitative_analysis/README.md).
+Reconstructing the measurements requires the archived PR evidence and access to
+the source revisions. Install the project requirements and
+`analysis/maintainability/requirements.txt`, then run from the repository root:
 
 ```bash
 python analysis/maintainability/run_maintainability.py
 ```
 
-## Measurement contract
+## Measurement Specification
 
 - Analyze complete source files at the immutable `base_sha` and `head_sha`
   recorded in `mining/sample_evidence/final/pull_requests.parquet`.
@@ -34,16 +37,18 @@ python analysis/maintainability/run_maintainability.py
   do not account for repository clustering or preserve exact weekly balance
   after complete-case exclusions. Lack of significance is not equivalence.
 
-## Outputs and resumption
+## Outputs and Execution
 
-Ignored `current/` contains compressed source caches, per-file metric checkpoints,
+The local `current/` directory contains compressed source caches, per-file metric checkpoints,
 input SHA-256 hashes, file eligibility and fetch-status audits, all PR deltas,
 complete-case analysis deltas, cohort coverage, summary statistics, tests, and a
-PDF boxplot. Rerunning reuses successful file results and retries failed pairs.
+PDF boxplot. Subsequent executions reuse successful file measurements and repeat
+retrieval for incomplete pairs.
 The figure shows median/IQR with 10th/90th-percentile whiskers and hides outlier
 markers; untrimmed values are used in tests and are available in the CSVs.
 
-Current run: 10,606 eligible file pairs in 2,066 PRs; 12 failed pairs affect four
+The reference measurement contains 10,606 eligible file pairs in 2,066 PRs; 12 unavailable pairs affect four
 PRs. Complete and finite measurements for all three metrics retain 2,029 PRs:
-1,005 agentic and 1,024 human-candidate. Consult `current/coverage.csv` and
-`current/file_results.jsonl` for exact coverage and per-file outcomes.
+1,005 agentic and 1,024 human-authored. Compact coverage and measurement tables
+are versioned under `analysis/quantitative_analysis/results/structural/`.
+The complete per-file retrieval record is retained in the source archive.

@@ -3,6 +3,11 @@
 The pipeline exposes one entrypoint per study stage. Run commands from the
 repository root.
 
+For the submitted paper's **offline statistics and figure reproduction**, start
+with [../REPRODUCING.md](../REPRODUCING.md). This document describes the optional
+full reconstruction workflow, which can require network calls and paid model
+inference. Python 3.12 is the tested interpreter.
+
 ## Setup
 
 ```bash

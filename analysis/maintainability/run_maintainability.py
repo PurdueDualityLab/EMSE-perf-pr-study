@@ -137,7 +137,7 @@ def report(frame, output, sample):
         tests.append(dict(metric=metric, u=float(u), p=float(p),
             cliffs_delta=2*float(u)/(len(arrays[0])*len(arrays[1]))-1))
         boxes = ax.boxplot(arrays, whis=(10, 90), showfliers=False, patch_artist=True,
-                           tick_labels=['Agentic', 'Human-candidate'])
+                           tick_labels=['Agentic', 'Human-authored'])
         for patch, color in zip(boxes['boxes'], ['#9BBCE8', '#B9DAB9']):
             patch.set_facecolor(color)
         ax.axhline(0, color='gray', linestyle='--')

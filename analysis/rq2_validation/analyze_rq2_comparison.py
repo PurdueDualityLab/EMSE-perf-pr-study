@@ -302,7 +302,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    frame = pd.read_parquet(args.consensus)
+    frame = pd.read_csv(args.consensus) if args.consensus.suffix == '.csv' else pd.read_parquet(args.consensus)
+    if args.consensus.suffix == '.csv':
+        frame['consensus_validation_types'] = frame['consensus_validation_types'].map(
+            lambda value: json.loads(value) if pd.notna(value) else None
+        )
     result = analyze(frame, bootstrap_iterations=args.bootstrap_iterations, bootstrap_seed=args.bootstrap_seed)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "rq2_comparison.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")

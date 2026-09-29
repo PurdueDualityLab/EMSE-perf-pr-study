@@ -114,7 +114,7 @@ def _snippet(text, pos):
     return " ".join(text[s:e].split())
 
 
-def extract_dimensions(raw_text):
+def extract_dimensions(raw_text, *, include_positions=False):
     """
     Return {dim: [match dicts]} for one text. Each match records the cue, the
     quantitative claim it co-occurs with, and a snippet for auditing.
@@ -127,7 +127,8 @@ def extract_dimensions(raw_text):
     # quantitative claims, per kind: sorted [(token index, (kind, matched text))]
     quant_by_kind = {}
     for kind, pat in mp.QUANT_PATTERNS:
-        items = sorted((_tok(starts, m.start()), (kind, m.group(0))) for m in pat.finditer(text))
+        items = sorted((_tok(starts, m.start()), (kind, m.group(0), m.start(), m.end()))
+                       for m in pat.finditer(text))
         if items:
             quant_by_kind[kind] = (items, [t for t, _ in items])
 
@@ -187,13 +188,18 @@ def extract_dimensions(raw_text):
 
     found = {}
 
-    def record(dim, cue, cue_pos, quant_item, rule):
+    def record(dim, cue, cue_pos, quant_item, rule, rule_id):
+        cue_end = cue_pos + len(cue)
         cue = " ".join(cue.split())
-        found.setdefault(dim, []).append({
+        match = {
             "cue": cue if len(cue) <= 60 else cue[:28] + " … " + cue[-28:],
             "quant_kind": quant_item[0], "quant": " ".join(str(quant_item[1]).split())[:60],
             "rule": rule, "snippet": _snippet(text, cue_pos),
-        })
+        }
+        if include_positions:
+            match.update(cue_start=cue_pos, cue_end=cue_end,
+                         quant_start=quant_item[2], quant_end=quant_item[3], rule_id=rule_id)
+        found.setdefault(dim, []).append(match)
 
     # (a) cue + quantitative claim (of a kind appropriate to the dimension) within window;
     #     the claim is credited to the nearest cue only
@@ -207,7 +213,7 @@ def extract_dimensions(raw_text):
             q = nearest_quant(st, mp.QUANT_KINDS[dim])
             if q is None:
                 continue
-            qt, (kind, _) = q
+            qt, (kind, _, _, _) = q
             if mp.NEAREST_CUE_WINS and nearer_cue_elsewhere(dim, qt, kind, span_dist(qt, st, et)):
                 continue
             if dim in mp.FALLBACK_DIMS:
@@ -217,11 +223,11 @@ def extract_dimensions(raw_text):
                     continue
                 if any(_any_within(quant_by_kind[k][1], qt, 2) for k in mp.UNIT_KINDS if k in quant_by_kind):
                     continue
-            record(dim, cue, pos, q[1], "cue+quant")
+            record(dim, cue, pos, q[1], "cue+quant", f"CUE_{dim}+QUANT_{kind}")
 
     # (b) self-sufficient cues
     for dim, rules in mp.SELF_SUFFICIENT.items():
-        for pat, required_ctx, suppress_dims in rules:
+        for rule_index, (pat, required_ctx, suppress_dims) in enumerate(rules):
             for m in pat.finditer(text):
                 ct = _tok(starts, m.start())
                 if _any_within(excl_idx, ct, mp.EXCLUSION_TOKENS):
@@ -230,7 +236,8 @@ def extract_dimensions(raw_text):
                     continue
                 if required_ctx is not None and nearest_quant(ct, required_ctx) is None:
                     continue
-                record(dim, m.group(0), m.start(), ("self", m.group(0)), "self-sufficient")
+                record(dim, m.group(0), m.start(), ("self", m.group(0), m.start(), m.end()),
+                       "self-sufficient", f"SELF_{dim}[{rule_index}]")
 
     return found
 

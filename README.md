@@ -1,61 +1,98 @@
-# Performance Pull Request Study
+# How Do Coding Agents Optimize Software and Report Performance Validation?
 
-This repository groups the source code, generated-data reference, and LaTeX
-report for the performance pull request study. Detailed pipeline commands and
-artifact metadata live in the corresponding directories rather than in this
-root overview.
+**A Large-Scale Empirical Study of Open-Source Pull Requests**
 
-## Repository Structure
+Huiyun Peng, Ricardo Calvo, Kelechi Kalu, and James C. Davis · Purdue University
 
-```text
-.
-├── mining/              Data collection, classification, filtering, sampling,
-│   ├── src/             and publication pipeline
-│   ├── tests/           Pytest regression tests
-│   ├── tools/           Artifact validation and publication utilities
-│   ├── README.md        Pipeline commands and methodology
-│   └── ARTIFACTS.md     Published artifact inventory and checksums
-├── data/                Private Hugging Face dataset submodule
-├── report/              Overleaf LaTeX report submodule
-├── AGENTS.md            Repository guidance for coding agents
-├── requirements.txt     Pinned Python dependencies
-├── LICENSE              Source-code license
-└── README.md            Repository structure overview
+This repository provides the replication package for the study. It contains
+the data-processing pipeline, analysis code, compact research datasets, and
+instructions for reproducing the reported results.
+
+The study examines 2,260 performance-oriented pull requests (PRs), comprising
+1,130 agentic and 1,130 human-authored contributions to open-source projects,
+covering submissions through June 1, 2026. It extends the authors' MSR 2026
+Mining Challenge study of 407 PRs.
+
+## Research Questions
+
+| Question | Focus | Analysis directory |
+| --- | --- | --- |
+| RQ1 | Adoption outcomes, patch size, and structural indicators of maintainability | [`quantitative_analysis`](analysis/quantitative_analysis/README.md), [`maintainability`](analysis/maintainability/README.md) |
+| RQ2 | Optimization patterns and their prevalence | [`rq1_optimization_patterns`](analysis/rq1_optimization_patterns/README.md) |
+| RQ3 | Reported validation evidence and temporal trends | [`rq2_validation`](analysis/rq2_validation/README.md) |
+| RQ4 | Quantitative performance metrics and their correspondence with optimizations | [`rq3_pattern_and_validation`](analysis/rq3_pattern_and_validation/README.md) |
+
+Directory and data-field names retain the original numbering for compatibility.
+The [analysis documentation](analysis/README.md) provides the correspondence
+between manuscript terminology and stored identifiers.
+
+## Reproduction
+
+The analyses can be reproduced from the versioned labels and measurements
+included in this repository. This workflow operates offline and requires
+Python 3.12.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r analysis/quantitative_analysis/requirements.txt
+python analysis/reproduce_paper.py --output-dir reproduction
 ```
 
-## Mining
+The command generates statistical results, supporting tables, nine quantitative
+figures, and audit summaries. Output filenames correspond to the manuscript's
+figure references. Input and source checksums are validated before execution;
+selected result tables are compared with the recorded reference outputs.
 
-[`mining/`](mining/) contains the reproducible Python pipeline. Its
-[`README.md`](mining/README.md) documents setup, stage inputs, execution,
-resume behavior, validation, and publication. Generated outputs, checkpoints,
-caches, local configuration, and credentials are excluded from Git.
+See [REPRODUCING.md](REPRODUCING.md) for environment requirements, expected
+populations, output descriptions, and instructions for reconstructing the
+original measurements and classifications.
 
-## Data
+## Repository Contents
 
-[`data/`](data/) is a Git submodule pointing to the private Hugging Face
-dataset:
+| Location | Contents |
+| --- | --- |
+| [`mining/`](mining/README.md) | PR collection, authorship attribution, performance classification, filtering, and sampling |
+| [`analysis/`](analysis/README.md) | Statistical analyses and figure generation for RQ1–RQ4 |
+| [`analysis/classification_labels/`](analysis/classification_labels/README.md) | Model labels, consensus decisions, and extracted metric indicators |
+| [`analysis/artifact_inputs/`](analysis/artifact_inputs/) | Compact metadata, annotation records, and model votes required for reproduction |
+| [`analysis/audits/`](analysis/audits/README.md) | Assessment procedures and reproduction of audit summaries |
+| [`data/`](data/) | Submodule identifying the full dataset revision |
+| [`report/`](report/) | Submodule containing the manuscript, figures, and bibliography |
+| [`artifact_manifest.json`](artifact_manifest.json) | Input schemas, checksums, source digests, and revision identifiers |
 
-https://huggingface.co/datasets/rcalvome/EMSE-perf-pr-study
+## Data Availability
 
-Access requires authorization for the private dataset. The submodule pins the
-exact dataset revision used by this repository. Its local checkout may use
-sparse checkout to avoid materializing the large Parquet files.
+Compact inputs for offline reproduction are included in this repository. The
+full dataset is hosted on [Hugging Face](https://huggingface.co/datasets/rcalvome/EMSE-perf-pr-study).
+Access to the full files requires authentication and acceptance of the dataset's
+access conditions. The dataset revision is identified by the `data/` submodule.
 
-## Report
+The [artifact specification](ARTIFACT.md) describes provenance, access to
+archived evidence, and documented differences between the manuscript and
+execution records. The [core inventory](mining/ARTIFACTS.md) lists published
+mining and classification artifacts with their checksums.
 
-[`report/`](report/) is a Git submodule connected to the private Overleaf
-project containing the LaTeX report, figures, references, and build files:
+## Interpretation
 
-https://www.overleaf.com/project/6a08c1aaa379b791cc6da4c2
+The stored label `human_candidate` corresponds to the manuscript's
+human-authored group. It indicates the absence of selected observable automation
+signals rather than independently verified authorship. The analyses characterize
+reported validation and performance claims; they do not independently reproduce
+the performance effects asserted by PR authors.
 
-Access requires authorization for the private Overleaf project. Changes to the
-report are committed and pushed inside the submodule first; the parent
-repository then records the updated report commit.
+## Citation
 
-## Supporting Files
+Citation metadata are provided in [CITATION.cff](CITATION.cff). The preceding
+conference study is:
 
-- [`requirements.txt`](requirements.txt) contains the pinned Python runtime and
-  test dependencies.
-- [`AGENTS.md`](AGENTS.md) records repository-specific maintenance guidance.
-- [`LICENSE`](LICENSE) contains the MIT license for the processing code.
-- [`.gitmodules`](.gitmodules) defines the private data and report submodules.
+Peng, H., Qiu, A. Z., Calvo Méndez, R. A., Kalu, K. G., and Davis, J. C. (2026).
+*How Do Agents Perform Code Optimization? An Empirical Study.* Proceedings of
+the 23rd International Conference on Mining Software Repositories, 732–736.
+https://doi.org/10.1145/3793302.3793564
+
+## License
+
+The processing and analysis code is distributed under the [MIT License](LICENSE).
+Third-party repository content remains subject to its original terms. Dataset
+access and reuse conditions are documented in the dataset repository.

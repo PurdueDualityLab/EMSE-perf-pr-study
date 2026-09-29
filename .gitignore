@@ -11,7 +11,8 @@ mining/aidev_human_candidates_v1/
 mining/aidev_weekly_balanced_sample_v1/
 mining/agentic_method_a/
 mining/experiments/
-mining/manual_review/
+mining/manual_review/*
+!mining/manual_review/build_luna_manual_audit.py
 mining/runs/
 mining/release_bundle/
 mining/sample_evidence/
@@ -41,6 +42,18 @@ analysis/rq2_validation/results_qwen/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Offline reproduction outputs
+reproduction/
+
+# Local analysis experiments and provider payloads
+analysis/rq1_optimization_patterns/results_*/
+analysis/rq2_validation/results_*/
+analysis/rq2_validation/smoke_*/
+analysis/rq2_validation/consensus/*.csv
+analysis/rq3_pattern_and_validation/current/
+analysis/methodology_current.*
+analysis/methodology_pipeline.*
 
 # Generated datasets
 *.parquet

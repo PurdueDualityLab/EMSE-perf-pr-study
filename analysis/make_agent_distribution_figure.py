@@ -131,7 +131,10 @@ def load_cohort_counts(
 
 
 def validate_official_counts(counts: dict[str, pd.Series]) -> None:
-    for cohort, expected in OFFICIAL_COUNTS.items():
+    if not counts or set(counts) - set(OFFICIAL_COUNTS):
+        raise ValueError("Unexpected cohorts")
+    for cohort in counts:
+        expected = OFFICIAL_COUNTS[cohort]
         actual = counts[cohort].to_dict()
         if actual != expected:
             raise ValueError(
@@ -222,6 +225,7 @@ def parse_args() -> argparse.Namespace:
         "--population-input", type=Path, default=DEFAULT_POPULATION_INPUT
     )
     parser.add_argument("--sample-input", type=Path, default=DEFAULT_SAMPLE_INPUT)
+    parser.add_argument("--counts", type=Path, help="Render from a frozen cohort,agent,count CSV, without reading Parquets.")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
         "--cohort",
@@ -245,13 +249,22 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    counts = load_cohort_counts(args.population_input, args.sample_input)
+    if args.counts:
+        frame = pd.read_csv(args.counts)
+        if frame.duplicated(['cohort', 'agent']).any() or frame['count'].lt(0).any():
+            raise ValueError("Invalid cohort counts")
+        counts = {cohort: g.set_index('agent')['count'].reindex(AGENTS)
+                  for cohort, g in frame.groupby('cohort')}
+    else:
+        counts = load_cohort_counts(args.population_input, args.sample_input)
     if not args.skip_official_controls:
         validate_official_counts(counts)
 
     selected_cohorts = (
         ("population", "sample") if args.cohort == "both" else (args.cohort,)
     )
+    if set(selected_cohorts) - set(counts):
+        raise ValueError("The count CSV does not contain every requested cohort")
     for cohort in selected_cohorts:
         print(f"{COHORT_LABELS[cohort]}:")
         for agent, value in counts[cohort].items():

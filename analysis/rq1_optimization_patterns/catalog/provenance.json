@@ -1,0 +1,28 @@
+{
+  "original_patterns": 43,
+  "original_sha256": "a951a9acf91ebe9a775009e95d187a3ea59f5a4ae4b2875d5ebc9788c1bc6d1e",
+  "executed_patterns": 58,
+  "executed_sha256": "8a4b2e59a83a3994ee228515ba47ce2712c43112df3070640ea0b3ef7fcf803c",
+  "submitted_manuscript_patterns": 59,
+  "category_counts": {
+    "Algorithm-Level Optimizations": 6,
+    "Build & Compilation & Infrastructure Optimization": 5,
+    "Code Smells and Structural Simplification": 8,
+    "Control-Flow and Branching Optimizations": 7,
+    "Data Structure Selection and Adaptation": 4,
+    "I/O and Synchronization": 6,
+    "Loop Transformations": 6,
+    "Memory and Data Locality Optimizations": 12,
+    "Network, Database, and Data Access Optimization": 4
+  },
+  "consolidation": {
+    "original_patterns": ["Increase Cache Efficiency via Locality", "Improve cache locality via data structure"],
+    "revised_pattern": "Improve cache locality - spatial locality"
+  },
+  "removed_pattern": "Loop Strip-mining",
+  "accounting": "43 original + 17 additions - 1 deletion - 1 two-to-one consolidation = 58",
+  "pilot_first_revised_catalog_commit": "9a7b3ca",
+  "parent_normalization_commit": "0f1101d",
+  "manuscript_count_change_commit": "a932f189da9519e2d8c1a68878cb5683a3acee7a",
+  "preparation_contract_sha256": "2a24640ef8e8d087de60633fcac0a632ce9ed97a48a2141d25417fab7b8fe3a1"
+}

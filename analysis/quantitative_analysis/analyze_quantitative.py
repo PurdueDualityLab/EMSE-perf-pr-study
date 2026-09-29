@@ -194,7 +194,10 @@ def summarize(frame):
     tests = pd.DataFrame(tests).reindex(columns=TEST_COLUMNS)
     if len(tests):
         # One exploratory characterization family: merge rate, elapsed time, and patch size.
-        tests['p_bh'] = false_discovery_control(tests.p_value.to_numpy())
+        tests['p_bh'] = np.nan
+        valid = tests.p_value.notna()
+        if valid.any():
+            tests.loc[valid, 'p_bh'] = false_discovery_control(tests.loc[valid, 'p_value'].to_numpy())
     return summary, tests
 
 
@@ -204,7 +207,7 @@ def plot(frame, summary, target):
     import matplotlib.pyplot as plt
     fig, axes = plt.subplots(2, 1, figsize=(5.8, 5.2), layout='constrained')
     colors = ['#9BBCE8', '#B9DAB9']
-    labels = ['Agentic', 'Human-candidate']
+    labels = ['Agentic', 'Human-authored']
     bars = axes[0].bar(labels, summary.merge_rate_pct, color=colors, width=.5)
     axes[0].bar_label(bars, labels=[f'{r.merge_rate_pct:.1f}% ({r.merged_n}/{r.observed_n})'
         for r in summary.itertuples()], padding=4, fontsize=9)
@@ -253,9 +256,9 @@ def write_outputs(frame, out, provenance):
         return ['$<0.001$' if row.p_bh < .001 else f'{row.p_bh:.3f}',
                 f'${symbol}={row.effect:.3f}$']
     table = [r'\begin{table}[htbp]', r'\centering', r'\small',
-        r"\caption{Quantitative outcomes and patch size at the archived snapshot. Merge rates use observed PRs; elapsed time uses merged PRs only. Patch-size entries are medians. $q$ is BH-adjusted across the seven characterization tests; the effect size is Cram\'er's $V$ for the merge-rate contingency table and Cliff's $\delta$ (agentic minus human-candidate) for the Mann--Whitney comparisons. Per-arm intervals, Hodges--Lehmann shifts, and the merge-rate odds ratio are reported in the replication package.}",
+        r"\caption{Quantitative outcomes and patch size at the archived snapshot. Merge rates use observed PRs; elapsed time uses merged PRs only. Patch-size entries are medians. $q$ is BH-adjusted across the seven characterization tests; the effect size is Cram\'er's $V$ for the merge-rate contingency table and Cliff's $\delta$ (agentic minus human-authored) for the Mann--Whitney comparisons. Per-arm intervals, Hodges--Lehmann shifts, and the merge-rate odds ratio are reported in the replication package.}",
         r'\label{tab:quantitative-outcomes}', r'\begin{tabular}{lrrrr}', r'\toprule',
-        r'Measure & Agentic & Human-candidate & $q$ & Effect \\', r'\midrule']
+        r'Measure & Agentic & Human-authored & $q$ & Effect \\', r'\midrule']
     for column,label,fmt,contrast in [('sample_n','Selected PRs',',.0f',None),
         ('observed_n','Observed PRs',',.0f',None),('merged_n','Merged PRs',',.0f',None),
         ('merge_rate_pct',r'Merge rate (\%)','.1f','merge_rate'),

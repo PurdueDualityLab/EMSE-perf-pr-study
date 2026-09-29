@@ -1,4 +1,17 @@
-# RQ1 Optimization Patterns
+# Optimization Patterns — Journal RQ2
+
+The directory and `rq1_*` filenames retain the pilot numbering. In the journal
+article this analysis answers **RQ2**. The executed catalog contains **58**
+patterns; see [catalog/README.md](catalog/README.md) for the reconciliation with
+the submitted manuscript's count of 59.
+
+The recorded compact labels support offline statistical reproduction:
+
+```bash
+python analysis/rq1_optimization_patterns/analyze_rq1_comparison.py \
+  --consensus analysis/classification_labels/rq1_labels.csv \
+  --output-dir reproduction/rq2/patterns
+```
 
 This directory contains the optimization-pattern catalog, GPT-5.6-sol, Gemini
 3.1 Pro Preview, and Qwen3.8-27B classifiers, consensus construction, and
@@ -14,9 +27,8 @@ supporting analyses.
 - `build_rq1_consensus.py`: builds strict atomic two-of-three consensus labels.
 - `analyze_rq1_comparison.py`: compares study arms and exports statistical
   tables, a machine-readable summary, and a figure.
-- `adjudicate_gemini_parent_labels.py`: applies an explicitly authorized,
-  auditable correction when Gemini returns a catalog sub-pattern under the wrong
-  high-level parent.
+- `adjudicate_gemini_parent_labels.py`: normalizes catalog-parent inconsistencies
+  while retaining the returned sub-pattern and recording each adjustment.
 - `catalog/`: original and updated optimization-pattern taxonomies.
 - `pattern_analysis.ipynb`: distribution and statistical analyses.
 - `compare_pattern.py` and `label_analysis.ipynb`: agreement and manual-review
@@ -25,7 +37,7 @@ supporting analyses.
   `optimization_pattern_detection_qwen.py`: alternative classifier notebooks
   and scripts.
 
-## Batch Workflow
+## Classification Workflow
 
 ```bash
 .venv/bin/python analysis/rq1_optimization_patterns/run_rq1.py prepare \
@@ -48,7 +60,7 @@ supporting analyses.
 GPT PR-level label table. Batch payloads, raw API responses, and local state
 are ignored by Git.
 
-## Agreement
+## Pairwise Agreement Assessment
 
 After both models have classified the same sample with the same prompt version:
 
@@ -66,25 +78,27 @@ for agentic and human-candidate PRs. Disagreements are exported to
 and notes columns for human review. The script does not select either model as a
 fallback.
 
-The completed run contains 2,260 labels from each model. Hierarchical agreement
+The pairwise assessment contains 2,260 labels from each model. Hierarchical agreement
 is 70.0% (1,582/2,260; Cohen's kappa 0.6764), with 69.82% agreement for agentic
 PRs and 70.18% for human-candidate PRs. The remaining 678 model disagreements
-require human adjudication.
+were exported as human-review candidates in this intermediate diagnostic.
+The journal's final labels use three-model atomic-pair consensus instead:
+1,238 unanimous, 845 two-model majorities, and 177 unresolved cases. No general
+human adjudication of those 177 disagreements is applied.
 
-Gemini produced 20 persistent responses whose sub-pattern was in the catalog
-but whose high-level parent was inconsistent with the catalog hierarchy. After
-four model attempts, the study owner authorized preserving each returned
-sub-pattern and replacing only its high-level parent with the sub-pattern's
-unique catalog parent. The complete audit is stored in
+Twenty Gemini responses contained a catalog sub-pattern paired with an
+inconsistent high-level category. Following repeated classification attempts,
+these records were normalized by retaining the returned sub-pattern and using
+its unique catalog parent. The decision records are stored in
 `results_gemini/manual_parent_adjudications.csv`; the correction is reproducible
 with `adjudicate_gemini_parent_labels.py`.
 
 Both runners use medium reasoning, a 4,096-token output limit, and the same
 structured schema. Gemini uses temperature zero. GPT-5.6-sol does not support
-a temperature parameter, so no equivalent parameter is sent. This prevents
-strict generation-level equivalence with the prior GPT-5.1 configuration and
-is reported as a methodological limitation. Preparation snapshots the catalog and
-records hashes for the sample, evidence, schema, system instruction, manifest,
+a temperature parameter, so no equivalent parameter is sent. Generation
+settings are therefore not strictly equivalent to the pilot's GPT-5.1 settings.
+Preparation snapshots the catalog and records hashes for the sample, evidence,
+schema, system instruction, manifest,
 and rendered prompt per PR. Collection refuses modified snapshots and records
 invalid or missing responses as row-level errors.
 
@@ -104,13 +118,12 @@ After all three model-specific label tables are complete:
 ```
 
 Consensus is computed over the atomic `(high_level_pattern, sub_pattern)` pair.
-Rows without an exact two-of-three majority remain unresolved. The primary
-comparison preserves the previous paper's chi-square, Cramer's V, permutation,
-and rarefaction analyses. The generated grouped-bar figure also preserves the
-previous ordering, normalization, labels, and layout while reading the new
-consensus table.
+Rows without an exact two-of-three majority remain unresolved. The comparison
+script reports category distributions, chi-square results, Cramer's V, and
+observed pattern coverage. Permutation and rarefaction diagnostics are also
+provided for comparison with the pilot analysis.
 
 The machine-readable output additionally includes repository-cluster bootstrap
 intervals and category-level Fisher tests with Holm correction. These are
-retained as optional robustness instruments and are not part of the paper's
-primary RQ1 analysis.
+reported as supplementary robustness analyses, distinct from the journal's
+primary RQ2 comparisons.

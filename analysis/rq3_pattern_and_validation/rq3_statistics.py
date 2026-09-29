@@ -25,6 +25,7 @@ Run from the repo root:
 
 import math
 import sys
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -37,6 +38,7 @@ sys.path.insert(0, str(HERE))
 import metric_patterns as mp  # noqa: E402
 
 DATA = HERE / "data" / "rq3_pr_level.csv"
+METADATA = None
 RES = HERE / "results"
 TAB = RES / "tables"
 
@@ -250,6 +252,14 @@ def test_line(t):
 
 def load():
     df = pd.read_csv(DATA)
+    if METADATA is not None:
+        metadata = pd.read_csv(METADATA)
+        extra = [c for c in metadata if c not in df or c in ("repo_id", "number")]
+        df = df.merge(metadata[extra], on=["repo_id", "number"], how="left", validate="one_to_one")
+        if df["is_merged"].isna().any():
+            raise ValueError("Missing archived outcome metadata for metric labels")
+    if "author_type" not in df and "sample_arm" in df:
+        df["author_type"] = df["sample_arm"]
     for d in DIMS:
         df[d] = df[d].astype(bool)
         df[f"{d}_nodiff"] = df[f"{d}_nodiff"].astype(bool)
@@ -505,9 +515,9 @@ def section_sensitivity(val):
     w("% of the author's validated PRs:", md(t)); save(t, "T5_sensitivity_diff")
     changed = (val.n_dims != val.n_dims_nodiff).sum()
     w(f"PRs whose dimension count changes when the diff is excluded: {changed} of {len(val)}.")
-    src = val["dim_sources"].apply(lambda s: pd.Series(__import__('json').loads(s)))
-    w(f"Dimensions found in the description alone: {int((val.n_dims_description_only > 0).sum())} PRs have ≥1; "
-      f"bot-authored issue comments contribute a dimension in {int((val.dims_from_bot_comments.fillna('') != '').sum())} PRs.")
+    w(f"Dimensions found in the description alone: {int((val.n_dims_description_only > 0).sum())} PRs have ≥1.")
+    if "dims_from_bot_comments" in val:
+        w(f"Bot-authored issue comments contribute a dimension in {int((val.dims_from_bot_comments.fillna('') != '').sum())} PRs.")
 
 
 def section_tests():
@@ -558,4 +568,15 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data", type=Path, default=DATA)
+    parser.add_argument("--metadata", type=Path, help="Compact archived metadata supplement for the public label export.")
+    parser.add_argument("--output-dir", type=Path, default=RES)
+    parser.add_argument("--current", action="store_true")
+    args = parser.parse_args()
+    DATA, METADATA, RES = args.data, args.metadata, args.output_dir
+    TAB = RES / "tables"
+    if args.current:
+        AUTHORS = ["agentic", "human_candidate"]
+        VTYPES = ["benchmark", "profiling", "static-reasoning", "anecdotal", "none", "unresolved"]
     main()

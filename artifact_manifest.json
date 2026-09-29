@@ -1,0 +1,544 @@
+{
+  "catalog": {
+    "categories": 9,
+    "executed_patterns": 58,
+    "explanation": "See analysis/rq1_optimization_patterns/catalog/README.md for the documented consolidation and manuscript history.",
+    "submitted_manuscript_patterns": 59
+  },
+  "code_base_revision": "157ca6f333937e369dc8f827ccd3c989abcd5c3c",
+  "code_version_note": "Source digests identify the prepared code; code_base_revision is the commit on which uncommitted artifact preparation was based. The final release commit identifies the full version.",
+  "data_revision": "4464afd020ece2a619649a185460fde9d02625fd",
+  "format_version": 1,
+  "inputs": {
+    "analysis/artifact_inputs/agent_distribution.csv": {
+      "columns": [
+        "cohort",
+        "agent",
+        "count"
+      ],
+      "rows": 5,
+      "sha256": "b0c8aec91bead9b3169d5fc49b6687228c1e7adc9901a41ba3f1f6abd4709abe"
+    },
+    "analysis/artifact_inputs/manual_classifier_audit.csv": {
+      "columns": [
+        "case_id",
+        "repo_id",
+        "number",
+        "audit_arm",
+        "audit_stratum",
+        "stratum_population",
+        "stratum_sample_size",
+        "inclusion_probability",
+        "sampling_weight",
+        "aidev_task_type",
+        "selection_hash",
+        "manual_label"
+      ],
+      "rows": 100,
+      "sha256": "353e8652181ad27cf71bb9db387aa523250b6dd49f0c6b6ae5312102ed0a01ed"
+    },
+    "analysis/artifact_inputs/regex_occurrence_votes.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "occurrence_id",
+        "dimension",
+        "openai_valid",
+        "gemini_valid",
+        "qwen_valid"
+      ],
+      "rows": 1910,
+      "sha256": "7c266f29ba799a135b7fe629e40add5faa7e1cbc8aef966f87746039c6a2c977"
+    },
+    "analysis/artifact_inputs/rq4_metadata.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "id",
+        "agent",
+        "is_merged",
+        "time_to_merge_days"
+      ],
+      "rows": 2081,
+      "sha256": "eb06b2fcc5edb879f736a4aca94fe241cc3b9d6fa08bdca87b9e8a20cbc50224"
+    },
+    "analysis/artifact_inputs/tradeoff_votes.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "openai_label",
+        "gemini_label",
+        "qwen_label"
+      ],
+      "rows": 29,
+      "sha256": "b39b20285133d5b9d079689856a818082b2b6f7ddb59d1a88403bacf21f40863"
+    },
+    "analysis/classification_labels/rq1_labels.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "repo_full_name",
+        "html_url",
+        "gpt_high_level_pattern",
+        "gpt_sub_pattern",
+        "gemini_high_level_pattern",
+        "gemini_sub_pattern",
+        "qwen_high_level_pattern",
+        "qwen_sub_pattern",
+        "consensus_status",
+        "consensus_vote_count",
+        "consensus_coalition",
+        "consensus_high_level_pattern",
+        "consensus_sub_pattern",
+        "included_in_analysis",
+        "inclusion_reason"
+      ],
+      "rows": 2260,
+      "sha256": "5d702b2c98d1927b14164434e12b54d6ff9e88b30b8a9c4d1821f62e210e88a0"
+    },
+    "analysis/classification_labels/rq2_exclusions.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "exclusion_reason",
+        "paired_with_repo_id",
+        "paired_with_number"
+      ],
+      "rows": 2,
+      "sha256": "352d564fb028fd8cfbcacb83ffa4def9223339642c9d189a511853c029f05352"
+    },
+    "analysis/classification_labels/rq2_labels.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "repo_full_name",
+        "html_url",
+        "gpt_model",
+        "gpt_classification_status",
+        "gpt_validation_present",
+        "gpt_primary_validation_type",
+        "gpt_validation_types",
+        "gemini_model",
+        "gemini_classification_status",
+        "gemini_validation_present",
+        "gemini_primary_validation_type",
+        "gemini_validation_types",
+        "qwen_model",
+        "qwen_classification_status",
+        "qwen_validation_present",
+        "qwen_primary_validation_type",
+        "qwen_validation_types",
+        "stage1_status",
+        "stage1_positive_votes",
+        "stage1_negative_votes",
+        "stage1_coalition",
+        "consensus_validation_present",
+        "stage2_status",
+        "stage2_vote_count",
+        "stage2_coalition",
+        "consensus_primary_validation_type",
+        "consensus_status",
+        "included_in_stage2_analysis",
+        "inclusion_reason",
+        "multilabel_status",
+        "multilabel_vote_count",
+        "multilabel_coalition",
+        "consensus_validation_types",
+        "included_in_multilabel_analysis",
+        "multilabel_inclusion_reason"
+      ],
+      "rows": 2258,
+      "sha256": "e75dc06ef2ce45abd89be566316b72aed36bb0c297dfe209eb3623c1a76d257d"
+    },
+    "analysis/classification_labels/rq3_labels.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "html_url",
+        "pattern",
+        "sub_pattern",
+        "rq1_label_source",
+        "validation_present",
+        "validation_type",
+        "in_metric_layer",
+        "in_type_layer",
+        "D0",
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9",
+        "n_dims",
+        "n_dims_specific",
+        "dims",
+        "D0_nodiff",
+        "D1_nodiff",
+        "D2_nodiff",
+        "D3_nodiff",
+        "D4_nodiff",
+        "D5_nodiff",
+        "D6_nodiff",
+        "D7_nodiff",
+        "D8_nodiff",
+        "D9_nodiff",
+        "n_dims_nodiff",
+        "n_dims_description_only"
+      ],
+      "rows": 2081,
+      "sha256": "c31616088cac4ea8d2369b942b78f08e39356250a0b452aba5c9402e05e070b9"
+    },
+    "analysis/quantitative_analysis/results/outcomes_summary.csv": {
+      "columns": [
+        "sample_arm",
+        "sample_n",
+        "observed_n",
+        "unobserved_n",
+        "merged_n",
+        "open_n",
+        "closed_unmerged_n",
+        "time_n",
+        "time_median_hours",
+        "time_mean_hours",
+        "invalid_merged_times",
+        "time_median_ci_low",
+        "time_median_ci_high",
+        "merge_rate_pct",
+        "merge_rate_ci_low",
+        "merge_rate_ci_high",
+        "additions_n",
+        "additions_median",
+        "additions_median_ci_low",
+        "additions_median_ci_high",
+        "deletions_n",
+        "deletions_median",
+        "deletions_median_ci_low",
+        "deletions_median_ci_high",
+        "lines_changed_n",
+        "lines_changed_median",
+        "lines_changed_median_ci_low",
+        "lines_changed_median_ci_high",
+        "changed_files_n",
+        "changed_files_median",
+        "changed_files_median_ci_low",
+        "changed_files_median_ci_high",
+        "commits_count_n",
+        "commits_count_median",
+        "commits_count_median_ci_low",
+        "commits_count_median_ci_high"
+      ],
+      "rows": 2,
+      "sha256": "0a413c3d2e22f6bf278295ef14ed719902d6d9d5898f44dcc184e7c9d04191a7"
+    },
+    "analysis/quantitative_analysis/results/outcomes_tests.csv": {
+      "columns": [
+        "contrast",
+        "method",
+        "n_agentic",
+        "n_human_candidate",
+        "statistic",
+        "p_value",
+        "p_bh",
+        "effect_name",
+        "effect",
+        "effect_ci_low",
+        "effect_ci_high",
+        "estimate_name",
+        "estimate",
+        "estimate_ci_low",
+        "estimate_ci_high",
+        "odds_ratio",
+        "odds_ratio_ci_low",
+        "odds_ratio_ci_high"
+      ],
+      "rows": 7,
+      "sha256": "336229c9ee019b3103d93faf7d2351ba43c3d897f52d462be321499d63d56efe"
+    },
+    "analysis/quantitative_analysis/results/pr_quantitative.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "snapshot_at",
+        "outcome_observed",
+        "outcome",
+        "time_to_merge_hours",
+        "time_status",
+        "additions",
+        "deletions",
+        "changed_files",
+        "commits_count",
+        "lines_changed"
+      ],
+      "rows": 2260,
+      "sha256": "6980168aab2c1be2c94a214188ea875fab1769d365d55ac7829bdd2d19741e09"
+    },
+    "analysis/quantitative_analysis/results/structural/analysis_deltas.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "metric",
+        "before",
+        "after",
+        "delta",
+        "delta_pct",
+        "eligible_files",
+        "fetched_pairs",
+        "metric_pairs",
+        "complete_pr"
+      ],
+      "rows": 6087,
+      "sha256": "a3bedd8939d5afe786930e653deb883015306538d07919d37c16ce9e3d4dd502"
+    },
+    "analysis/quantitative_analysis/results/structural/pr_deltas.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "metric",
+        "before",
+        "after",
+        "delta",
+        "delta_pct",
+        "eligible_files",
+        "fetched_pairs",
+        "metric_pairs",
+        "complete_pr"
+      ],
+      "rows": 6198,
+      "sha256": "f7af3983164538e6cd78b3de22732a5850e687ab35eb4d8003ca423a9b25049f"
+    },
+    "analysis/quantitative_analysis/results/structural/summary.csv": {
+      "columns": [
+        "metric",
+        "sample_arm",
+        "n",
+        "median",
+        "mean",
+        "increases",
+        "increase_pct",
+        "p10",
+        "p90"
+      ],
+      "rows": 6,
+      "sha256": "6c7704ef5edcaeae776969083e68691b11f305bc0adac58b5ac0cad0314d1461"
+    },
+    "analysis/quantitative_analysis/results/structural/tests.csv": {
+      "columns": [
+        "metric",
+        "u",
+        "p",
+        "cliffs_delta",
+        "p_bh"
+      ],
+      "rows": 3,
+      "sha256": "c75a745d77517329b9d8b5f931f794464cf3c36da25094859c9169219149f288"
+    },
+    "analysis/rq1_optimization_patterns/catalog/original_optimization_catalog.csv": {
+      "columns": [
+        "High-level Pattern",
+        "Sub pattern",
+        "Description",
+        "Example",
+        "Optimized Metrics",
+        "Detection"
+      ],
+      "rows": 43,
+      "sha256": "a951a9acf91ebe9a775009e95d187a3ea59f5a4ae4b2875d5ebc9788c1bc6d1e"
+    },
+    "analysis/rq1_optimization_patterns/catalog/updated_optimization_catalog.csv": {
+      "columns": [
+        "High-level Pattern",
+        "Sub pattern",
+        "Description",
+        "Example",
+        "Optimized Metrics",
+        "Detection"
+      ],
+      "rows": 58,
+      "sha256": "8a4b2e59a83a3994ee228515ba47ce2712c43112df3070640ea0b3ef7fcf803c"
+    },
+    "analysis/rq1_optimization_patterns/structural_by_category/results/category_structural_tests.csv": {
+      "columns": [
+        "metric",
+        "measure",
+        "high_level_pattern",
+        "tested",
+        "skip_reason",
+        "n_agentic",
+        "n_human_candidate",
+        "median_agentic",
+        "median_human_candidate",
+        "statistic",
+        "p_value",
+        "bh_adjusted_p_value",
+        "bh_reject_0_05",
+        "cliffs_delta",
+        "cliffs_delta_ci_low",
+        "cliffs_delta_ci_high",
+        "cliffs_delta_magnitude",
+        "hodges_lehmann_shift"
+      ],
+      "rows": 36,
+      "sha256": "fb58f95d5f62035f1049e5840db8c6b26eff293660ac5aaf504300548029add4"
+    },
+    "analysis/rq2_validation/temporal/pr_created_at.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "repo_full_name",
+        "created_at",
+        "source"
+      ],
+      "rows": 2258,
+      "sha256": "5fba9b5dc3687fc5f9f7e237758da89cf7eb9a99d6cfbb66310bb8490d74a956"
+    },
+    "analysis/rq2_validation/temporal/presence_by_quarter.csv": {
+      "columns": [
+        "period",
+        "agentic_events",
+        "agentic_total",
+        "agentic_rate",
+        "agentic_ci95_low",
+        "agentic_ci95_high",
+        "human_candidate_events",
+        "human_candidate_total",
+        "human_candidate_rate",
+        "human_candidate_ci95_low",
+        "human_candidate_ci95_high",
+        "risk_difference",
+        "risk_difference_ci95_low",
+        "risk_difference_ci95_high",
+        "risk_difference_newcombe_ci95_low",
+        "risk_difference_newcombe_ci95_high"
+      ],
+      "rows": 6,
+      "sha256": "8bbbc42058653104097d746da0181c2700340bdbdf742061e33afc637194428e"
+    },
+    "analysis/rq2_validation/temporal/primary_type_by_quarter.csv": {
+      "columns": [
+        "period",
+        "sample_arm",
+        "total",
+        "benchmark_events",
+        "benchmark_share",
+        "benchmark_ci95_low",
+        "benchmark_ci95_high",
+        "profiling_events",
+        "profiling_share",
+        "profiling_ci95_low",
+        "profiling_ci95_high",
+        "static-reasoning_events",
+        "static-reasoning_share",
+        "static-reasoning_ci95_low",
+        "static-reasoning_ci95_high",
+        "anecdotal_events",
+        "anecdotal_share",
+        "anecdotal_ci95_low",
+        "anecdotal_ci95_high"
+      ],
+      "rows": 12,
+      "sha256": "af9f1da8c40ab8f26405acbd9099dc9cfe784ca6979dea1a133fa982bcaf3651"
+    },
+    "analysis/rq3_pattern_and_validation/catalog_expected_dims.csv": {
+      "columns": [
+        "High-level Pattern",
+        "Sub pattern",
+        "Optimized Metrics",
+        "catalog_expected_dims"
+      ],
+      "rows": 58,
+      "sha256": "5acc2680347f77139e9525f116111ba106ddf93027e5f0a0147e3e1cbc82ca1f"
+    },
+    "analysis/rq3_pattern_and_validation/results/rq3_tests.csv": {
+      "columns": [
+        "family",
+        "test_label",
+        "stratum",
+        "n",
+        "shape",
+        "test",
+        "statistic",
+        "dof",
+        "p_raw",
+        "effect_name",
+        "effect",
+        "note",
+        "p_bh",
+        "significant_bh"
+      ],
+      "rows": 60,
+      "sha256": "85b35eae3ad38bfdab7541e9f07608443d93c005a01fdc7b0bc1b11754878b0b"
+    },
+    "analysis/rq3_pattern_and_validation/results/tables/T6_1_alignment_permutation.csv": {
+      "columns": [
+        "population",
+        "n",
+        "observed",
+        "null mean",
+        "null 95%",
+        "p (one-sided)"
+      ],
+      "rows": 5,
+      "sha256": "5c48d298d143e9ca4df258de85c6cdc9686fb1c5a3e357566576af6aa806556c"
+    },
+    "analysis/rq3_pattern_and_validation/results/tables/T7_4_category_x_author_interaction.csv": {
+      "columns": [
+        "outcome",
+        "OR_agent",
+        "OR_human",
+        "ratio_of_ORs",
+        "ratio_lo",
+        "ratio_hi",
+        "wald_z",
+        "p_wald",
+        "LRT_chi2",
+        "p_LRT",
+        "p_bh"
+      ],
+      "rows": 3,
+      "sha256": "a003ac0aa92abb9c204e1fb9e79be7809e3c5a7000f3b17b6216671f8dc8ab42"
+    }
+  },
+  "manuscript_revision": "40bc4fcc3fa3ae5e4b97d21ac4a6dad8af96a4b1",
+  "python": "3.12",
+  "source_sha256": {
+    "Dockerfile.paper": "39d5eae3f73a6ddead827eee3f819f517c62cdec9a467a0d8b2d5eda428b9d15",
+    "analysis/artifact_inputs/manifest.json": "83a22a99a43336fd8e1172d459a9464131ea65c612faf8b4e371b9f3c5024ee1",
+    "analysis/audits/replay.py": "b3516feca08028549e8b9ceab7262a8903c64c523785d04bb5e54d71380ac09c",
+    "analysis/build_classification_labels.py": "d355d9dac5a1288ed4dea7c750dc7162366f736b8afe37dc22062501efae8943",
+    "analysis/constraints-python312.txt": "98abeecf60eebb2bbd6d93d68556a8355d2c11d1bc4df944ecdd2f96f993e6b7",
+    "analysis/export_artifact_inputs.py": "0158cf0872c11cca47160c20aa769f46d62fdcb740cb42cb59be7fc03ee4c85f",
+    "analysis/maintainability/requirements.txt": "8be913e3366f8f552b7409e36cca0874c195b644c4691e6c74bf2da5484812be",
+    "analysis/maintainability/run_maintainability.py": "95712c7805893d21c9dc09fa9f6230190f328da4ce945255beb2affd24bdc30e",
+    "analysis/make_agent_distribution_figure.py": "b53d76a66c9ca07763118e0dd0b8645511d0c66d7c638648a3c873f6024082be",
+    "analysis/make_paper_comparison_figures.py": "c548fa59905232c2bdfff1d439fba0cd43dc8c09f54cc2888955261f823b9fee",
+    "analysis/make_paper_result_tables.py": "e7254444674e1368a432bf430e05a8f94fe903a17fc054d9e1b403766e65b5b0",
+    "analysis/quantitative_analysis/analyze_quantitative.py": "f32cfd5e87a65c1ff160133a5623904c2d8ee09387618f0292a73854ad83c2bb",
+    "analysis/quantitative_analysis/requirements.txt": "2955666200e6f731353875ef4f8ce6aac3591bc226ad58a522598f4f3a105ffb",
+    "analysis/reproduce_paper.py": "a6306ce5e2294f9adf5b62ebeecbaa0e249aec3fabbab9bd41ce563fb2d1a5af",
+    "analysis/rq1_optimization_patterns/analyze_rq1_comparison.py": "43161e0b2d3da01b118444c44c7045d8468d92b7e8a99f1c9d764f25315b9d5d",
+    "analysis/rq1_optimization_patterns/catalog/provenance.json": "669994335fba1a51175fd5161ae774cd98f456aa32220f96462404d905833eb6",
+    "analysis/rq1_optimization_patterns/structural_by_category/analyze_rq1_structural_by_category.py": "2282bc78005071e7294d4eb2ad1335668a143bc1ee5a1523f12b898665d94fa7",
+    "analysis/rq2_validation/analyze_rq2_comparison.py": "236d6a076d51a0b6f72c47a44accfe726f3fc10b3e41928148d1d1583d0187d1",
+    "analysis/rq2_validation/temporal/analyze_rq2_temporal.py": "fe5ef356a6eeb3153af79b10b211eb36a8538f1d07889ca4aa77ab3d31b49f64",
+    "analysis/rq3_pattern_and_validation/code_smells_by_author.py": "aba7219f42ccd10674682c6f1ffe468eae323f27170ddd329c46349699c29107",
+    "analysis/rq3_pattern_and_validation/make_figures.py": "252f6fe603252ca67cc66ce4bd020aea7594db7d7c5ccb9b60fb09058e2b857f",
+    "analysis/rq3_pattern_and_validation/metric_alignment.py": "5ee5cd131017bf30261873465544dd51cba7d5167ba6f5afcc4f8c47e7c49a1e",
+    "analysis/rq3_pattern_and_validation/metric_patterns.py": "dbf50f5821b17add7aabf746a8332977d36efc86c6f5755c1a6ce32c9dcccd8e",
+    "analysis/rq3_pattern_and_validation/rq3_statistics.py": "5fc55679c4e3f6f69f7a1b0d14218c315bb38d221e6a963befe4d52375880d55",
+    "analysis/validate_artifact.py": "f05addaa4b5fafdf83d9d55bd1f7f9208cf3d4dda185991ea5b39e36b93bde07",
+    "requirements.txt": "e7abc43a60964db8d5f74d4e2d0b52bf295cadfdab4cb14ea3cde07701bf16ab"
+  },
+  "title": "How Do Coding Agents Optimize Software and Report Performance Validation? A Large-Scale Empirical Study of Open-Source Pull Requests"
+}

@@ -1,0 +1,98 @@
+{
+  "files": {
+    "agent_distribution.csv": {
+      "columns": [
+        "cohort",
+        "agent",
+        "count"
+      ],
+      "description": "Agent counts aggregated from the frozen final agentic sample.",
+      "rows": 5,
+      "sha256": "b0c8aec91bead9b3169d5fc49b6687228c1e7adc9901a41ba3f1f6abd4709abe",
+      "source_file": "agentic_sample.parquet",
+      "source_sha256": "66643a58480668ef62295e1d3cf3c162cb89a79a81d6741fac7bec2ddbb1820e"
+    },
+    "manual_classifier_audit.csv": {
+      "columns": [
+        "case_id",
+        "repo_id",
+        "number",
+        "audit_arm",
+        "audit_stratum",
+        "stratum_population",
+        "stratum_sample_size",
+        "inclusion_probability",
+        "sampling_weight",
+        "aidev_task_type",
+        "selection_hash",
+        "manual_label"
+      ],
+      "description": "Blinded human labels with disproportionate-stratified sampling metadata; raw and weighted estimates have different interpretations.",
+      "rows": 100,
+      "sha256": "353e8652181ad27cf71bb9db387aa523250b6dd49f0c6b6ae5312102ed0a01ed",
+      "source_file": "luna_manual_audit_100-1.xlsx",
+      "source_sha256": "0c590aa3cb479558008bd03d0e33f440e05a4defa300ea701841816127384de9"
+    },
+    "regex_occurrence_votes.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "occurrence_id",
+        "dimension",
+        "openai_valid",
+        "gemini_valid",
+        "qwen_valid"
+      ],
+      "description": "RQ4 metric-extractor audit v3: majority per occurrence, then any valid occurrence per PR.",
+      "rows": 1910,
+      "run": "rq4-regex-positive-audit-v3",
+      "sha256": "7c266f29ba799a135b7fe629e40add5faa7e1cbc8aef966f87746039c6a2c977",
+      "source_file": "regex_audit_occurrence_votes.csv",
+      "source_sha256": "88d6d6db74b06884f24e122196827486206450ec1a22ed2707b5a5d0a19b4326"
+    },
+    "rq4_metadata.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "id",
+        "agent",
+        "is_merged",
+        "time_to_merge_days"
+      ],
+      "description": "Outcome and agent metadata from the original frozen metric-extraction run; no PR text or model responses.",
+      "rows": 2081,
+      "sha256": "eb06b2fcc5edb879f736a4aca94fe241cc3b9d6fa08bdca87b9e8a20cbc50224",
+      "source_file": "rq3_pr_level.csv",
+      "source_sha256": "e11a95f8dbef0e575d04e7de3b03dd7136fe105df063165580999254413529f7"
+    },
+    "tradeoff_votes.csv": {
+      "columns": [
+        "repo_id",
+        "number",
+        "sample_arm",
+        "openai_label",
+        "gemini_label",
+        "qwen_label"
+      ],
+      "description": "Initial binary trade-off audit underlying the submitted paper's 17/12 result; model labels, not verified measurements.",
+      "models": {
+        "gemini": [
+          "gemini-3.1-pro-preview"
+        ],
+        "openai": [
+          "gpt-5.6-sol"
+        ],
+        "qwen": [
+          "qwen3.8:27b"
+        ]
+      },
+      "rows": 29,
+      "run": "initial-binary-tradeoff-audit",
+      "sha256": "b39b20285133d5b9d079689856a818082b2b6f7ddb59d1a88403bacf21f40863",
+      "source_file": "tradeoff_audit_consensus.parquet",
+      "source_sha256": "ce91e0baa2caf8d259ce74664abd61437b773a7a1b131b268dc70dbf744fb727"
+    }
+  },
+  "format_version": 1
+}

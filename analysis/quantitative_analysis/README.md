@@ -1,12 +1,12 @@
-# Section 4.1: Quantitative analysis
+# Adoption, Patch Characteristics, and Structural Indicators — Journal RQ1
 
-This directory ports the previous paper's quantitative characterization to the
-current 2,260-PR balanced sample. It includes the original analysis sources,
-current reproducible scripts, compact per-PR measurements, summary tables,
-statistical results, and figures. Full PR bodies, comments, diffs, and cached
-source files remain outside this GitHub export.
+This module implements the quantitative characterization of the 2,260-PR balanced
+sample used in journal RQ1. It provides analysis code, compact PR-level
+measurements, summary tables, statistical results, and figures. Original analysis
+sources are retained with their provenance. Full PR text and source-file archives
+are maintained separately from the compact reproduction inputs.
 
-## What is included
+## Contents
 
 - `analyze_quantitative.py`: archived merge outcomes, elapsed time to merge,
   patch-size summaries, and reproduction of structural comparisons.
@@ -62,13 +62,13 @@ To remeasure source complexity, use the sibling maintainability script and its
 documented evidence inputs. It downloads source at the stored revisions and
 caches results locally; these caches are not published to GitHub.
 
-## Current results and denominators
+## Reference Results and Populations
 
 The evidence snapshot is dated **2026-08-27**. It covers the official 2,260 PRs,
-with one unavailable human-candidate PR. Missing observations are not failures
+with one unavailable human-authored PR. Missing observations are not failures
 to merge and are excluded from the merge-rate denominator.
 
-| Outcome | Agentic | Human-candidate |
+| Outcome | Agentic | Human-authored |
 | --- | ---: | ---: |
 | Selected PRs | 1,130 | 1,130 |
 | Observed PRs | 1,130 | 1,129 |
@@ -84,10 +84,10 @@ to merge and are excluded from the merge-rate denominator.
 Bracketed ranges are two-sided 95% intervals for that arm alone: Wilson intervals
 for the merge rates and binomial order-statistic intervals for the medians.
 
-### Characterization tests
+### Statistical Comparisons
 
 All seven between-arm comparisons form one Benjamini--Hochberg family; `q` is the
-adjusted p-value. Effect sizes contrast agentic with human-candidate PRs, so a
+adjusted p-value. Effect sizes contrast agentic with human-authored PRs, so a
 negative value means the agentic arm is lower. The shift column is the
 Hodges--Lehmann median of all pairwise differences with its Moses interval, which
 is a location shift and is not the difference between the two medians above.
@@ -111,11 +111,11 @@ confirmatory hypothesis testing.
 Structural analysis considers 10,606 eligible modified/renamed file pairs in
 2,066 PRs. Twelve unavailable pairs affect four PRs. Requiring complete retrieval
 and finite percentage changes for all three metrics leaves **2,029 PRs: 1,005
-agentic and 1,024 human-candidate**. Median AvgCCN change is zero in both arms
+agentic and 1,024 human-authored**. Median AvgCCN change is zero in both arms
 (Mann--Whitney p = 0.624); AvgCCN increases in 44.9% and 42.8%, respectively.
 The structural test family uses BH adjustment across its three comparisons.
 
-## Interpretation and changes from the historical analysis
+## Measurement Scope and Interpretation
 
 - `human_candidate` means no selected observable agentic signal, not confirmed
   human authorship. None of these comparisons demonstrates a causal effect.
@@ -128,11 +128,8 @@ The structural test family uses BH adjustment across its three comparisons.
   and are not an unconditional statement about how long a submitted PR takes.
 - Rates are computed from exact counts before rounding, unlike the historical
   notebook's early rounding of group means.
-- The characterization comparisons now carry effect sizes, 95% intervals, and BH
-  adjustment across their own family, matching the treatment of the structural
-  and RQ3 families. The earlier release tested only merge rate and elapsed time
-  and reported raw p-values without intervals. Patch-size differences were
-  previously described from medians alone, with no test.
+- Characterization comparisons report effect sizes, 95% intervals, and
+  Benjamini–Hochberg adjustment within their declared comparison family.
 - Patch size uses PR-level additions/deletions, not summed per-commit diffs that
   may count the same edits repeatedly. `commits_count` is the actual PR commit
   count, not the number of commit-file records.
@@ -144,7 +141,7 @@ The structural test family uses BH adjustment across its three comparisons.
   do not preserve exact weekly balance. Neither analysis adjusts for repository
   clustering, language mix, or differences in observation age.
 
-Full study artifacts are maintained in the private
+Full study artifacts are maintained in the access-controlled
 [Hugging Face dataset](https://huggingface.co/datasets/rcalvome/EMSE-perf-pr-study).
 The published dataset does not currently include the entire enriched evidence
 snapshot; its hashes identify the local measurement inputs. Figures and tables

@@ -312,7 +312,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     distribution, expected, tests, summary = analyze_comparison(
-        pd.read_parquet(args.consensus), args.bootstrap_iterations, args.permutation_iterations, args.seed
+        pd.read_csv(args.consensus) if args.consensus.suffix == '.csv' else pd.read_parquet(args.consensus),
+        args.bootstrap_iterations, args.permutation_iterations, args.seed
     )
     summary["source_sha256"] = {"consensus": sha256_file(args.consensus)}
     args.output_dir.mkdir(parents=True, exist_ok=True)

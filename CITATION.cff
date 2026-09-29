@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "Please cite this replication artifact and the associated manuscript."
+type: software
+title: "How Do Coding Agents Optimize Software and Report Performance Validation? A Large-Scale Empirical Study of Open-Source Pull Requests"
+authors:
+  - family-names: Peng
+    given-names: Huiyun
+    orcid: "https://orcid.org/0009-0003-2574-5316"
+  - family-names: Calvo
+    given-names: Ricardo
+    orcid: "https://orcid.org/0009-0003-6681-4840"
+  - family-names: Kalu
+    given-names: Kelechi
+    orcid: "https://orcid.org/0000-0002-8749-9697"
+  - family-names: Davis
+    given-names: James C.
+    orcid: "https://orcid.org/0000-0003-2495-686X"
+repository-code: "https://github.com/PurdueDualityLab/EMSE-perf-pr-study"
+url: "https://github.com/PurdueDualityLab/EMSE-perf-pr-study"
+license: MIT
+keywords:
+  - software performance
+  - coding agents
+  - pull requests
+  - empirical software engineering
+  - performance validation

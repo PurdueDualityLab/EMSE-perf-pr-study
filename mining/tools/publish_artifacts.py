@@ -98,7 +98,7 @@ def assert_portable(path: Path) -> None:
 def dataset_card() -> str:
     return """---
 license: other
-pretty_name: Performance Pull Request Study
+pretty_name: "How Do Coding Agents Optimize Software and Report Performance Validation?"
 size_categories:
 - 1M<n<10M
 task_categories:
@@ -180,10 +180,15 @@ configs:
     path: data/rq2/performance_validation_labels_qwen.parquet
 ---
 
-# Performance Pull Request Study
+# How Do Coding Agents Optimize Software and Report Performance Validation?
 
-This private dataset contains the approved artifacts for a study comparing
-agentic and human-candidate performance pull requests.
+## A Large-Scale Empirical Study of Open-Source Pull Requests
+
+This access-controlled dataset contains the approved artifacts for a study
+comparing agentic and human-authored performance pull requests. The stored
+`human_candidate` label denotes the manuscript's human-authored group.
+Offline statistics and figure reproduction, without full-data downloads, are
+documented in the source repository's `REPRODUCING.md`.
 
 ## Cohorts
 
@@ -208,8 +213,11 @@ The `balanced-sample` subset is the default. Other subsets expose the full
 mining, attribution, classification, filtering, and sampling artifacts without
 combining tables that have different schemas.
 
-The optimization catalog subsets expose the original and study-refined RQ1
-taxonomies as separate tables.
+The optimization catalog subsets expose the original and executed taxonomies
+as separate tables. The executed snapshot contains 58 patterns; the source
+repository documents the discrepancy with the submitted paper's count of 59.
+Historical `rq1` paths answer journal RQ2, `rq2` paths answer journal RQ3,
+and the historical `rq3` extraction bundle answers journal RQ4.
 
 The `rq1-model-labels` and `rq2-model-labels` subsets expose the complete,
 validated outputs from GPT-5.6-sol, Gemini 3.1 Pro Preview, and Qwen3.8 27B as
@@ -232,8 +240,9 @@ sample = load_dataset(
 )
 ```
 
-The Hub Dataset Viewer requires a PRO or Enterprise account for private
-datasets. This limitation does not affect authenticated downloads or loading.
+Downloads require an authenticated account with the necessary dataset access
+and acceptance of any applicable access conditions. Availability of the Dataset
+Viewer depends on the Hub's current access and account settings.
 
 ## Terms
 
@@ -254,16 +263,16 @@ def inspect_table(path: Path, format: str) -> tuple[int, list[str]]:
     raise ValueError(f"Unsupported artifact format: {format}")
 
 
-def build_bundle(bundle_dir: Path) -> tuple[list[dict[str, Any]], list[tuple[Path, str]]]:
-    bundle_dir.mkdir(parents=True, exist_ok=True)
-    path_map = {
-        str((ROOT / artifact.local_path).resolve()): artifact.remote_path
-        for artifact in ARTIFACTS
-    }
+def validate_sources(dataset_dir: Path | None = None) -> tuple[list[dict[str, Any]], list[tuple[Path, str]]]:
+    """Inspect the allowlisted source tables or a downloaded dataset without writes."""
     manifest_entries = []
     uploads: list[tuple[Path, str]] = []
     for artifact in ARTIFACTS:
-        path = ROOT / artifact.local_path
+        root = (dataset_dir or ROOT).resolve()
+        relative = artifact.remote_path if dataset_dir is not None else artifact.local_path
+        path = (root / relative).resolve()
+        if not path.is_relative_to(root):
+            raise ValueError(f"Artifact escapes the selected root: {relative}")
         if not path.is_file():
             raise FileNotFoundError(path)
         actual_rows, columns = inspect_table(path, artifact.format)
@@ -284,6 +293,58 @@ def build_bundle(bundle_dir: Path) -> tuple[list[dict[str, Any]], list[tuple[Pat
             }
         )
         uploads.append((path, artifact.remote_path))
+    return manifest_entries, uploads
+
+
+def inventory_text() -> str:
+    lines = [
+        '# Official Core Artifact Inventory', '',
+        'Generated from the allowlist in `mining/tools/publish_artifacts.py`.',
+        'Paths below are relative to the Hugging Face dataset repository root.',
+        'This is the core mining/catalog/model-label bundle. The historical RQ4',
+        'extraction bundle has separate metadata; offline paper inputs and audits',
+        'are listed in the root `artifact_manifest.json`.', '',
+        '| Stage | Artifact | Rows | SHA-256 |', '| --- | --- | ---: | --- |',
+    ]
+    lines.extend(f'| {a.stage} | `{a.remote_path}` | {a.rows:,} | `{a.sha256}` |' for a in ARTIFACTS)
+    lines += ['',
+        'The executed optimization catalog has **58 patterns**. The submitted paper',
+        'reports 59; the documented consolidation and manuscript history are in',
+        '`analysis/rq1_optimization_patterns/catalog/README.md`.', '',
+        'Historical `rq1` and `rq2` dataset paths refer to journal RQ2 and RQ3.',
+        '`human_candidate` is the stored label for the manuscript\'s human-authored',
+        'group; it does not establish independently verified human authorship.', '',
+        'Full-data access requires authentication and the dataset\'s access conditions.',
+        'Publication tooling retains its private-only upload guard.', '',
+        'Validate installed dataset files without writes:', '',
+        '```bash', 'python mining/tools/publish_artifacts.py --validate-only --dataset-dir data', '```', '',
+        '`--dry-run` validates original local sources and **builds** sanitized metadata',
+        'under `--bundle-dir`; it is not a read-only validation command.', '',
+        'Maintainers can check or regenerate this inventory and `mining/artifacts.sha256`:', '',
+        '```bash', 'python mining/tools/publish_artifacts.py --check-inventory',
+        'python mining/tools/publish_artifacts.py --write-inventory', '```', '',
+    ]
+    return '\n'.join(lines)
+
+
+def checksum_text() -> str:
+    return ''.join(f'{a.sha256}  {a.local_path}\n' for a in ARTIFACTS)
+
+
+def check_inventory() -> None:
+    for path, expected in [(ROOT / 'mining/ARTIFACTS.md', inventory_text()),
+                           (ROOT / 'mining/artifacts.sha256', checksum_text())]:
+        if path.read_text() != expected:
+            raise ValueError(f'Stale artifact inventory: {path}; use --write-inventory after reviewing the allowlist.')
+
+
+def build_bundle(bundle_dir: Path) -> tuple[list[dict[str, Any]], list[tuple[Path, str]]]:
+    manifest_entries, uploads = validate_sources()
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+    path_map = {
+        str((ROOT / artifact.local_path).resolve()): artifact.remote_path
+        for artifact in ARTIFACTS
+    }
 
     for source_name, remote_path in SUMMARIES.items():
         source = ROOT / source_name
@@ -354,16 +415,35 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--bundle-dir", type=Path, default=DEFAULT_BUNDLE_DIR)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--upload", action="store_true")
+    parser.add_argument("--validate-only", action="store_true", help="Read-only validation; do not construct or upload a bundle.")
+    parser.add_argument("--dataset-dir", type=Path, help="Validate the downloaded dataset layout instead of original local source paths.")
+    parser.add_argument("--check-inventory", action="store_true")
+    parser.add_argument("--write-inventory", action="store_true")
     args = parser.parse_args()
     if args.upload and args.dry_run:
         parser.error("Choose either --dry-run or --upload.")
     if args.upload and not args.repo_id:
         parser.error("--repo-id or HF_DATASET_REPO is required with --upload.")
+    if sum([args.dry_run, args.upload, args.validate_only, args.check_inventory, args.write_inventory]) > 1:
+        parser.error("Choose one validation, inventory, build, or upload mode.")
+    if args.dataset_dir is not None and not args.validate_only:
+        parser.error("--dataset-dir requires --validate-only.")
     return args
 
 
 def main() -> None:
     args = parse_args()
+    if args.check_inventory or args.write_inventory:
+        if args.write_inventory:
+            (ROOT / 'mining/ARTIFACTS.md').write_text(inventory_text())
+            (ROOT / 'mining/artifacts.sha256').write_text(checksum_text())
+        check_inventory()
+        print(json.dumps({'inventory_artifacts': len(ARTIFACTS), 'mode': 'inventory'}))
+        return
+    if args.validate_only:
+        entries, _ = validate_sources(args.dataset_dir)
+        print(json.dumps({'validated_artifacts': len(entries), 'mode': 'validate-only'}))
+        return
     manifest, uploads = build_bundle(args.bundle_dir)
     total_bytes = sum(entry["bytes"] for entry in manifest)
     result: dict[str, Any] = {

@@ -1,2 +1,3 @@
+-c ../constraints-python312.txt
 -r ../../requirements.txt
 -r ../maintainability/requirements.txt

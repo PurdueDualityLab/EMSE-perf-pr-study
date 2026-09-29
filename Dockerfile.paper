@@ -1,0 +1,9 @@
+FROM texlive/texlive@sha256:16c556aeb4095b47245fcd05db47061529e5df8fc8c04d97fb0f049055244526
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends make \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+ENV TEXMFVAR=/tmp/texmf-var
+CMD ["make"]

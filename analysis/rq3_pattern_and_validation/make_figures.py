@@ -29,6 +29,17 @@ DATA = HERE / "data" / "rq3_pr_level.csv"
 FIG = HERE / "figures"
 DIMS = list(mp.DIMENSIONS)
 AUTHORS = ["AI Agent", "Human"]
+AUTHOR_LABELS = {"agentic": "Agentic", "human_candidate": "Human-authored"}
+PAPER_NAMES = False
+PAPER_FILENAMES = {
+    "rq3_dimensionality": "metric_count_distribution",
+    "rq3_metric_frequency": "metric_frequency",
+    "rq3_metric_profile_heatmap": "metric_profile_by_category",
+}
+
+
+def author_label(author):
+    return AUTHOR_LABELS.get(author, author.replace('_', '-').capitalize())
 
 # Consistent study-arm palette; one-hue blue ramp is reserved for magnitudes.
 AGENT, HUMAN = "#9BBCE8", "#B9DAB9"
@@ -88,7 +99,7 @@ def fig_validation_by_category(df):
         ax.set_xlim(0, 118)
         ax.set_xticks([0, 25, 50, 75, 100])
         ax.set_xlabel("share of PRs (%)")
-        ax.set_title(f"{author.replace('_', '-').capitalize()} (n={len(g)})", loc="left", color=INK)
+        ax.set_title(f"{author_label(author)} (n={len(g)})", loc="left", color=INK)
         ax.set_yticks(y)
         ax.set_yticklabels([SHORT.get(c, c) for c in order])
         ax.tick_params(axis="y", length=0)
@@ -130,7 +141,7 @@ def fig_metric_profile_heatmap(df):
         ax.tick_params(length=0)
         if ax is axes[1]:
             ax.tick_params(axis="y", pad=2)
-        ax.set_title(f"{author.replace('_', '-').capitalize()} (validated n={len(g)})", loc="left")
+        ax.set_title(f"{author_label(author)} (validated n={len(g)})", loc="left")
         for s in ax.spines.values():
             s.set_visible(False)
         # thin white grid between cells
@@ -158,7 +169,7 @@ def fig_metric_frequency(df):
         g = val[val.author_type == author]
         share = g[order].mean().values * 100
         yy = y + (0.5 - i) * height
-        ax.barh(yy, share, height=height * 0.94, color=color, label=f"{author.replace('_', '-').capitalize()} (n={len(g)})")
+        ax.barh(yy, share, height=height * 0.94, color=color, label=f"{author_label(author)} (n={len(g)})")
         for yi, v in zip(yy, share):
             ax.text(v + 0.8, yi, f"{v:.0f}%", va="center", ha="left", fontsize=6.5, color=INK2)
         xmax = max(xmax, share.max())
@@ -186,7 +197,7 @@ def fig_dimensionality(df):
         g = val[val.author_type == author]
         share = g["k"].value_counts(normalize=True).reindex(ks).fillna(0) * 100
         x = np.arange(len(ks)) + (i - 0.5) * width
-        ax.bar(x, share.values, width=width * 0.94, color=color, label=f"{author.replace('_', '-').capitalize()} (n={len(g)})")
+        ax.bar(x, share.values, width=width * 0.94, color=color, label=f"{author_label(author)} (n={len(g)})")
         for xi, v in zip(x, share.values):
             if v > 0:
                 ax.text(xi, v + 1, f"{v:.0f}", ha="center", va="bottom", fontsize=6.5, color=INK2)
@@ -204,6 +215,8 @@ def fig_dimensionality(df):
 
 def _save(fig, name):
     """Save the PDF; also a PNG preview when RQ3_PNG_DIR is set (for quick inspection)."""
+    if PAPER_NAMES:
+        name = PAPER_FILENAMES.get(name, name)
     fig.savefig(FIG / f"{name}.pdf", bbox_inches="tight")
     png_dir = os.environ.get("RQ3_PNG_DIR")
     if png_dir:
@@ -240,8 +253,10 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=Path, default=DATA)
     parser.add_argument("--output-dir", type=Path, default=FIG)
     parser.add_argument("--current", action="store_true", help="Use current study arms and validation-type labels.")
+    parser.add_argument("--paper-names", action="store_true", help="Use filenames included by the journal manuscript.")
     args = parser.parse_args()
     DATA, FIG = args.data, args.output_dir
+    PAPER_NAMES = args.paper_names
     if args.current:
         AUTHORS = ["agentic", "human_candidate"]
         VTYPES = ["benchmark", "profiling", "static-reasoning", "anecdotal", "none", "unresolved"]

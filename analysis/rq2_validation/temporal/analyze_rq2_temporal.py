@@ -475,7 +475,7 @@ def plot_temporal(quarterly: pd.DataFrame, benchmark: pd.DataFrame, output: Path
     import matplotlib.pyplot as plt
 
     colors = {"agentic": "#9BBCE8", "human_candidate": "#B9DAB9"}
-    labels = {"agentic": "Agentic", "human_candidate": "Human candidate"}
+    labels = {"agentic": "Agentic", "human_candidate": "Human-authored"}
     periods = list(quarterly["period"])
     positions = np.arange(len(periods))
 
@@ -490,9 +490,26 @@ def plot_temporal(quarterly: pd.DataFrame, benchmark: pd.DataFrame, output: Path
             positions, rate, yerr=[rate - low, high - rate], marker="o", capsize=3,
             color=colors[arm], markeredgecolor="#444444", linewidth=2, label=labels[arm],
         )
+        for position, percentage, events, total in zip(
+            positions, rate, quarterly[f"{arm}_events"], quarterly[f"{arm}_total"]
+        ):
+            other_arm = "human_candidate" if arm == "agentic" else "agentic"
+            other_rate = quarterly[f"{other_arm}_rate"].iloc[position] * 100
+            above = percentage > other_rate or (percentage == other_rate and arm == "agentic")
+            axis.annotate(
+                f"{percentage:.1f}%\n({int(events)}/{int(total)})",
+                (position, percentage),
+                xytext=(position, high[position] + 2 if above else low[position] - 2),
+                textcoords="data", ha="center",
+                va="bottom" if above else "top", fontsize=9,
+                color="#345B8C" if arm == "agentic" else "#356335",
+                bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.85, "pad": 1},
+                arrowprops={"arrowstyle": "-", "color": colors[arm], "linewidth": 0.7},
+            )
     axis.set_ylabel("PRs reporting validation (%)", fontsize=12)
     axis.set_title("Reported performance validation over the sampling window", fontsize=15, pad=10)
-    axis.set_ylim(30, 100)
+    axis.set_ylim(30, 110)
+    axis.set_yticks(np.arange(30, 101, 10))
     axis.legend(title="Author type", loc="lower right")
     axis.grid(axis="y", color="#CCCCCC")
 
@@ -514,7 +531,8 @@ def plot_temporal(quarterly: pd.DataFrame, benchmark: pd.DataFrame, output: Path
 
     # The two panels have different denominators (all PRs above, resolved
     # positives below), so no single per-quarter count belongs on the shared
-    # axis. They are carried in the caption and in the exported tables.
+    # axis. The top panel labels events / totals; other denominators remain in
+    # the caption and exported tables.
     for axis in axes:
         axis.set_xticks(positions, periods, rotation=0, fontsize=10)
 
