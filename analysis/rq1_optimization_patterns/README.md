@@ -78,20 +78,12 @@ for agentic and human-candidate PRs. Disagreements are exported to
 and notes columns for human review. The script does not select either model as a
 fallback.
 
-The pairwise assessment contains 2,260 labels from each model. Hierarchical agreement
-is 70.0% (1,582/2,260; Cohen's kappa 0.6764), with 69.82% agreement for agentic
-PRs and 70.18% for human-candidate PRs. The remaining 678 model disagreements
-were exported as human-review candidates in this intermediate diagnostic.
-The journal's final labels use three-model atomic-pair consensus instead:
-1,238 unanimous, 845 two-model majorities, and 177 unresolved cases. No general
-human adjudication of those 177 disagreements is applied.
+The journal's final labels use three-model atomic-pair consensus. Unresolved
+disagreements are not assigned labels through general human adjudication.
 
-Twenty Gemini responses contained a catalog sub-pattern paired with an
-inconsistent high-level category. Following repeated classification attempts,
-these records were normalized by retaining the returned sub-pattern and using
-its unique catalog parent. The decision records are stored in
-`results_gemini/manual_parent_adjudications.csv`; the correction is reproducible
-with `adjudicate_gemini_parent_labels.py`.
+Catalog-parent normalization retains the returned sub-pattern and assigns its
+unique catalog parent. `adjudicate_gemini_parent_labels.py` implements this rule
+and records decisions in `results_gemini/manual_parent_adjudications.csv`.
 
 Both runners use medium reasoning, a 4,096-token output limit, and the same
 structured schema. Gemini uses temperature zero. GPT-5.6-sol does not support

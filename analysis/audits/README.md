@@ -26,23 +26,20 @@ occurrence groups across 88 PRs, with 44 PRs per author group. An occurrence is
 accepted when at least two models judge it valid. A PR is classified as a true
 positive relative to this reference when at least one occurrence is accepted.
 
-The selected assessment yields **77 true-positive and 11 false-positive
-reference labels**, corresponding to **87.5% PR-level precision**. The reference
-is three-model consensus; it is not independently adjudicated human ground
-truth. This positive-only sample does not estimate recall or the precision of
-each individual metric label.
+The replay computes PR-level precision against the three-model consensus
+reference. This is not independently adjudicated human ground truth. The
+positive-only sample does not estimate recall or the precision of each
+individual metric label.
 
 ## Runtime–Memory Classification Assessment
 
 `tradeoff_votes.csv` records the three-model binary classifications for 29 PRs.
-Majority aggregation reproduces **17 trade-offs and 12 joint improvements**, as
-reported in the submitted manuscript. By author group, the counts are 10 and 7
-for agentic PRs, and 7 and 5 for human-authored PRs.
+The replay aggregates majority labels overall and by author group.
 
 The labels characterize reported evidence rather than independently measured
-performance effects. Additional assessments produced different classifications
-under alternative evidence and decision requirements. Their outcomes and the
-identifiers of the selected execution records are documented in
+performance effects. Additional assessments examine alternative evidence and
+decision requirements. Their outcomes and the identifiers of the selected
+execution records are documented in
 [Assessment Provenance](../rq3_llm_validation/PROVENANCE.md).
 
 Reproduction establishes the correspondence between the stored votes and the
@@ -58,9 +55,8 @@ sample, 30 predicted positives outside it, and 40 predicted negatives. Selection
 is balanced by author group, and predicted negatives are further stratified by
 task label.
 
-The unweighted sample confusion matrix contains 50 true positives, 10 false
-positives, 9 false negatives, and 31 true negatives. These counts reproduce the
-reported precision of **83.3%**, recall of **84.7%**, and F1 score of **84.0%**.
+The replay computes the unweighted sample confusion matrix, precision, recall,
+and F1 score from the human annotations and model predictions.
 
 The output additionally provides inverse-probability-weighted estimates for the
 auditable, model-classified population represented by the sampling strata.

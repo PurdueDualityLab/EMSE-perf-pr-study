@@ -40,7 +40,6 @@ not retrieve PR content or perform model inference.
 | Resolved optimization label and available validation-presence label | 2,081 | 1,048 | 1,033 |
 | Reported validation; general metric population | 1,699 | 858 | 841 |
 | Resolved positive primary evidence type | 1,684 | 851 | 833 |
-| Benchmark- or profiling-based primary evidence | 906 | 413 | 493 |
 
 The 15 PRs with positive validation presence and unresolved evidence types
 remain in general metric profiles. Comparisons conditioned on evidence type
@@ -161,7 +160,7 @@ of previously generated supporting tables.
 
 Results are observational PR-level associations. Benchmark classifications and
 metric detections share evidence, so their association does not independently
-validate the extractor. The positive-only three-model assessment accepts 77 of
-88 PRs and does not estimate recall. False positives and missed evidence are
-both possible; extracted frequencies are not verified performance effects or
+validate the extractor. The positive-only three-model assessment does not
+estimate recall. False positives and missed evidence are both possible;
+extracted frequencies are not verified performance effects or
 guaranteed lower bounds on true reporting rates.

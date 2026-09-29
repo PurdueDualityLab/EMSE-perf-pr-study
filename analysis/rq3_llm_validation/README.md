@@ -4,18 +4,18 @@ This module implements the model-based assessments associated with journal RQ4.
 It evaluates quantitative-metric detections and classifies reported runtime–
 memory relationships. The module name retains the original analysis numbering.
 
-## Reported Assessments
+## Assessment Procedures
 
-| Assessment | Sample | Decision procedure | Reported outcome |
-| --- | ---: | --- | --- |
-| Metric-extraction precision | 88 PRs; 44 per author group | Majority judgment per occurrence, followed by aggregation to PR level | 77 true-positive and 11 false-positive reference labels |
-| Runtime–memory classification | 29 PRs | Majority judgment on a binary PR-level label | 17 trade-offs and 12 joint improvements |
+| Assessment | Sample | Decision procedure |
+| --- | ---: | --- |
+| Metric-extraction precision | 88 PRs; 44 per author group | Majority judgment per occurrence, followed by aggregation to PR level |
+| Runtime–memory classification | 29 PRs | Majority judgment on a binary PR-level label |
 
 The models are GPT-5.6-sol, Gemini-3.1-Pro-Preview, and Qwen3.8-27B. Their
 classifications provide an assessment of the archived evidence rather than
 independent measurements of software performance.
 
-## Reproducing the Reported Counts
+## Reproduction
 
 The compact inputs and aggregation procedures are provided by the
 [assessment module](../audits/README.md):

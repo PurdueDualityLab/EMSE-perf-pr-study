@@ -53,52 +53,9 @@ group.
 
 The output retains both the conservative bound-difference interval
 (`risk_difference_ci95`) and Newcombe's square-and-add interval
-(`risk_difference_newcombe_ci95`). The latter is used in the descriptive table
-below.
-
-## Reference Results
-
-### Validation Presence
-
-| Period | Agentic | Human-authored | Difference, percentage points | Newcombe 95% CI |
-| --- | ---: | ---: | ---: | --- |
-| 2025-Q1, 10 PRs per group | 70.0% | 70.0% | 0.0 | [-35.9, 35.9] |
-| 2025-Q2 | 63.9% | 76.1% | -12.2 | [-23.4, -0.5] |
-| 2025-Q3 | 74.7% | 72.2% | 2.5 | [-6.5, 11.5] |
-| 2025-Q4 | 76.4% | 76.6% | -0.2 | [-9.2, 8.8] |
-| 2026-Q1 | 86.3% | 79.6% | 6.7 | [0.9, 12.4] |
-| 2026-Q2 | 92.9% | 90.6% | 2.3 | [-2.1, 6.6] |
-
-| Regression term | Odds ratio per year | Clustered 95% CI | Clustered p |
-| --- | ---: | --- | ---: |
-| Time, human-authored PRs | 3.06 | [1.71, 5.49] | <0.001 |
-| Time, agentic PRs | 6.47 | [3.30, 12.70] | <0.001 |
-| Author type × time | 2.11 | [0.88, 5.06] | 0.093 |
-
-Validation reporting increases in both groups. The interaction is not
-statistically significant with repository-clustered standard errors; the
-descriptive crossover does not establish different validation-presence trends.
-
-The first period, 2025-W01 through 2025-W42, contains 347 PRs per group and has
-validation rates of 69.5% and 74.1%. The second, 2025-W43 through 2026-W23,
-contains 782 PRs per group and has rates of 88.0% and 83.5%, respectively.
-
-### Benchmark-Based Primary Evidence
-
-This outcome uses the 1,819 PRs with reported validation and a resolved primary
-evidence type.
-
-| Regression term | Odds ratio per year | Clustered 95% CI | Clustered p |
-| --- | ---: | --- | ---: |
-| Time, human-authored PRs | 0.98 | [0.56, 1.73] | 0.950 |
-| Time, agentic PRs | 3.63 | [1.32, 9.96] | 0.012 |
-| Author type × time | 3.69 | [1.24, 10.97] | 0.019 |
-
-Benchmark-based primary evidence increases among agentic PRs, while the
-human-authored group shows no statistically significant temporal change. The
-2026-Q2 proportions are 60.1% and 58.7%, respectively. An additional sensitivity
-analysis uses the 1,707-PR complete primary-type/type-set consensus subset; its
-results are recorded separately in the JSON and CSV outputs.
+(`risk_difference_newcombe_ci95`). An additional sensitivity analysis uses the
+complete primary-type/type-set consensus subset and records its outputs
+separately from the primary-type analysis.
 
 ## Interpretation
 

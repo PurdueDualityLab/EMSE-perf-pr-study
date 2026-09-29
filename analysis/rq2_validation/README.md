@@ -95,18 +95,9 @@ quotes, and explanations as review candidates; neither model is used as an
 automatic fallback. These intermediate candidates are not the final labeling
 procedure. The journal uses the three-model consensus described below.
 
-The completed run contains 2,258 labels from each model. Full agreement across
-presence, primary type, and the complete type set is 63.99% (1,445/2,258).
-Validation-presence agreement is 86.80% (Cohen's kappa 0.5841), primary-type
-agreement is 80.60% (kappa 0.7086), and complete type-set agreement is 64.66%
-(kappa 0.5559). Full agreement is 63.95% for agentic PRs and 64.04% for
-human-candidate PRs. The 813 complete disagreements are exported to
-`agreement/adjudication_template.csv` with empty decision fields for human
-review.
-
-The final provider outputs contain 2,258 classified rows each. Completion,
-schema validity, and consistency of input identities are checked before
-consensus construction.
+Disagreements are exported to `agreement/adjudication_template.csv` with empty
+decision fields for human review. Completion, schema validity, and consistency
+of input identities are checked before consensus construction.
 
 ## Consensus and Comparison
 
@@ -125,13 +116,13 @@ consensus construction.
 
 Stage 1 takes the majority validation-presence vote. The primary Stage 2
 analysis requires two positive models to agree on `primary_validation_type`.
-It resolves 1,819 positive PRs and preserves 20 as unresolved. A separate
-multi-label sensitivity requires agreement on the complete
-`(primary_validation_type, validation_types)` value, resolving 1,707 positive
-PRs and preserving 132 as unresolved. This secondary rule avoids synthesizing
-a type set that no model emitted. Primary comparisons use chi-square tests and
-Cramer's V, including Yates's correction for validation presence. Evidence-type
-proportions are calculated within each author group among resolved positive PRs.
+Positive PRs without this agreement remain unresolved. A separate multi-label
+sensitivity requires agreement on the complete
+`(primary_validation_type, validation_types)` value. This secondary rule avoids
+synthesizing a type set that no model emitted. Primary comparisons use chi-square
+tests and Cramer's V, including Yates's correction for validation presence.
+Evidence-type proportions are calculated within each author group among resolved
+positive PRs.
 
 The machine-readable output additionally includes repository-cluster bootstrap
 intervals, Fisher tests with Holm correction, and non-exclusive type summaries

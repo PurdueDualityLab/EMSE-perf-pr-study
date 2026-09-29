@@ -62,57 +62,32 @@ To remeasure source complexity, use the sibling maintainability script and its
 documented evidence inputs. It downloads source at the stored revisions and
 caches results locally; these caches are not published to GitHub.
 
-## Reference Results and Populations
+## Population and Statistical Methods
 
 The evidence snapshot is dated **2026-08-27**. It covers the official 2,260 PRs,
 with one unavailable human-authored PR. Missing observations are not failures
 to merge and are excluded from the merge-rate denominator.
 
-| Outcome | Agentic | Human-authored |
-| --- | ---: | ---: |
-| Selected PRs | 1,130 | 1,130 |
-| Observed PRs | 1,130 | 1,129 |
-| Merged | 615 | 827 |
-| Merge rate among observed PRs | 54.4% [51.5, 57.3] | 73.3% [70.6, 75.8] |
-| Median creation-to-merge time, merged PRs | 4.99 h [2.95, 8.04] | 19.16 h [16.29, 21.87] |
-| Median added + deleted lines | 130.5 [115, 148] | 81.0 [72, 96] |
-| Median added lines | 89.5 [78, 102] | 54.0 [46, 63] |
-| Median deleted lines | 22.0 [19, 25] | 18.0 [16, 21] |
-| Median changed files | 3 [3, 3] | 3 [3, 3] |
-| Median actual PR commits | 3 [2, 3] | 2 [2, 2] |
-
-Bracketed ranges are two-sided 95% intervals for that arm alone: Wilson intervals
-for the merge rates and binomial order-statistic intervals for the medians.
-
-### Statistical Comparisons
+Arm-specific summaries use two-sided 95% intervals: Wilson intervals for merge
+rates and binomial order-statistic intervals for medians.
 
 All seven between-arm comparisons form one Benjamini--Hochberg family; `q` is the
 adjusted p-value. Effect sizes contrast agentic with human-authored PRs, so a
 negative value means the agentic arm is lower. The shift column is the
 Hodges--Lehmann median of all pairwise differences with its Moses interval, which
-is a location shift and is not the difference between the two medians above.
+is a location shift and is not the difference between the two group medians.
 
-| Contrast | Test | p | q | Effect [95% CI] | Shift [95% CI] |
-| --- | --- | ---: | ---: | --- | --- |
-| Merge rate | chi-square (Yates) = 85.89 | <0.001 | <0.001 | V = 0.195 | -18.83 pp [-22.71, -14.94] |
-| Time to merge (h) | Mann--Whitney U = 201663.5 | <0.001 | <0.001 | delta = -0.207 [-0.266, -0.147] | -3.59 h [-6.69, -1.73] |
-| Added lines | Mann--Whitney U = 715192.5 | <0.001 | <0.001 | delta = 0.121 [0.074, 0.168] | 14 [8, 22] |
-| Deleted lines | Mann--Whitney U = 669430.5 | 0.042 | 0.049 | delta = 0.049 [0.002, 0.097] | 1 [0, 3] |
-| Added + deleted lines | Mann--Whitney U = 710186.0 | <0.001 | <0.001 | delta = 0.113 [0.066, 0.160] | 19 [10, 30] |
-| Changed files | Mann--Whitney U = 656531.5 | 0.222 | 0.222 | delta = 0.029 [-0.018, 0.076] | 0 [0, 0] |
-| Commits | Mann--Whitney U = 699634.0 | <0.001 | <0.001 | delta = 0.097 [0.050, 0.143] | 0 [0, 0] |
-
-The merge-rate table also yields an odds ratio of 0.436 [0.366, 0.520] for merging
-in the agentic arm. Cliff's delta intervals use the consistent asymmetric form of
-Cliff (1993). Added, deleted, and added + deleted lines are nested measures rather
-than independent comparisons, and the family is exploratory characterization, not
-confirmatory hypothesis testing.
+The merge-rate comparison uses a chi-square test with Yates's correction and
+reports Cramer's V and an odds ratio. Continuous and ordinal outcomes use
+two-sided Mann--Whitney U tests. Cliff's delta intervals use the consistent
+asymmetric form of Cliff (1993). Added, deleted, and added + deleted lines are
+nested measures rather than independent comparisons, and the family is
+exploratory characterization, not confirmatory hypothesis testing.
 
 Structural analysis considers 10,606 eligible modified/renamed file pairs in
 2,066 PRs. Twelve unavailable pairs affect four PRs. Requiring complete retrieval
 and finite percentage changes for all three metrics leaves **2,029 PRs: 1,005
-agentic and 1,024 human-authored**. Median AvgCCN change is zero in both arms
-(Mann--Whitney p = 0.624); AvgCCN increases in 44.9% and 42.8%, respectively.
+agentic and 1,024 human-authored**.
 The structural test family uses BH adjustment across its three comparisons.
 
 ## Measurement Scope and Interpretation
